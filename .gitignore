@@ -1,0 +1,23 @@
+/node_modules/
+/.env
+/log
+/sandbox.js
+/.vscode/launch.json
+
+# jest
+/coverage
+
+/build
+/dist
+
+/sessions
+
+.knex/*
+!.knex/.env.example
+
+/.data
+/.files
+/.cache
+/.relay
+/.log
+/.keys
