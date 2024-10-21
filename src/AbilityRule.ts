@@ -10,14 +10,9 @@ class AbilityRule {
     return this.#statements;
   }
 
-  /**
-   * Запустить проверку условий
-   * Все условия в одном правиле должны вернуть «permit»,
-   * тогда правило считается разрешательным, в противном случае - запрещает
-   */
-  public enforce(subject: unknown, obj?: unknown) {
+  public enforce(subject: unknown, obj?: unknown, env?: unknown | undefined) {
     const affected = this.#statements.map(statement => {
-      const status = statement.enforce(subject, obj);
+      const status = statement.enforce(subject, obj, env);
 
       return { statement, status };
     });

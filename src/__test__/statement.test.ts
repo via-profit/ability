@@ -90,18 +90,6 @@ test('Deny if subject.foo > object.bar for 1 and 3', () => {
   expect(result).toBe<AbilityStatementStatus>('deny');
 });
 
-test('Throw Error if subject prefix missing', () => {
-  expect(() =>
-    new AbilityStatement('a', ['foo', '=', 'object.bar']).enforce({ foo: 1 }, { bar: 1 }),
-  ).toThrow(Error);
-});
-
-test('Throw Error if subject is not an object', () => {
-  expect(() =>
-    new AbilityStatement('a', ['subject.foo', '=', 'object.bar']).enforce(1, { bar: 1 }),
-  ).toThrow(Error);
-});
-
 test('Permit if data have a nested properties subject.foo.bar.baz = object.bar.taz.baz', () => {
   const result = new AbilityStatement('a', [
     'subject.foo.bar.baz',
@@ -147,6 +135,18 @@ test('Permit if subject.user.age eq 21', () => {
       age: 21,
     },
   });
+
+  expect(result).toBe<AbilityStatementStatus>('permit');
+});
+
+test('Permit if environment.deparament is NBC-news', () => {
+  const result = new AbilityStatement('a', ['environment.departament', '=', 'NBC-news']).enforce(
+    null,
+    null,
+    {
+      departament: 'NBC-news',
+    },
+  );
 
   expect(result).toBe<AbilityStatementStatus>('permit');
 });

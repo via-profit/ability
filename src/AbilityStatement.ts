@@ -1,6 +1,19 @@
 export type AbilityStatementStatus = 'permit' | 'deny';
-export type AbilityStatementMatches = [string, AbilityCondition, string | number];
+type SubjectPrefix = 'subject.' | 'environment.';
+export type AbilityStatementMatches = [
+  `${SubjectPrefix}${string}`,
+  AbilityCondition,
+  string | number | boolean,
+];
 export type AbilityCondition = '=' | '<>' | '>' | '<' | '<=' | '>=' | 'in';
+
+// type AddPrefix<TKey, TPrefix extends string> = TKey extends string ? `${TPrefix}${TKey}` : never;
+
+// type AbilityStatementMatches<S extends object, O> = [
+//   AddPrefix<keyof S, 'subject.' | 'environment.' | ''>,
+//   AbilityCondition,
+//   AddPrefix<keyof O, 'object.' | ''>,
+// ][];
 
 class AbilityStatement {
   #matches: AbilityStatementMatches;
@@ -98,11 +111,15 @@ class AbilityStatement {
     return this.#effect;
   }
 
-  public enforce(subject: unknown, obj?: unknown | undefined): AbilityStatementStatus {
+  public enforce(
+    subject: unknown,
+    obj?: unknown | undefined,
+    env?: unknown | undefined,
+  ): AbilityStatementStatus {
     const [_subjectFieldName, condition, _objectFieldName] = this.#matches;
 
     let is: boolean = false;
-    const [valueS, valueO] = this.extractValues(subject, obj);
+    const [valueS, valueO] = this.extractValues(subject, obj, env);
 
     if (condition === '<') {
       is = Number(valueS) < Number(valueO);
@@ -147,46 +164,48 @@ class AbilityStatement {
   }
 
   protected extractValues(
-    subject: unknown,
+    sub: unknown,
     obj?: unknown | undefined,
+    env?: unknown | undefined,
   ): [
     string | number | boolean | (string | number)[] | null | undefined,
     string | number | boolean | (string | number)[] | null | undefined,
   ] {
     const [subjectFieldName, _condition, objectFieldName] = this.#matches;
-    const REGEXP = /^(subject|object)\./;
+    const REGEXP = /^(subject|object|environment)\./;
 
     //  The subject field must be named at «subject.<field-name>»
-    if (!subjectFieldName.match(REGEXP)) {
+    if (!subjectFieldName.match(/^(subject|environment)\./)) {
       throw new Error(
         `Matches error. The subject field must be named at «subject.<field-name>», but got ${subjectFieldName}`,
       );
     }
 
-    // The subject must be an object only
-    if (typeof subject !== 'object') {
-      throw new Error(`The subject reference must be an object type, but got «${subject}»`);
-    }
+    const sFieldName = subjectFieldName.replace(/^(subject|environment)\./, '');
+    const subject = typeof sub === 'undefined' || sub === null ? {} : sub;
+    const object = typeof obj === 'undefined' || obj === null ? {} : obj;
 
-    const sFieldName = subjectFieldName.replace(REGEXP, '');
-
-    // The subject field must be null, or any value, not undefined
-    if (subject !== null && typeof this.getDotNotationValue(subject, sFieldName) === 'undefined') {
-      return [NaN, NaN];
-    }
-
-    const sValue = subject ? this.getDotNotationValue(subject, sFieldName) : subject;
+    const sValue = subject
+      ? this.getDotNotationValue(
+          subjectFieldName.match(/^subject\./)
+            ? subject
+            : subjectFieldName.match(/^environment\./)
+              ? env
+              : {},
+          sFieldName,
+        )
+      : subject;
 
     // The object field name can be «object».
     // In this case the object be compare as is
     if (objectFieldName === 'object') {
-      return [sValue, obj] as ReturnType<AbilityStatement['extractValues']>;
+      return [sValue, object] as ReturnType<AbilityStatement['extractValues']>;
     }
 
     // Object field name - is a «object.<field-name>»
-    if (obj && String(objectFieldName).match(REGEXP)) {
+    if (object && String(objectFieldName).match(REGEXP)) {
       const oFieldName = String(objectFieldName).replace(REGEXP, '');
-      return [sValue, this.getDotNotationValue(obj, oFieldName)] as ReturnType<
+      return [sValue, this.getDotNotationValue(object, oFieldName)] as ReturnType<
         AbilityStatement['extractValues']
       >;
     }
@@ -196,8 +215,7 @@ class AbilityStatement {
       return [sValue, objectFieldName] as ReturnType<AbilityStatement['extractValues']>;
     }
 
-   
-    return [NaN, NaN]
+    return [NaN, NaN];
   }
 
   protected getDotNotationValue(obj: unknown, desc: string) {

@@ -8,14 +8,15 @@ export type AbilityEnforceResult = {
   readonly deniedStatements: readonly AbilityStatement[];
 };
 
+
 class AbilityPolicy {
   #rules: AbilityRule[] = [];
   #compareMethod: AbilityRuleCompareMethod = 'and';
   #target: string = '<unknown-target>';
   #name: string;
 
-  public constructor(ruleName: string) {
-    this.#name = ruleName;
+  public constructor(policyName: string) {
+    this.#name = policyName;
   }
 
   public addRule(rule: AbilityRule, compareMethod: AbilityRuleCompareMethod = 'and'): this {
@@ -47,13 +48,13 @@ class AbilityPolicy {
     return this.#name;
   }
 
-  public enforce(subject: unknown, obj?: unknown | undefined): AbilityEnforceResult {
+  public enforce(subject: unknown, obj?: unknown | undefined, env?: unknown | undefined): AbilityEnforceResult {
     const deniedRules: AbilityRule[] = [];
     const deniedStatements: AbilityStatement[] = [];
     const statuses: AbilityStatementStatus[] = [];
 
     if (this.#rules.length === 0) {
-      deniedStatements.push(new AbilityStatement('Missing rules', ['', '=', '']));
+      deniedStatements.push(new AbilityStatement('Missing rules', ['subject.', '=', '']));
       deniedRules.push(new AbilityRule(deniedStatements));
 
       return {
@@ -63,8 +64,9 @@ class AbilityPolicy {
       };
     }
 
+
     this.#rules.forEach(rule => {
-      const { permission, deniedStatements: st } = rule.enforce(subject, obj);
+      const { permission, deniedStatements: st } = rule.enforce(subject, obj, env);
 
       statuses.push(permission);
 

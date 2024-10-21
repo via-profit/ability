@@ -23,10 +23,6 @@ export type AbilityPolicyConfig = {
   readonly target: string;
   readonly ruleCompareMethod: AbilityRuleCompareMethod;
   readonly rules: AbilityStatementConfig[][];
-  readonly dummy: {
-    readonly subject: unknown;
-    readonly object: unknown;
-  };
 };
 
 class AbilityService {
@@ -138,22 +134,6 @@ class AbilityService {
         policyName: 'Bugtracker. Возможность сменить статус на «accepted»',
         target: 'BugtrackerTaskStatus',
         ruleCompareMethod: 'or',
-        dummy: {
-          subject: {
-            accouint: {
-              roles: ['<role>'],
-            },
-            user: {
-              id: '<id>',
-            },
-          },
-          object: {
-            task: {
-              responsible: '<id>',
-              creator: '<id>',
-            },
-          },
-        },
         rules: [
           [
             {

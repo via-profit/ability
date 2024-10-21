@@ -1,6 +1,8 @@
 import http from 'node:http';
 
 import AbilityService, { AbilityPolicyConfig } from './AbilityService';
+// import AbilityRule from './AbilityRule';
+// import AbilityStatement from './AbilityStatement';
 
 // const policy = new AbilityService().parsePolicyConfig({
 //   policyID: 'BUGTRACKER_CAN_CHANGE_TO_ACCEPTED_STATUS',
@@ -68,79 +70,70 @@ server.on('request', (_, res) => {
     policyID: 'BUGTRACKER_CAN_CHANGE_TO_ACCEPTED_STATUS',
     policyName: 'Bugtracker. Возможность сменить статус на «accepted»',
     target: 'BugtrackerTaskStatus',
-    ruleCompareMethod: 'or',
-    dummy: {
-      subject: {
-        accouint: {
-          roles: ['<role>'],
-        },
-        user: {
-          id: '<id>',
-        },
-      },
-      object: {
-        task: {
-          responsible: '<id>',
-          creator: '<id>',
-        },
-      },
-    },
+    ruleCompareMethod: 'and',
     rules: [
       [
         {
           name: 'Пользователь должен быть назначен как ответственный',
           effect: 'permit',
-          matches: ['subject.user.id', '=', 'object.task.responsible'],
+          matches: ['subject.id', '=', 'object.responsible'],
         },
+        // {
+        //   name: 'Предыдущий статус должен быть - «unknown»',
+        //   effect: 'permit',
+        //   matches: ['environment.task.status', '=', 'unknown'],
+        // },
+      ],
+      [
         {
-          name: 'Предыдущий статус должен быть - «unknown»',
+          name: 'Пользователь должен являеться создателем задачи',
           effect: 'permit',
-          matches: ['subject.status', '=', 'unknown'],
+          matches: ['subject.id', '=', 'object.creator'],
         },
       ],
       // [
       //   {
-      //     name: 'Пользователь должен являеться создателем задачи',
-      //     effect: 'permit',
-      //     matches: ['subject.user.id', '=', 'object.task.creator'],
-      //   },
-      // ],
-      // [
-      //   {
       //     name: 'Пользователь должен имеет роль администратора',
       //     effect: 'permit',
-      //     matches: ['subject.account.roles', 'in', 'administrator'],
+      //     matches: ['environment.account.roles', 'in', 'administrator'],
       //   },
       // ],
     ],
   };
 
+  // const a = new AbilityService().createPolicy('ds').addRule(
+  //   new AbilityRule([
+  //     new AbilityStatement('saa', ['subject.id', '=', ''])
+  //   ])
+  // )
+
   const policy = new AbilityService().parsePolicyConfig(policyConfig);
 
   const subject = {
+    id: '1',
+    age: 21,
+  };
+  const obj = {
+    id: '6',
+    responsible: '1',
+    creator: '1',
+  };
+
+  const env = {
+    task: {
+      status: 'unknown',
+    },
     account: {
       roles: ['viewer', 'administrator', 'manager'],
     },
-    user: {
-      id: '1',
-      age: 21,
-    },
   };
-  const obj = {
-    task: {
-      id: '6',
-      responsible: '1',
-    },
-  };
-  const { permission, deniedRules } = policy.enforce(subject, obj);
+  const { permission, deniedStatements } = policy.enforce(subject, obj, env);
 
   console.log(`Permission ${permission === 'deny' ? 'denied' : 'granted'}`);
 
-  if (deniedRules.length) {
-    deniedRules.forEach(rule => {
-      rule.getStatements().forEach(st => {
-        console.log(`Deny by «${st.getName()}»`);
-      });
+  if (permission === 'deny') {
+    deniedStatements.forEach(statement => {
+      console.log(`Deny by «${statement.getName()}»`);
     });
   }
 
