@@ -116,7 +116,7 @@ class AbilityStatement<Subject = unknown, Resource = unknown, Environment = unkn
     resource?: Resource | undefined,
     environment?: Environment | undefined,
   ): boolean {
-    return 'permit' === this.enforce(subject, resource, environment);
+    return 'permit' === this.check(subject, resource, environment);
   }
 
   public isDeny(
@@ -124,10 +124,10 @@ class AbilityStatement<Subject = unknown, Resource = unknown, Environment = unkn
     resource?: Resource | undefined,
     environment?: Environment | undefined,
   ): boolean {
-    return 'deny' === this.enforce(subject, resource, environment);
+    return 'deny' === this.check(subject, resource, environment);
   }
 
-  public enforce(
+  public check(
     subject: Subject,
     resource?: Resource | undefined,
     environment?: Environment | undefined,

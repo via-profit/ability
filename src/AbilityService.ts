@@ -127,7 +127,7 @@ class AbilityService {
       .setTarget(target);
   }
 
-  public enforcePolicies(
+  public checkPolicies(
     policiesResult: readonly AbilityPolicyResult[],
     compareMethod?: AbilityCompareMethod | undefined,
   ): AbilityEnforceResult {
@@ -163,11 +163,11 @@ class AbilityService {
     };
   }
 
-  public throwEnforcePolicies(
+  public enforcePolicies(
     policiesResult: readonly AbilityPolicyResult[],
     compareMethod?: AbilityCompareMethod | undefined,
   ): void | never {
-    const { permission, deniedStatements } = this.enforcePolicies(policiesResult, compareMethod);
+    const { permission, deniedStatements } = this.checkPolicies(policiesResult, compareMethod);
 
     if (permission === 'deny') {
       throw new Error(
