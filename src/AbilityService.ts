@@ -5,11 +5,6 @@ import AbilityStatement, {
 import AbilityPolicy, { AbilityRuleCompareMethod } from './AbilityPolicy';
 import AbilityRule from './AbilityRule';
 
-export type PolicyID =
-  | 'USER_MUST_BE_A_CREATOR_OR_RESPONSIBLE_PROGRAMMER'
-  | 'BUGTRACKER_CAN_CHANGE_TO_ACCEPTED_STATUS'
-  | 'BUGTRACKER_CAN_CHANGE_TO_ACCEPTED_STATUS_FROM_UNKNOWN';
-
 export type AbilityStatementConfig = {
   readonly name: string;
   readonly effect: AbilityStatementStatus;
@@ -17,23 +12,15 @@ export type AbilityStatementConfig = {
 };
 
 export type AbilityPolicyConfig = {
-  readonly policyID: PolicyID;
-  readonly policyName: string;
-  readonly policyDescription?: string;
+  readonly id: string;
+  readonly name: string;
+  readonly description?: string;
   readonly target: string;
   readonly ruleCompareMethod: AbilityRuleCompareMethod;
   readonly rules: AbilityStatementConfig[][];
 };
 
 class AbilityService {
-  public static isPermissionDeny(permission: AbilityStatementStatus) {
-    return permission === 'deny';
-  }
-
-  public static isPermissionPermit(permission: AbilityStatementStatus) {
-    return permission === 'permit';
-  }
-
   public createRule(...args: ConstructorParameters<typeof AbilityRule>): AbilityRule {
     return new AbilityRule(...args);
   }
@@ -104,15 +91,19 @@ class AbilityService {
   /**
    * Create the Policy class instance
    */
-  public createPolicy(...args: ConstructorParameters<typeof AbilityPolicy>): AbilityPolicy {
-    return new AbilityPolicy(...args);
+  public createPolicy<Subject = unknown, Resource = unknown, Environment = unknown>(
+    ...args: ConstructorParameters<typeof AbilityPolicy>
+  ): AbilityPolicy {
+    return new AbilityPolicy<Subject, Resource, Environment>(...args);
   }
 
   /**
    * Parse the config JSON format to Policy class instance
    */
-  public parsePolicyConfig(config: AbilityPolicyConfig): AbilityPolicy {
-    const { policyName, rules, ruleCompareMethod, target } = config;
+  public parsePolicyConfig<Subject = unknown, Resource = unknown, Environment = unknown>(
+    config: AbilityPolicyConfig,
+  ): AbilityPolicy<Subject, Resource, Environment> {
+    const { name, rules, ruleCompareMethod, target } = config;
 
     const ruless = rules.map(statements => {
       return new AbilityRule(
@@ -124,54 +115,9 @@ class AbilityService {
       );
     });
 
-    return this.createPolicy(policyName).addRules(ruless, ruleCompareMethod).setTarget(target);
-  }
-
-  public async loadPolicies() {
-    const policyConfig: AbilityPolicyConfig[] = [
-      {
-        policyID: 'BUGTRACKER_CAN_CHANGE_TO_ACCEPTED_STATUS',
-        policyName: 'Bugtracker. Возможность сменить статус на «accepted»',
-        target: 'BugtrackerTaskStatus',
-        ruleCompareMethod: 'or',
-        rules: [
-          [
-            {
-              name: 'Разрешено, если пользователь назначен как ответственный',
-              effect: 'permit',
-              matches: ['subject.user.id', '=', 'resource.task.responsible'],
-            },
-            {
-              name: 'Разрешено, если предыдущий статус - «unknown»',
-              effect: 'permit',
-              matches: ['subject.user.id', '=', 'resource.task.responsible'],
-            },
-          ],
-          [
-            {
-              name: 'Разрешено, если пользователь является создателем задачи',
-              effect: 'permit',
-              matches: ['subject.user.id', '=', 'resource.task.creator'],
-            },
-          ],
-          [
-            {
-              name: 'Разрешено, если пользователь имеет роль администратора',
-              effect: 'permit',
-              matches: ['subject.account.roles', 'in', 'administrator'],
-            },
-          ],
-        ],
-      },
-    ];
-
-    const policyRecords: Record<PolicyID, AbilityPolicy> = {} as Record<PolicyID, AbilityPolicy>;
-
-    Object.entries(policyConfig).map(([_key, config]) => {
-      policyRecords[config.policyID] = this.parsePolicyConfig(config);
-    });
-
-    return policyRecords;
+    return this.createPolicy<Subject, Resource, Environment>(name)
+      .addRules(ruless, ruleCompareMethod)
+      .setTarget(target);
   }
 }
 

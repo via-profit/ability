@@ -15,7 +15,7 @@ export type AbilityCondition = '=' | '<>' | '>' | '<' | '<=' | '>=' | 'in';
 //   AddPrefix<keyof O, 'resource.' | ''>,
 // ][];
 
-class AbilityStatement {
+class AbilityStatement<Subject = unknown, Resource = unknown, Environment = unknown> {
   public matches: AbilityStatementMatches;
   public name: string;
   public effect: AbilityStatementStatus;
@@ -111,18 +111,26 @@ class AbilityStatement {
     return this.effect;
   }
 
-  public isPermit(...args: Parameters<AbilityStatement['check']>): boolean {
-    return 'permit' === this.check(...args);
+  public isPermit(
+    subject: Subject,
+    resource?: Resource | undefined,
+    environment?: Environment | undefined,
+  ): boolean {
+    return 'permit' === this.check(subject, resource, environment);
   }
 
-  public isDeny(...args: Parameters<AbilityStatement['check']>): boolean {
-    return 'deny' === this.check(...args);
+  public isDeny(
+    subject: Subject,
+    resource?: Resource | undefined,
+    environment?: Environment | undefined,
+  ): boolean {
+    return 'deny' === this.check(subject, resource, environment);
   }
 
   public check(
-    subject: unknown,
-    resource?: unknown | undefined,
-    environment?: unknown | undefined,
+    subject: Subject,
+    resource?: Resource | undefined,
+    environment?: Environment | undefined,
   ): AbilityStatementStatus {
     const [_subjectFieldName, condition, _resourceFieldName] = this.matches;
 

@@ -1,6 +1,6 @@
 import AbilityStatement, { AbilityStatementStatus } from './AbilityStatement';
 
-class AbilityRule {
+class AbilityRule<Subject = unknown, Resource = unknown, Environment = unknown> {
   public statements: AbilityStatement[];
   public constructor(statements: AbilityStatement[]) {
     this.statements = statements;
@@ -10,23 +10,31 @@ class AbilityRule {
     return this.statements;
   }
 
-  public check(...args: Parameters<AbilityRule['enforce']>) {
-    return this.enforce(...args);
-  }
-
-  public isPermit(...args: Parameters<AbilityRule['enforce']>) {
-    const { permission } = this.enforce(...args);
+  public isPermit(
+    subject: Subject | null | undefined,
+    resource?: Resource | null | undefined,
+    environment?: Environment | null | undefined,
+  ) {
+    const { permission } = this.check(subject, resource, environment);
 
     return permission === 'permit';
   }
 
-  public isDeny(...args: Parameters<AbilityRule['enforce']>) {
-    const { permission } = this.enforce(...args);
+  public isDeny(
+    subject: Subject | null | undefined,
+    resource?: Resource | null | undefined,
+    environment?: Environment | null | undefined,
+  ) {
+    const { permission } = this.check(subject, resource, environment);
 
     return permission === 'deny';
   }
 
-  private enforce(subject: unknown, resource?: unknown, environment?: unknown | undefined) {
+  public check(
+    subject: Subject | null | undefined,
+    resource?: Resource | null | undefined,
+    environment?: Environment | null | undefined,
+  ) {
     const affected = this.statements.map(statement => {
       const status = statement.check(subject, resource, environment);
 

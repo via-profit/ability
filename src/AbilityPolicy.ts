@@ -8,7 +8,7 @@ export type AbilityEnforceResult = {
   readonly deniedStatements: readonly AbilityStatement[];
 };
 
-class AbilityPolicy {
+class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown> {
   public rules: AbilityRule[] = [];
   public compareMethod: AbilityRuleCompareMethod = 'and';
   public target: string = '<unknown-target>';
@@ -47,26 +47,44 @@ class AbilityPolicy {
     return this.name;
   }
 
-  public isPermit(...args: Parameters<AbilityPolicy['enforce']>): boolean {
-    const { permission } = this.enforce(...args);
+  public throwCheck(
+    subject: Subject | null | undefined,
+    resource?: Resource | null | undefined,
+    environment?: Environment | null | undefined,
+  ): void | never {
+    const { permission, deniedStatements } = this.check(subject, resource, environment);
+
+    if (permission === 'deny') {
+      throw new Error(
+        `Permission denied.\n${deniedStatements.map(st => st.getName()).join('.\n')}`,
+      );
+    }
+  }
+
+  public isPermit(
+    subject: Subject | null | undefined,
+    resource?: Resource | null | undefined,
+    environment?: Environment | null | undefined,
+  ): boolean {
+    const { permission } = this.check(subject, resource, environment);
 
     return permission === 'permit';
   }
 
-  public isDeny(...args: Parameters<AbilityPolicy['enforce']>): boolean {
-    const { permission } = this.enforce(...args);
+  public isDeny(
+    subject: Subject | null | undefined,
+    resource?: Resource | null | undefined,
+    environment?: Environment | null | undefined,
+  ): boolean {
+    const { permission } = this.check(subject, resource, environment);
 
     return permission === 'deny';
   }
 
-  public check(...args: Parameters<AbilityPolicy['enforce']>): AbilityEnforceResult {
-    return this.enforce(...args);
-  }
-
-  protected enforce(
-    subject: unknown,
-    resource?: unknown | undefined,
-    environment?: unknown | undefined,
+  public check(
+    subject: Subject | null | undefined,
+    resource?: Resource | null | undefined,
+    environment?: Environment | null | undefined,
   ): AbilityEnforceResult {
     const deniedRules: AbilityRule[] = [];
     const deniedStatements: AbilityStatement[] = [];
