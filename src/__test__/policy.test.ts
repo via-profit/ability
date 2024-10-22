@@ -11,7 +11,7 @@ test('Permit if bane and the age are equal', () => {
     'or',
   );
 
-  const { permission } = policy.check(
+  const { permission } = policy.enforce(
     {
       name: 'Oleg',
       age: 28,
@@ -31,7 +31,7 @@ test('Permit if resource is undefined, but compare by value', () => {
     'or',
   );
 
-  const { permission } = policy.check({
+  const { permission } = policy.enforce({
     name: 'Oleg',
     age: 28,
   });

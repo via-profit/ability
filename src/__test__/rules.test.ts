@@ -7,7 +7,7 @@ test('The name and the same name of subject and the same age will be return Perm
     new AbilityStatement('2', ['subject.age', '=', 'resource.age']),
   ]);
 
-  const { permission } = rule.check(
+  const { permission } = rule.enforce(
     {
       name: 'Oleg',
       age: 26,
@@ -27,7 +27,7 @@ test('The same name and age of subject gte age of the resource will be return Pe
     new AbilityStatement('2', ['subject.age', '>', 'resource.age']),
   ]);
 
-  const { permission } = rule.check(
+  const { permission } = rule.enforce(
     {
       name: 'Oleg',
       age: 26,
@@ -47,7 +47,7 @@ test('The different name and age of subject and the resource will be return Deny
     new AbilityStatement('2', ['subject.age', '=', 'resource.age']),
   ]);
 
-  const { permission } = rule.check(
+  const { permission } = rule.enforce(
     {
       name: 'max',
       age: 26,

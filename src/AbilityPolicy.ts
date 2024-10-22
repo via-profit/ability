@@ -47,12 +47,12 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
     return this.name;
   }
 
-  public throwCheck(
+  public throwEnforce(
     subject: Subject | null,
     resource?: Resource | null,
     environment?: Environment | null,
   ): void | never {
-    const { permission, deniedStatements } = this.check(subject, resource, environment);
+    const { permission, deniedStatements } = this.enforce(subject, resource, environment);
 
     if (permission === 'deny') {
       throw new Error(
@@ -62,18 +62,18 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
   }
 
   public isPermit(subject: Subject, resource?: Resource, environment?: Environment): boolean {
-    const { permission } = this.check(subject, resource, environment);
+    const { permission } = this.enforce(subject, resource, environment);
 
     return permission === 'permit';
   }
 
   public isDeny(subject: Subject, resource?: Resource, environment?: Environment): boolean {
-    const { permission } = this.check(subject, resource, environment);
+    const { permission } = this.enforce(subject, resource, environment);
 
     return permission === 'deny';
   }
 
-  public check(
+  public enforce(
     subject: Subject | null,
     resource?: Resource | null,
     environment?: Environment | null,
@@ -94,7 +94,7 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
     }
 
     this.rules.forEach(rule => {
-      const { permission, deniedStatements: st } = rule.check(subject, resource, environment);
+      const { permission, deniedStatements: st } = rule.enforce(subject, resource, environment);
 
       statuses.push(permission);
 

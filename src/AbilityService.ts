@@ -20,7 +20,7 @@ export type AbilityPolicyConfig = {
   readonly rules: AbilityStatementConfig[][];
 };
 
-export type AbilityCheckResult = {
+export type AbilityEnforceResult = {
   readonly permission: AbilityStatementStatus;
   readonly deniedRules: readonly AbilityRule[];
   readonly deniedStatements: readonly AbilityStatement[];
@@ -127,10 +127,10 @@ class AbilityService {
       .setTarget(target);
   }
 
-  public checkPolicies(
+  public enforcePolicies(
     policiesResult: readonly AbilityPolicyResult[],
     compareMethod?: AbilityCompareMethod | undefined,
-  ): AbilityCheckResult {
+  ): AbilityEnforceResult {
     const deniedRules: AbilityRule[] = [];
     const deniedStatements: AbilityStatement[] = [];
     const deniedPolicies: AbilityPolicy[] = [];
@@ -163,11 +163,11 @@ class AbilityService {
     };
   }
 
-  public throwCheckPolicies(
+  public throwEnforcePolicies(
     policiesResult: readonly AbilityPolicyResult[],
     compareMethod?: AbilityCompareMethod | undefined,
   ): void | never {
-    const { permission, deniedStatements } = this.checkPolicies(policiesResult, compareMethod);
+    const { permission, deniedStatements } = this.enforcePolicies(policiesResult, compareMethod);
 
     if (permission === 'deny') {
       throw new Error(

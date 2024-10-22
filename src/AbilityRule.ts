@@ -20,7 +20,7 @@ class AbilityRule<Subject = unknown, Resource = unknown, Environment = unknown> 
     resource?: Resource | null ,
     environment?: Environment | null,
   ) {
-    const { permission } = this.check(subject, resource, environment);
+    const { permission } = this.enforce(subject, resource, environment);
 
     return permission === 'permit';
   }
@@ -30,18 +30,18 @@ class AbilityRule<Subject = unknown, Resource = unknown, Environment = unknown> 
     resource?: Resource | null ,
     environment?: Environment | null,
   ) {
-    const { permission } = this.check(subject, resource, environment);
+    const { permission } = this.enforce(subject, resource, environment);
 
     return permission === 'deny';
   }
 
-  public check(
+  public enforce(
     subject: Subject | null,
     resource?: Resource | null ,
     environment?: Environment | null,
   ): AbilityRuleResult {
     const affected = this.statements.map(statement => {
-      const status = statement.check(subject, resource, environment);
+      const status = statement.enforce(subject, resource, environment);
 
       return { statement, status };
     });
