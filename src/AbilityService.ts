@@ -2,7 +2,7 @@ import AbilityStatement, {
   AbilityStatementMatches,
   AbilityStatementStatus,
 } from './AbilityStatement';
-import AbilityPolicy, { AbilityRuleCompareMethod } from './AbilityPolicy';
+import AbilityPolicy, { AbilityCompareMethod, AbilityPolicyResult } from './AbilityPolicy';
 import AbilityRule from './AbilityRule';
 
 export type AbilityStatementConfig = {
@@ -16,8 +16,15 @@ export type AbilityPolicyConfig = {
   readonly name: string;
   readonly description?: string;
   readonly target: string;
-  readonly ruleCompareMethod: AbilityRuleCompareMethod;
+  readonly ruleCompareMethod: AbilityCompareMethod;
   readonly rules: AbilityStatementConfig[][];
+};
+
+export type AbilityCheckResult = {
+  readonly permission: AbilityStatementStatus;
+  readonly deniedRules: readonly AbilityRule[];
+  readonly deniedStatements: readonly AbilityStatement[];
+  readonly deniedPolicies: readonly AbilityPolicy[];
 };
 
 class AbilityService {
@@ -118,6 +125,55 @@ class AbilityService {
     return this.createPolicy<Subject, Resource, Environment>(name)
       .addRules(ruless, ruleCompareMethod)
       .setTarget(target);
+  }
+
+  public checkPolicies(
+    policiesResult: readonly AbilityPolicyResult[],
+    compareMethod?: AbilityCompareMethod | undefined,
+  ): AbilityCheckResult {
+    const deniedRules: AbilityRule[] = [];
+    const deniedStatements: AbilityStatement[] = [];
+    const deniedPolicies: AbilityPolicy[] = [];
+    const statuses: AbilityStatementStatus[] = [];
+
+    policiesResult.forEach(policyResult => {
+      statuses.push(policyResult.permission);
+
+      if (policyResult.permission === 'deny') {
+        policyResult.deniedRules.forEach(rule => {
+          deniedRules.push(rule);
+        });
+        policyResult.deniedStatements.forEach(st => {
+          deniedStatements.push(st);
+        });
+      }
+    });
+
+    const permission = statuses[compareMethod === 'and' ? 'every' : 'some'](
+      status => status === 'permit',
+    )
+      ? 'permit'
+      : 'deny';
+
+    return {
+      permission,
+      deniedRules,
+      deniedStatements,
+      deniedPolicies,
+    };
+  }
+
+  public throwCheckPolicies(
+    policiesResult: readonly AbilityPolicyResult[],
+    compareMethod?: AbilityCompareMethod | undefined,
+  ): void | never {
+    const { permission, deniedStatements } = this.checkPolicies(policiesResult, compareMethod);
+
+    if (permission === 'deny') {
+      throw new Error(
+        `Permission denied. ${deniedStatements.map(st => st.getName()).join('. ')}`,
+      );
+    }
   }
 }
 

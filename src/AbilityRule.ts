@@ -1,5 +1,10 @@
 import AbilityStatement, { AbilityStatementStatus } from './AbilityStatement';
 
+export type AbilityRuleResult = {
+  readonly permission: AbilityStatementStatus;
+  readonly deniedStatements: readonly AbilityStatement[];
+}
+
 class AbilityRule<Subject = unknown, Resource = unknown, Environment = unknown> {
   public statements: AbilityStatement[];
   public constructor(statements: AbilityStatement[]) {
@@ -11,9 +16,9 @@ class AbilityRule<Subject = unknown, Resource = unknown, Environment = unknown> 
   }
 
   public isPermit(
-    subject: Subject | null | undefined,
-    resource?: Resource | null | undefined,
-    environment?: Environment | null | undefined,
+    subject: Subject | null,
+    resource?: Resource | null ,
+    environment?: Environment | null,
   ) {
     const { permission } = this.check(subject, resource, environment);
 
@@ -21,9 +26,9 @@ class AbilityRule<Subject = unknown, Resource = unknown, Environment = unknown> 
   }
 
   public isDeny(
-    subject: Subject | null | undefined,
-    resource?: Resource | null | undefined,
-    environment?: Environment | null | undefined,
+    subject: Subject | null,
+    resource?: Resource | null ,
+    environment?: Environment | null,
   ) {
     const { permission } = this.check(subject, resource, environment);
 
@@ -31,10 +36,10 @@ class AbilityRule<Subject = unknown, Resource = unknown, Environment = unknown> 
   }
 
   public check(
-    subject: Subject | null | undefined,
-    resource?: Resource | null | undefined,
-    environment?: Environment | null | undefined,
-  ) {
+    subject: Subject | null,
+    resource?: Resource | null ,
+    environment?: Environment | null,
+  ): AbilityRuleResult {
     const affected = this.statements.map(statement => {
       const status = statement.check(subject, resource, environment);
 

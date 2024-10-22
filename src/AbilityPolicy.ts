@@ -1,8 +1,8 @@
 import AbilityStatement, { AbilityStatementStatus } from './AbilityStatement';
 import AbilityRule from './AbilityRule';
 
-export type AbilityRuleCompareMethod = 'or' | 'and';
-export type AbilityEnforceResult = {
+export type AbilityCompareMethod = 'or' | 'and';
+export type AbilityPolicyResult = {
   readonly permission: AbilityStatementStatus;
   readonly deniedRules: readonly AbilityRule[];
   readonly deniedStatements: readonly AbilityStatement[];
@@ -10,7 +10,7 @@ export type AbilityEnforceResult = {
 
 class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown> {
   public rules: AbilityRule[] = [];
-  public compareMethod: AbilityRuleCompareMethod = 'and';
+  public compareMethod: AbilityCompareMethod = 'and';
   public target: string = '<unknown-target>';
   public name: string;
 
@@ -18,14 +18,14 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
     this.name = policyName;
   }
 
-  public addRule(rule: AbilityRule, compareMethod: AbilityRuleCompareMethod = 'and'): this {
+  public addRule(rule: AbilityRule, compareMethod: AbilityCompareMethod = 'and'): this {
     this.rules.push(rule);
     this.compareMethod = compareMethod;
 
     return this;
   }
 
-  public addRules(rules: AbilityRule[], compareMethod: AbilityRuleCompareMethod = 'and'): this {
+  public addRules(rules: AbilityRule[], compareMethod: AbilityCompareMethod = 'and'): this {
     rules.forEach(rule => {
       this.addRule(rule, compareMethod);
     });
@@ -48,44 +48,36 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
   }
 
   public throwCheck(
-    subject: Subject | null | undefined,
-    resource?: Resource | null | undefined,
-    environment?: Environment | null | undefined,
+    subject: Subject | null,
+    resource?: Resource | null,
+    environment?: Environment | null,
   ): void | never {
     const { permission, deniedStatements } = this.check(subject, resource, environment);
 
     if (permission === 'deny') {
       throw new Error(
-        `Permission denied.\n${deniedStatements.map(st => st.getName()).join('.\n')}`,
+        `Permission denied. ${deniedStatements.map(st => st.getName()).join('. ')}`,
       );
     }
   }
 
-  public isPermit(
-    subject: Subject | null | undefined,
-    resource?: Resource | null | undefined,
-    environment?: Environment | null | undefined,
-  ): boolean {
+  public isPermit(subject: Subject, resource?: Resource, environment?: Environment): boolean {
     const { permission } = this.check(subject, resource, environment);
 
     return permission === 'permit';
   }
 
-  public isDeny(
-    subject: Subject | null | undefined,
-    resource?: Resource | null | undefined,
-    environment?: Environment | null | undefined,
-  ): boolean {
+  public isDeny(subject: Subject, resource?: Resource, environment?: Environment): boolean {
     const { permission } = this.check(subject, resource, environment);
 
     return permission === 'deny';
   }
 
   public check(
-    subject: Subject | null | undefined,
-    resource?: Resource | null | undefined,
-    environment?: Environment | null | undefined,
-  ): AbilityEnforceResult {
+    subject: Subject | null,
+    resource?: Resource | null,
+    environment?: Environment | null,
+  ): AbilityPolicyResult {
     const deniedRules: AbilityRule[] = [];
     const deniedStatements: AbilityStatement[] = [];
     const statuses: AbilityStatementStatus[] = [];
