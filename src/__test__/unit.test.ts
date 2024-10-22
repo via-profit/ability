@@ -1,4 +1,4 @@
-import AbilityStatement from '~/AbilityStatement';
+import AbilityStatement from '../AbilityStatement';
 
 test('Dot notation path foo.bar.baz.taz returns 2', () => {
   class Test extends AbilityStatement {
@@ -7,7 +7,7 @@ test('Dot notation path foo.bar.baz.taz returns 2', () => {
     }
   }
 
-  const object = {
+  const resource = {
     any: 6,
     foo: {
       any: 7,
@@ -20,7 +20,7 @@ test('Dot notation path foo.bar.baz.taz returns 2', () => {
       },
     },
   };
-  const value = new Test('sa', ['subject.', '=', '']).proxyDotNotation(object, 'foo.bar.baz.taz');
+  const value = new Test('sa', ['subject.', '=', '']).proxyDotNotation(resource, 'foo.bar.baz.taz');
 
-  expect(value).toBe(object.foo.bar.baz.taz);
+  expect(value).toBe(resource.foo.bar.baz.taz);
 });

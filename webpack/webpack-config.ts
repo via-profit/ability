@@ -18,9 +18,13 @@ const webpackBaseConfig: Configuration = {
   optimization: {
     minimize: false,
   },
-  entry: {
-    index: path.resolve(__dirname, '../src/playground.ts'),
-  },
+  entry: isDev
+    ? {
+        playground: path.resolve(__dirname, '../src/playground.ts'),
+      }
+    : {
+        index: path.resolve(__dirname, '../src/index.ts'),
+      },
   output: {
     libraryTarget: 'commonjs2',
     path: isDev ? path.join(__dirname, '../build/') : path.join(__dirname, '../dist/'),
@@ -40,21 +44,7 @@ const webpackBaseConfig: Configuration = {
       '~': path.resolve(__dirname, '..', 'src'),
     },
   },
-  externals: [
-    /^@via-profit-services\/geography\/data\/.*/,
-    // KNEX ignore not postgress drivers
-    /sqlite3/,
-    /mysql2/,
-    /mssql/,
-    /mariasql/,
-    /mysql/,
-    /oracle/,
-    /strong-oracle/,
-    /oracledb/,
-    /pg-native/,
-    /pg-query-stream/,
-    /import-file/,
-  ],
+  externals: [],
   node: {
     __dirname: true,
   },

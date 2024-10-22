@@ -8,20 +8,19 @@ export type AbilityEnforceResult = {
   readonly deniedStatements: readonly AbilityStatement[];
 };
 
-
 class AbilityPolicy {
-  #rules: AbilityRule[] = [];
-  #compareMethod: AbilityRuleCompareMethod = 'and';
-  #target: string = '<unknown-target>';
-  #name: string;
+  public rules: AbilityRule[] = [];
+  public compareMethod: AbilityRuleCompareMethod = 'and';
+  public target: string = '<unknown-target>';
+  public name: string;
 
   public constructor(policyName: string) {
-    this.#name = policyName;
+    this.name = policyName;
   }
 
   public addRule(rule: AbilityRule, compareMethod: AbilityRuleCompareMethod = 'and'): this {
-    this.#rules.push(rule);
-    this.#compareMethod = compareMethod;
+    this.rules.push(rule);
+    this.compareMethod = compareMethod;
 
     return this;
   }
@@ -35,25 +34,45 @@ class AbilityPolicy {
   }
 
   public setTarget(target: string): this {
-    this.#target = target;
+    this.target = target;
 
     return this;
   }
 
   public getTarget() {
-    return this.#target;
+    return this.target;
   }
 
   public getName() {
-    return this.#name;
+    return this.name;
   }
 
-  public enforce(subject: unknown, obj?: unknown | undefined, env?: unknown | undefined): AbilityEnforceResult {
+  public isPermit(...args: Parameters<AbilityPolicy['enforce']>): boolean {
+    const { permission } = this.enforce(...args);
+
+    return permission === 'permit';
+  }
+
+  public isDeny(...args: Parameters<AbilityPolicy['enforce']>): boolean {
+    const { permission } = this.enforce(...args);
+
+    return permission === 'deny';
+  }
+
+  public check(...args: Parameters<AbilityPolicy['enforce']>): AbilityEnforceResult {
+    return this.enforce(...args);
+  }
+
+  protected enforce(
+    subject: unknown,
+    resource?: unknown | undefined,
+    environment?: unknown | undefined,
+  ): AbilityEnforceResult {
     const deniedRules: AbilityRule[] = [];
     const deniedStatements: AbilityStatement[] = [];
     const statuses: AbilityStatementStatus[] = [];
 
-    if (this.#rules.length === 0) {
+    if (this.rules.length === 0) {
       deniedStatements.push(new AbilityStatement('Missing rules', ['subject.', '=', '']));
       deniedRules.push(new AbilityRule(deniedStatements));
 
@@ -64,9 +83,8 @@ class AbilityPolicy {
       };
     }
 
-
-    this.#rules.forEach(rule => {
-      const { permission, deniedStatements: st } = rule.enforce(subject, obj, env);
+    this.rules.forEach(rule => {
+      const { permission, deniedStatements: st } = rule.check(subject, resource, environment);
 
       statuses.push(permission);
 
@@ -78,7 +96,7 @@ class AbilityPolicy {
       }
     });
 
-    const res = statuses[this.#compareMethod === 'and' ? 'every' : 'some'](
+    const res = statuses[this.compareMethod === 'and' ? 'every' : 'some'](
       status => status === 'permit',
     )
       ? 'permit'

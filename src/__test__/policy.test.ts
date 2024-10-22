@@ -5,13 +5,13 @@ import AbilityStatement, { AbilityStatementStatus } from '../AbilityStatement';
 test('Permit if bane and the age are equal', () => {
   const policy = new AbilityPolicy('a').addRule(
     new AbilityRule([
-      new AbilityStatement('ds', ['subject.name', '=', 'object.name']),
-      new AbilityStatement('ds', ['subject.age', '=', 'object.age']),
+      new AbilityStatement('ds', ['subject.name', '=', 'resource.name']),
+      new AbilityStatement('ds', ['subject.age', '=', 'resource.age']),
     ]),
     'or',
   );
 
-  const { permission } = policy.enforce(
+  const { permission } = policy.check(
     {
       name: 'Oleg',
       age: 28,
@@ -25,13 +25,13 @@ test('Permit if bane and the age are equal', () => {
   expect(permission).toBe<AbilityStatementStatus>('permit');
 });
 
-test('Permit if object is undefined, but compare by value', () => {
+test('Permit if resource is undefined, but compare by value', () => {
   const policy = new AbilityPolicy('').addRule(
     new AbilityRule([new AbilityStatement('ds', ['subject.age', '=', 28])]),
     'or',
   );
 
-  const { permission } = policy.enforce({
+  const { permission } = policy.check({
     name: 'Oleg',
     age: 28,
   });

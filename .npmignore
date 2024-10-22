@@ -1,0 +1,7 @@
+.*
+/src
+/node_modules
+/webpack
+/eslint.config.mjs
+/jest.config.js
+/tsconfig.json

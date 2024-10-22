@@ -1,7 +1,7 @@
 import AbilityStatement, { AbilityStatementStatus } from '../AbilityStatement';
 
-test('Permit if subject.foo = object.bar for Oleg and Oleg', () => {
-  const result = new AbilityStatement('a', ['subject.foo', '=', 'object.bar']).enforce(
+test('Permit if subject.foo = resource.bar for Oleg and Oleg', () => {
+  const result = new AbilityStatement('a', ['subject.foo', '=', 'resource.bar']).check(
     { foo: 'Oleg' },
     { bar: 'Oleg' },
   );
@@ -9,8 +9,8 @@ test('Permit if subject.foo = object.bar for Oleg and Oleg', () => {
   expect(result).toBe<AbilityStatementStatus>('permit');
 });
 
-test('Deny if subject.foo = object.bar for Oleg and NotOleg', () => {
-  const result = new AbilityStatement('a', ['subject.foo', '=', 'object.bar']).enforce(
+test('Deny if subject.foo = resource.bar for Oleg and NotOleg', () => {
+  const result = new AbilityStatement('a', ['subject.foo', '=', 'resource.bar']).check(
     { foo: 'Oleg' },
     { bar: 'NptOleg' },
   );
@@ -18,8 +18,8 @@ test('Deny if subject.foo = object.bar for Oleg and NotOleg', () => {
   expect(result).toBe<AbilityStatementStatus>('deny');
 });
 
-test('Permit if subject.foo in object for admin and [admin]', () => {
-  const result = new AbilityStatement('a', ['subject.foo', 'in', 'object']).enforce(
+test('Permit if subject.foo in resource for admin and [admin]', () => {
+  const result = new AbilityStatement('a', ['subject.foo', 'in', 'resource']).check(
     { foo: 'admin' },
     ['admin', 'manager'],
   );
@@ -27,8 +27,8 @@ test('Permit if subject.foo in object for admin and [admin]', () => {
   expect(result).toBe<AbilityStatementStatus>('permit');
 });
 
-test('Permit if subject.foo in object for [admin] and [admin]', () => {
-  const result = new AbilityStatement('a', ['subject.foo', 'in', 'object']).enforce(
+test('Permit if subject.foo in resource for [admin] and [admin]', () => {
+  const result = new AbilityStatement('a', ['subject.foo', 'in', 'resource']).check(
     { foo: ['admin'] },
     ['admin', 'manager'],
   );
@@ -36,8 +36,8 @@ test('Permit if subject.foo in object for [admin] and [admin]', () => {
   expect(result).toBe<AbilityStatementStatus>('permit');
 });
 
-test('Deny if subject.foo in object for admin and [manager]', () => {
-  const result = new AbilityStatement('a', ['subject.foo', 'in', 'object']).enforce(
+test('Deny if subject.foo in resource for admin and [manager]', () => {
+  const result = new AbilityStatement('a', ['subject.foo', 'in', 'resource']).check(
     { foo: 'admin' },
     ['manager'],
   );
@@ -45,8 +45,8 @@ test('Deny if subject.foo in object for admin and [manager]', () => {
   expect(result).toBe<AbilityStatementStatus>('deny');
 });
 
-test('Deny if subject.foo in object for [admin] and [manager]', () => {
-  const result = new AbilityStatement('a', ['subject.foo', 'in', 'object']).enforce(
+test('Deny if subject.foo in resource for [admin] and [manager]', () => {
+  const result = new AbilityStatement('a', ['subject.foo', 'in', 'resource']).check(
     { foo: ['admin'] },
     ['manager'],
   );
@@ -54,8 +54,8 @@ test('Deny if subject.foo in object for [admin] and [manager]', () => {
   expect(result).toBe<AbilityStatementStatus>('deny');
 });
 
-test('Permit if subject.foo in object for 1 and [1, 2, 3]', () => {
-  const result = new AbilityStatement('a', ['subject.foo', 'in', 'object']).enforce(
+test('Permit if subject.foo in resource for 1 and [1, 2, 3]', () => {
+  const result = new AbilityStatement('a', ['subject.foo', 'in', 'resource']).check(
     { foo: 1 },
     [1, 2, 3],
   );
@@ -64,7 +64,7 @@ test('Permit if subject.foo in object for 1 and [1, 2, 3]', () => {
 });
 
 test('Deny if subject.foo = invalid.bar for 1 and 1', () => {
-  const result = new AbilityStatement('a', ['subject.foo', '=', 'invalid.bar']).enforce(
+  const result = new AbilityStatement('a', ['subject.foo', '=', 'invalid.bar']).check(
     { foo: 1 },
     { bar: 1 },
   );
@@ -72,8 +72,8 @@ test('Deny if subject.foo = invalid.bar for 1 and 1', () => {
   expect(result).toBe<AbilityStatementStatus>('deny');
 });
 
-test('Permit if subject.foo > object.bar for 3 and 1', () => {
-  const result = new AbilityStatement('a', ['subject.foo', '>', 'object.bar']).enforce(
+test('Permit if subject.foo > resource.bar for 3 and 1', () => {
+  const result = new AbilityStatement('a', ['subject.foo', '>', 'resource.bar']).check(
     { foo: 3 },
     { bar: 1 },
   );
@@ -81,8 +81,8 @@ test('Permit if subject.foo > object.bar for 3 and 1', () => {
   expect(result).toBe<AbilityStatementStatus>('permit');
 });
 
-test('Deny if subject.foo > object.bar for 1 and 3', () => {
-  const result = new AbilityStatement('a', ['subject.foo', '>', 'object.bar']).enforce(
+test('Deny if subject.foo > resource.bar for 1 and 3', () => {
+  const result = new AbilityStatement('a', ['subject.foo', '>', 'resource.bar']).check(
     { foo: 1 },
     { bar: 3 },
   );
@@ -90,12 +90,12 @@ test('Deny if subject.foo > object.bar for 1 and 3', () => {
   expect(result).toBe<AbilityStatementStatus>('deny');
 });
 
-test('Permit if data have a nested properties subject.foo.bar.baz = object.bar.taz.baz', () => {
+test('Permit if data have a nested properties subject.foo.bar.baz = resource.bar.taz.baz', () => {
   const result = new AbilityStatement('a', [
     'subject.foo.bar.baz',
     '=',
-    'object.bar.taz.baz',
-  ]).enforce(
+    'resource.bar.taz.baz',
+  ]).check(
     {
       foo: {
         bar: {
@@ -118,7 +118,7 @@ test('Permit if subject.user.account.roles has roles [administrator]', () => {
     'subject.user.account.roles',
     'in',
     'administrator',
-  ]).enforce({
+  ]).check({
     user: {
       account: {
         roles: ['viewer', 'administrator', 'manager'],
@@ -130,7 +130,7 @@ test('Permit if subject.user.account.roles has roles [administrator]', () => {
 });
 
 test('Permit if subject.user.age eq 21', () => {
-  const result = new AbilityStatement('a', ['subject.user.age', '=', 21]).enforce({
+  const result = new AbilityStatement('a', ['subject.user.age', '=', 21]).check({
     user: {
       age: 21,
     },
@@ -140,7 +140,7 @@ test('Permit if subject.user.age eq 21', () => {
 });
 
 test('Permit if environment.deparament is NBC-news', () => {
-  const result = new AbilityStatement('a', ['environment.departament', '=', 'NBC-news']).enforce(
+  const result = new AbilityStatement('a', ['environment.departament', '=', 'NBC-news']).check(
     null,
     null,
     {

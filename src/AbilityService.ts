@@ -51,48 +51,48 @@ class AbilityService {
    * ```json
    * {"userID": "1", "userDepartament": "NBC"}
    * ```
-   * and _The object_
+   * and _The resource_
    * ```json
    * {"departamentID": "154", "departamentName": "NBC"}
    * ```
    * \
    * Now we can make the matching rule:
    * ```json
-   * ["subject.userDepartament", "=", "object.departamentName"]
+   * ["subject.userDepartament", "=", "resource.departamentName"]
    * ```
    *
    * \
    * **Example 2.**\
-   * In this case will be compared object and string:
+   * In this case will be compared resource and string:
    * \
    * _The subject_
    * ```json
    * {"userID": "1", "userDepartament": "NBC"}
    * ```
-   * and _The object_ will be «undefined».\
+   * and _The resource_ will be «undefined».\
    * Now we can make the matching rule:
    * ```json
    * ["subject.userDepartament", "=", "NBC"]
    * ```
    * \
    * **Example 3.**\
-   * In this case will be compared object and array of string:\
+   * In this case will be compared resource and array of string:\
    * \
    * _The subject_
    * ```json
    * {"userID": "1", "userDepartament": "NBC"}
    * ```
-   * and _The object_
+   * and _The resource_
    * ```json
    * ["FOX", "NBC", "AONE"]
    * ```
    * \
    * Now we can make the matching rule:
    * ```json
-   * ["subject.userDepartament", "=", "object"]
+   * ["subject.userDepartament", "=", "resource"]
    * ```
-   * **Note: In this rule whe set the object field as the «object» string.\
-   * This means that we will compare the entire object as a whole,\
+   * **Note: In this rule whe set the resource field as the «resource» string.\
+   * This means that we will compare the entire resource as a whole,\
    * and not search for it by field name.**
    */
   public createStatement(
@@ -139,19 +139,19 @@ class AbilityService {
             {
               name: 'Разрешено, если пользователь назначен как ответственный',
               effect: 'permit',
-              matches: ['subject.user.id', '=', 'object.task.responsible'],
+              matches: ['subject.user.id', '=', 'resource.task.responsible'],
             },
             {
               name: 'Разрешено, если предыдущий статус - «unknown»',
               effect: 'permit',
-              matches: ['subject.user.id', '=', 'object.task.responsible'],
+              matches: ['subject.user.id', '=', 'resource.task.responsible'],
             },
           ],
           [
             {
               name: 'Разрешено, если пользователь является создателем задачи',
               effect: 'permit',
-              matches: ['subject.user.id', '=', 'object.task.creator'],
+              matches: ['subject.user.id', '=', 'resource.task.creator'],
             },
           ],
           [

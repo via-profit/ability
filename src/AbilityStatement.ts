@@ -9,16 +9,16 @@ export type AbilityCondition = '=' | '<>' | '>' | '<' | '<=' | '>=' | 'in';
 
 // type AddPrefix<TKey, TPrefix extends string> = TKey extends string ? `${TPrefix}${TKey}` : never;
 
-// type AbilityStatementMatches<S extends object, O> = [
+// type AbilityStatementMatches<S extends resource, O> = [
 //   AddPrefix<keyof S, 'subject.' | 'environment.' | ''>,
 //   AbilityCondition,
-//   AddPrefix<keyof O, 'object.' | ''>,
+//   AddPrefix<keyof O, 'resource.' | ''>,
 // ][];
 
 class AbilityStatement {
-  #matches: AbilityStatementMatches;
-  #name: string;
-  #effect: AbilityStatementStatus;
+  public matches: AbilityStatementMatches;
+  public name: string;
+  public effect: AbilityStatementStatus;
 
   /**
    * Create the statement to compare
@@ -33,58 +33,58 @@ class AbilityStatement {
    * ```json
    * {"userID": "1", "userDepartament": "NBC"}
    * ```
-   * and _The object_
+   * and _The resource_
    * ```json
    * {"departamentID": "154", "departamentName": "NBC"}
    * ```
    * \
    * Now we can make the matching rule:
    * ```json
-   * ["subject.userDepartament", "=", "object.departamentName"]
+   * ["subject.userDepartament", "=", "resource.departamentName"]
    * ```
    *
    * \
    * **Example 2.**\
-   * In this case will be compared object and string:
+   * In this case will be compared resource and string:
    * \
    * _The subject_
    * ```json
    * {"userID": "1", "userDepartament": "NBC"}
    * ```
-   * and _The object_ will be «undefined».\
+   * and _The resource_ will be «undefined».\
    * Now we can make the matching rule:
    * ```json
    * ["subject.userDepartament", "=", "NBC"]
    * ```
    * \
    * **Example 3.**\
-   * In this case will be compared object and array of string:\
+   * In this case will be compared resource and array of string:\
    * \
    * _The subject_
    * ```json
    * {"userID": "1", "userDepartament": "NBC"}
    * ```
-   * and _The object_
+   * and _The resource_
    * ```json
    * ["FOX", "NBC", "AONE"]
    * ```
    * \
    * Now we can make the matching rule:
    * ```json
-   * ["subject.userDepartament", "=", "object"]
+   * ["subject.userDepartament", "=", "resource"]
    * ```
-   * **Note: In this rule whe set the object field as the «object» string.\
-   * This means that we will compare the entire object as a whole,\
+   * **Note: In this rule whe set the resource field as the «resource» string.\
+   * This means that we will compare the entire resource as a whole,\
    * and not search for it by field name.**
    * \
    * **Example 4.**\
-   * In this case will be compared object and array of string:\
+   * In this case will be compared resource and array of string:\
    * \
    * _The subject_
    * ```json
    * {"user": {"account": {"roles": ["admin", "viewer"]}}}
    * ```
-   * and _The object_
+   * and _The resource_
    * ```json
    * undefined
    * ```
@@ -98,28 +98,36 @@ class AbilityStatement {
     matches: AbilityStatementMatches,
     effect: AbilityStatementStatus = 'permit',
   ) {
-    this.#name = statementName;
-    this.#effect = effect;
-    this.#matches = matches;
+    this.name = statementName;
+    this.effect = effect;
+    this.matches = matches;
   }
 
   public getName() {
-    return this.#name;
+    return this.name;
   }
 
   public getEffect() {
-    return this.#effect;
+    return this.effect;
   }
 
-  public enforce(
+  public isPermit(...args: Parameters<AbilityStatement['check']>): boolean {
+    return 'permit' === this.check(...args);
+  }
+
+  public isDeny(...args: Parameters<AbilityStatement['check']>): boolean {
+    return 'deny' === this.check(...args);
+  }
+
+  public check(
     subject: unknown,
-    obj?: unknown | undefined,
-    env?: unknown | undefined,
+    resource?: unknown | undefined,
+    environment?: unknown | undefined,
   ): AbilityStatementStatus {
-    const [_subjectFieldName, condition, _objectFieldName] = this.#matches;
+    const [_subjectFieldName, condition, _resourceFieldName] = this.matches;
 
     let is: boolean = false;
-    const [valueS, valueO] = this.extractValues(subject, obj, env);
+    const [valueS, valueO] = this.extractValues(subject, resource, environment);
 
     if (condition === '<') {
       is = Number(valueS) < Number(valueO);
@@ -160,19 +168,19 @@ class AbilityStatement {
       }
     }
 
-    return is ? this.#effect : this.#effect === 'permit' ? 'deny' : 'permit';
+    return is ? this.effect : this.effect === 'permit' ? 'deny' : 'permit';
   }
 
-  protected extractValues(
+  public extractValues(
     sub: unknown,
-    obj?: unknown | undefined,
+    res?: unknown | undefined,
     env?: unknown | undefined,
   ): [
     string | number | boolean | (string | number)[] | null | undefined,
     string | number | boolean | (string | number)[] | null | undefined,
   ] {
-    const [subjectFieldName, _condition, objectFieldName] = this.#matches;
-    const REGEXP = /^(subject|object|environment)\./;
+    const [subjectFieldName, _condition, resourceFieldName] = this.matches;
+    const REGEXP = /^(subject|resource|environment)\./;
 
     //  The subject field must be named at «subject.<field-name>»
     if (!subjectFieldName.match(/^(subject|environment)\./)) {
@@ -183,7 +191,7 @@ class AbilityStatement {
 
     const sFieldName = subjectFieldName.replace(/^(subject|environment)\./, '');
     const subject = typeof sub === 'undefined' || sub === null ? {} : sub;
-    const object = typeof obj === 'undefined' || obj === null ? {} : obj;
+    const resource = typeof res === 'undefined' || res === null ? {} : res;
 
     const sValue = subject
       ? this.getDotNotationValue(
@@ -196,32 +204,32 @@ class AbilityStatement {
         )
       : subject;
 
-    // The object field name can be «object».
-    // In this case the object be compare as is
-    if (objectFieldName === 'object') {
-      return [sValue, object] as ReturnType<AbilityStatement['extractValues']>;
+    // The resource field name can be «resource».
+    // In this case the resource be compare as is
+    if (resourceFieldName === 'resource') {
+      return [sValue, resource] as ReturnType<AbilityStatement['extractValues']>;
     }
 
-    // Object field name - is a «object.<field-name>»
-    if (object && String(objectFieldName).match(REGEXP)) {
-      const oFieldName = String(objectFieldName).replace(REGEXP, '');
-      return [sValue, this.getDotNotationValue(object, oFieldName)] as ReturnType<
+    // Object field name - is a «resource.<field-name>»
+    if (resource && String(resourceFieldName).match(REGEXP)) {
+      const oFieldName = String(resourceFieldName).replace(REGEXP, '');
+      return [sValue, this.getDotNotationValue(resource, oFieldName)] as ReturnType<
         AbilityStatement['extractValues']
       >;
     }
 
-    // The object field abne can be «<some-value>» only
-    if (String(objectFieldName).match(REGEXP) === null) {
-      return [sValue, objectFieldName] as ReturnType<AbilityStatement['extractValues']>;
+    // The resource field abne can be «<some-value>» only
+    if (String(resourceFieldName).match(REGEXP) === null) {
+      return [sValue, resourceFieldName] as ReturnType<AbilityStatement['extractValues']>;
     }
 
     return [NaN, NaN];
   }
 
-  protected getDotNotationValue(obj: unknown, desc: string) {
+  public getDotNotationValue(resource: unknown, desc: string) {
     const arr = desc.split('.');
 
-    while (arr.length && obj) {
+    while (arr.length && resource) {
       const comp = arr.shift() || '';
       const match = new RegExp('(.+)\\[([0-9]*)\\]').exec(comp);
 
@@ -231,17 +239,17 @@ class AbilityStatement {
           arrIndex: match[2],
         };
 
-        if (obj[arrayData.arrName as keyof typeof obj] !== undefined) {
-          obj = obj[arrayData.arrName as keyof typeof obj][arrayData.arrIndex];
+        if (resource[arrayData.arrName as keyof typeof resource] !== undefined) {
+          resource = resource[arrayData.arrName as keyof typeof resource][arrayData.arrIndex];
         } else {
-          obj = undefined;
+          resource = undefined;
         }
       } else {
-        obj = obj[comp as keyof typeof obj];
+        resource = resource[comp as keyof typeof resource];
       }
     }
 
-    return obj;
+    return resource;
   }
 }
 
