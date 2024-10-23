@@ -1,24 +1,6 @@
-import AbilityStatement, {
-  AbilityStatementMatches,
-  AbilityStatementStatus,
-} from './AbilityStatement';
+import AbilityStatement, { AbilityStatementStatus } from './AbilityStatement';
 import AbilityPolicy, { AbilityCompareMethod, AbilityPolicyResult } from './AbilityPolicy';
 import AbilityRule from './AbilityRule';
-
-export type AbilityStatementConfig = {
-  readonly name: string;
-  readonly effect: AbilityStatementStatus;
-  readonly matches: AbilityStatementMatches;
-};
-
-export type AbilityPolicyConfig = {
-  readonly id: string;
-  readonly name: string;
-  readonly description?: string;
-  readonly target: string;
-  readonly ruleCompareMethod: AbilityCompareMethod;
-  readonly rules: AbilityStatementConfig[][];
-};
 
 export type AbilityEnforceResult = {
   readonly permission: AbilityStatementStatus;
@@ -98,33 +80,8 @@ class AbilityService {
   /**
    * Create the Policy class instance
    */
-  public createPolicy<Subject = unknown, Resource = unknown, Environment = unknown>(
-    ...args: ConstructorParameters<typeof AbilityPolicy>
-  ): AbilityPolicy {
-    return new AbilityPolicy<Subject, Resource, Environment>(...args);
-  }
-
-  /**
-   * Parse the config JSON format to Policy class instance
-   */
-  public parsePolicyConfig<Subject = unknown, Resource = unknown, Environment = unknown>(
-    config: AbilityPolicyConfig,
-  ): AbilityPolicy<Subject, Resource, Environment> {
-    const { name, rules, ruleCompareMethod, target } = config;
-
-    const ruless = rules.map(statements => {
-      return new AbilityRule(
-        statements.map(statementConfig => {
-          const { name, effect, matches } = statementConfig;
-
-          return new AbilityStatement(name, matches, effect);
-        }),
-      );
-    });
-
-    return this.createPolicy<Subject, Resource, Environment>(name)
-      .addRules(ruless, ruleCompareMethod)
-      .setTarget(target);
+  public createPolicy(...args: ConstructorParameters<typeof AbilityPolicy>): AbilityPolicy {
+    return new AbilityPolicy(...args);
   }
 
   public checkPolicies(
@@ -170,9 +127,7 @@ class AbilityService {
     const { permission, deniedStatements } = this.checkPolicies(policiesResult, compareMethod);
 
     if (permission === 'deny') {
-      throw new Error(
-        `Permission denied. ${deniedStatements.map(st => st.getName()).join('. ')}`,
-      );
+      throw new Error(`Permission denied. ${deniedStatements.map(st => st.getName()).join('. ')}`);
     }
   }
 }

@@ -1,5 +1,5 @@
 export type AbilityStatementStatus = 'permit' | 'deny';
-type SubjectPrefix = 'subject.' | 'environment.';
+export type SubjectPrefix = 'subject.' | 'environment.';
 export type AbilityStatementMatches = [
   `${SubjectPrefix}${string}`,
   AbilityCondition,
@@ -7,17 +7,15 @@ export type AbilityStatementMatches = [
 ];
 export type AbilityCondition = '=' | '<>' | '>' | '<' | '<=' | '>=' | 'in';
 
-// type AddPrefix<TKey, TPrefix extends string> = TKey extends string ? `${TPrefix}${TKey}` : never;
-
-// type AbilityStatementMatches<S extends resource, O> = [
-//   AddPrefix<keyof S, 'subject.' | 'environment.' | ''>,
-//   AbilityCondition,
-//   AddPrefix<keyof O, 'resource.' | ''>,
-// ][];
+export type AbilityStatementConfig = {
+  readonly name: string;
+  readonly effect: AbilityStatementStatus;
+  readonly matches: AbilityStatementMatches;
+};
 
 class AbilityStatement<Subject = unknown, Resource = unknown, Environment = unknown> {
   public matches: AbilityStatementMatches;
-  public name: string;
+  public name: string | symbol;
   public effect: AbilityStatementStatus;
 
   /**
@@ -94,7 +92,7 @@ class AbilityStatement<Subject = unknown, Resource = unknown, Environment = unkn
    * ["subject.user.account.roles", "in", "admin"]
    */
   public constructor(
-    statementName: string,
+    statementName: string | symbol,
     matches: AbilityStatementMatches,
     effect: AbilityStatementStatus = 'permit',
   ) {
@@ -258,6 +256,21 @@ class AbilityStatement<Subject = unknown, Resource = unknown, Environment = unkn
     }
 
     return resource;
+  }
+
+  /**
+   * Parsing the statement config object or JSON string\
+   * of config and returns the AbilityStatement class instance
+   */
+  public static parse(
+    configOrJson: AbilityStatementConfig | string,
+  ): AbilityStatement {
+    const { name, effect, matches } =
+      typeof configOrJson === 'string'
+        ? (JSON.parse(configOrJson) as AbilityStatementConfig)
+        : configOrJson;
+
+    return new AbilityStatement(name, matches, effect);
   }
 }
 

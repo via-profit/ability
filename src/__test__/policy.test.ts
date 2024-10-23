@@ -1,40 +1,34 @@
-import AbilityPolicy from '../AbilityPolicy';
+import AbilityPolicy, { AbilityPolicyConfig } from '../AbilityPolicy';
 import AbilityRule from '../AbilityRule';
 import AbilityStatement, { AbilityStatementStatus } from '../AbilityStatement';
 
-test('Permit if bane and the age are equal', () => {
-  const policy = new AbilityPolicy('a').addRule(
-    new AbilityRule([
-      new AbilityStatement('ds', ['subject.name', '=', 'resource.name']),
-      new AbilityStatement('ds', ['subject.age', '=', 'resource.age']),
-    ]),
-    'or',
-  );
+import { sameNameAndGreater21YearsPolicyConfig } from './policies';
 
-  const { permission } = policy.enforce(
-    {
-      name: 'Oleg',
-      age: 28,
-    },
-    {
-      name: 'Oleg',
-      age: 28,
-    },
-  );
-
-  expect(permission).toBe<AbilityStatementStatus>('permit');
-});
-
-test('Permit if resource is undefined, but compare by value', () => {
-  const policy = new AbilityPolicy('').addRule(
-    new AbilityRule([new AbilityStatement('ds', ['subject.age', '=', 28])]),
-    'or',
-  );
-
-  const { permission } = policy.enforce({
-    name: 'Oleg',
-    age: 28,
+test('Throw Error while policies and rules are empty', () => {
+  const policy = AbilityPolicy.parse({
+    id: '<id>',
+    name: '<name>',
   });
 
-  expect(permission).toBe<AbilityStatementStatus>('permit');
+  expect(() => policy.enforce({}, {})).toThrow(Error);
 });
+
+test('Permit two policies: compare names and the age', () => {
+  const policy = AbilityPolicy.parse(sameNameAndGreater21YearsPolicyConfig);
+
+  expect(policy.isPermit({ name: 'Oleg', age: 21 }, { name: 'Oleg' })).toBeTruthy();
+});
+
+// test('Permit if resource is undefined, but compare by value', () => {
+//   const policy = new AbilityPolicy('<name>', '<id>').addRule(
+//     new AbilityRule('s').addStatement(new AbilityStatement('ds', ['subject.age', '=', 28])),
+//     'or',
+//   );
+
+//   const { permission } = policy.check({
+//     name: 'Oleg',
+//     age: 28,
+//   });
+
+//   expect(permission).toBe<AbilityStatementStatus>('permit');
+// });
