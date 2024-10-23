@@ -1,7 +1,4 @@
-import AbilityPolicy, { AbilityPolicyConfig } from '../AbilityPolicy';
-import AbilityRule from '../AbilityRule';
-import AbilityStatement, { AbilityStatementStatus } from '../AbilityStatement';
-
+import AbilityPolicy from '../AbilityPolicy';
 import { sameNameAndGreater21YearsPolicyConfig } from './policies';
 
 test('Throw Error while policies and rules are empty', () => {
