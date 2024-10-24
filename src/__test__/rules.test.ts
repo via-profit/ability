@@ -12,7 +12,7 @@ test('Permit if subject.foo = resource.bar for Oleg and Oleg', () => {
 test('Deny if subject.foo = resource.bar for Oleg and NotOleg', () => {
   const result = new AbilityRule('a', ['subject.foo', '=', 'resource.bar']).check(
     { foo: 'Oleg' },
-    { bar: 'NptOleg' },
+    { bar: 'NotOleg' },
   );
 
   expect(result).toBe<AbilityRuleStatus>('deny');
