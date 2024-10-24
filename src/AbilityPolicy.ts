@@ -1,18 +1,16 @@
-import AbilityStatement, { AbilityStatementStatus } from './AbilityStatement';
-import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
+import AbilityRule, { AbilityRuleStatus, AbilityRuleConfig } from './AbilityRule';
 
 /**
  * Compare method.\
- * For the «and» method the entity (policy, rule or statement) will be permitted if all\
+ * For the «and» method the entity (policy, rule or rule) will be permitted if all\
  * entities will be returns «permit» status and for the «or» - if\
  * one of the entities returns as «permit»
  */
 export type AbilityCompareMethod = 'or' | 'and';
 
 export type AbilityPolicyResult = {
-  readonly permission: AbilityStatementStatus;
+  readonly permission: AbilityRuleStatus;
   readonly deniedRules: readonly AbilityRule[];
-  readonly deniedStatements: readonly AbilityStatement[];
   readonly deniedPolicies: readonly AbilityPolicy[];
 };
 
@@ -20,14 +18,10 @@ export type AbilityPolicyConfig = {
   readonly id: string;
   readonly name: string;
   readonly description?: string;
-  readonly rules?: {
-    readonly compareMethod: AbilityCompareMethod;
-    readonly list: AbilityRuleConfig[];
-  } | null;
-  readonly policies?: {
-    readonly compareMethod: AbilityCompareMethod;
-    readonly list: AbilityPolicyConfig[];
-  } | null;
+  readonly rulesCompareMethod?: AbilityCompareMethod;
+  readonly policiesCompareMethod?: AbilityCompareMethod;
+  readonly rules?: AbilityRuleConfig[] | null;
+  readonly policies?: AbilityPolicyConfig[] | null;
 };
 
 class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown> {
@@ -158,10 +152,9 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
     environment?: Environment | null,
   ): AbilityPolicyResult {
     const deniedRules: AbilityRule[] = [];
-    const deniedStatements: AbilityStatement[] = [];
     const deniedPolicies: AbilityPolicy[] = [];
-    const ruleStatuses: AbilityStatementStatus[] = [];
-    const policyStatuses: AbilityStatementStatus[] = [];
+    const ruleStatuses: AbilityRuleStatus[] = [];
+    const policyStatuses: AbilityRuleStatus[] = [];
 
     AbilityPolicy.validatePolicy(this);
 
@@ -177,14 +170,10 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
       policyResult.deniedRules.forEach(rule => {
         deniedRules.push(rule);
       });
-
-      policyResult.deniedStatements.forEach(st => {
-        deniedStatements.push(st);
-      });
     });
 
     this.rules.forEach(rule => {
-      const { permission, deniedStatements: st } = rule.check(subject, resource, environment);
+      const permission = rule.check(subject, resource, environment);
 
       ruleStatuses.push(permission);
 
@@ -192,13 +181,9 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
         deniedRules.push(rule);
         deniedPolicies.push(this);
       }
-
-      st.forEach(statement => {
-        deniedStatements.push(statement);
-      });
     });
 
-    let res: AbilityStatementStatus = 'deny';
+    let res: AbilityRuleStatus = 'deny';
 
     if (policyStatuses.length) {
       res = policyStatuses[this.policiesCompareMethod === 'and' ? 'every' : 'some'](
@@ -220,7 +205,6 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
       permission: res,
       deniedRules,
       deniedPolicies,
-      deniedStatements,
     };
   }
 
@@ -228,7 +212,15 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
    * Parse the config JSON format to Policy class instance
    */
   public static parse(configOrJson: AbilityPolicyConfig | string): AbilityPolicy {
-    const { id, name, description, rules, policies } =
+    const {
+      id,
+      name,
+      description,
+      rules,
+      policies,
+      rulesCompareMethod,
+      policiesCompareMethod,
+    } =
       typeof configOrJson === 'string'
         ? (JSON.parse(configOrJson) as AbilityPolicyConfig)
         : configOrJson;
@@ -241,21 +233,17 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
     }
 
     // Adding rules if exists
-    if (rules?.list && rules.list.length > 0) {
-      const abilityRules = [...(rules?.list || [])].map(ruleConfig =>
-        AbilityRule.parse(ruleConfig),
-      );
+    if (rules && rules.length > 0) {
+      const abilityRules = rules.map(ruleConfig => AbilityRule.parse(ruleConfig));
 
-      policy.addRules(abilityRules, rules.compareMethod);
+      policy.addRules(abilityRules, rulesCompareMethod);
     }
 
     // Adding policies if exixts
-    if (policies?.list && policies.list.length > 0) {
-      const nestedPolicies = [...(policies?.list || [])].map(nestedConfig =>
-        AbilityPolicy.parse(nestedConfig),
-      );
+    if (policies && policies.length > 0) {
+      const nestedPolicies = policies.map(nestedConfig => AbilityPolicy.parse(nestedConfig));
 
-      policy.addPolicies(nestedPolicies, policies.compareMethod);
+      policy.addPolicies(nestedPolicies, policiesCompareMethod);
     }
 
     return policy;

@@ -1,7 +1,7 @@
-import AbilityStatement from '../AbilityStatement';
+import AbilityRule from '../AbilityRule';
 
 test('Dot notation path foo.bar.baz.taz returns 2', () => {
-  class Test extends AbilityStatement {
+  class Test extends AbilityRule {
     public proxyDotNotation(o: unknown, p: string) {
       return this.getDotNotationValue(o, p);
     }

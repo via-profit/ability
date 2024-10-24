@@ -1,81 +1,152 @@
-import AbilityRule from '../AbilityRule';
-import AbilityStatement, { AbilityStatementStatus } from '../AbilityStatement';
+import AbilityRule, { AbilityRuleStatus } from '../AbilityRule';
 
-test('Rule name must be returns in deniedRules array', () => {
-  const RULE_NAME = Symbol('The name of rule');
-  const STATEMENT_1_NAME = Symbol('St 1');
-  const STATEMENT_2_NAME = Symbol('St 2');
-  const rule = new AbilityRule(RULE_NAME).addStatements(
-    [
-      new AbilityStatement(STATEMENT_1_NAME, ['subject.name', '=', 'resource.name']),
-      new AbilityStatement(STATEMENT_2_NAME, ['subject.age', '=', 'resource.age']),
-    ],
-    'and',
+test('Permit if subject.foo = resource.bar for Oleg and Oleg', () => {
+  const result = new AbilityRule('a', ['subject.foo', '=', 'resource.bar']).check(
+    { foo: 'Oleg' },
+    { bar: 'Oleg' },
   );
 
-  const { permission, deniedStatements } = rule.check({ name: 'A', age: 21 }, { name: 'B' });
-
-  expect(permission).toBe('deny');
-  expect(deniedStatements[0].getName()).toBe(STATEMENT_1_NAME);
-  expect(deniedStatements[1].getName()).toBe(STATEMENT_2_NAME);
+  expect(result).toBe<AbilityRuleStatus>('permit');
 });
 
-test('The name and the same name of subject and the same age will be return Permit', () => {
-  const rule = new AbilityRule('Rule name').addStatements([
-    new AbilityStatement('1', ['subject.name', '=', 'resource.name']),
-    new AbilityStatement('2', ['subject.age', '=', 'resource.age']),
-  ]);
-
-  const { permission } = rule.check(
-    {
-      name: 'Oleg',
-      age: 26,
-    },
-    {
-      name: 'Oleg',
-      age: 26,
-    },
+test('Deny if subject.foo = resource.bar for Oleg and NotOleg', () => {
+  const result = new AbilityRule('a', ['subject.foo', '=', 'resource.bar']).check(
+    { foo: 'Oleg' },
+    { bar: 'NptOleg' },
   );
 
-  expect(permission).toBe<AbilityStatementStatus>('permit');
+  expect(result).toBe<AbilityRuleStatus>('deny');
 });
 
-test('The same name and age of subject gte age of the resource will be return Permit', () => {
-  const rule = new AbilityRule('Rule name').addStatements([
-    new AbilityStatement('1', ['subject.name', '=', 'resource.name']),
-    new AbilityStatement('2', ['subject.age', '>', 'resource.age']),
-  ]);
-
-  const { permission } = rule.check(
-    {
-      name: 'Oleg',
-      age: 26,
-    },
-    {
-      name: 'Oleg',
-      age: 18,
-    },
+test('Permit if subject.foo in resource for admin and [admin]', () => {
+  const result = new AbilityRule('a', ['subject.foo', 'in', 'resource']).check(
+    { foo: 'admin' },
+    ['admin', 'manager'],
   );
 
-  expect(permission).toBe<AbilityStatementStatus>('permit');
+  expect(result).toBe<AbilityRuleStatus>('permit');
 });
 
-test('The different name and age of subject and the resource will be return Deny', () => {
-  const rule = new AbilityRule('Rule name').addStatements([
-    new AbilityStatement('1', ['subject.name', '=', 'resource.name']),
-    new AbilityStatement('2', ['subject.age', '=', 'resource.age']),
-  ]);
+test('Permit if subject.foo in resource for [admin] and [admin]', () => {
+  const result = new AbilityRule('a', ['subject.foo', 'in', 'resource']).check(
+    { foo: ['admin'] },
+    ['admin', 'manager'],
+  );
 
-  const { permission } = rule.check(
+  expect(result).toBe<AbilityRuleStatus>('permit');
+});
+
+test('Deny if subject.foo in resource for admin and [manager]', () => {
+  const result = new AbilityRule('a', ['subject.foo', 'in', 'resource']).check(
+    { foo: 'admin' },
+    ['manager'],
+  );
+
+  expect(result).toBe<AbilityRuleStatus>('deny');
+});
+
+test('Deny if subject.foo in resource for [admin] and [manager]', () => {
+  const result = new AbilityRule('a', ['subject.foo', 'in', 'resource']).check(
+    { foo: ['admin'] },
+    ['manager'],
+  );
+
+  expect(result).toBe<AbilityRuleStatus>('deny');
+});
+
+test('Permit if subject.foo in resource for 1 and [1, 2, 3]', () => {
+  const result = new AbilityRule('a', ['subject.foo', 'in', 'resource']).check(
+    { foo: 1 },
+    [1, 2, 3],
+  );
+
+  expect(result).toBe<AbilityRuleStatus>('permit');
+});
+
+test('Deny if subject.foo = invalid.bar for 1 and 1', () => {
+  const result = new AbilityRule('a', ['subject.foo', '=', 'invalid.bar']).check(
+    { foo: 1 },
+    { bar: 1 },
+  );
+
+  expect(result).toBe<AbilityRuleStatus>('deny');
+});
+
+test('Permit if subject.foo > resource.bar for 3 and 1', () => {
+  const result = new AbilityRule('a', ['subject.foo', '>', 'resource.bar']).check(
+    { foo: 3 },
+    { bar: 1 },
+  );
+
+  expect(result).toBe<AbilityRuleStatus>('permit');
+});
+
+test('Deny if subject.foo > resource.bar for 1 and 3', () => {
+  const result = new AbilityRule('a', ['subject.foo', '>', 'resource.bar']).check(
+    { foo: 1 },
+    { bar: 3 },
+  );
+
+  expect(result).toBe<AbilityRuleStatus>('deny');
+});
+
+test('Permit if data have a nested properties subject.foo.bar.baz = resource.bar.taz.baz', () => {
+  const result = new AbilityRule('a', [
+    'subject.foo.bar.baz',
+    '=',
+    'resource.bar.taz.baz',
+  ]).check(
     {
-      name: 'max',
-      age: 26,
+      foo: {
+        bar: {
+          baz: 'value',
+        },
+      },
     },
     {
-      name: 'Oleg',
-      age: 26,
+      bar: {
+        taz: { baz: 'value' },
+      },
     },
   );
 
-  expect(permission).toBe<AbilityStatementStatus>('deny');
+  expect(result).toBe<AbilityRuleStatus>('permit');
+});
+
+test('Permit if subject.user.account.roles has roles [administrator]', () => {
+  const result = new AbilityRule('a', [
+    'subject.user.account.roles',
+    'in',
+    'administrator',
+  ]).check({
+    user: {
+      account: {
+        roles: ['viewer', 'administrator', 'manager'],
+      },
+    },
+  });
+
+  expect(result).toBe<AbilityRuleStatus>('permit');
+});
+
+test('Permit if subject.user.age eq 21', () => {
+  const result = new AbilityRule('a', ['subject.user.age', '=', 21]).check({
+    user: {
+      age: 21,
+    },
+  });
+
+  expect(result).toBe<AbilityRuleStatus>('permit');
+});
+
+test('Permit if environment.deparament is NBC-news', () => {
+  const result = new AbilityRule('a', ['environment.departament', '=', 'NBC-news']).check(
+    null,
+    null,
+    {
+      departament: 'NBC-news',
+    },
+  );
+
+  expect(result).toBe<AbilityRuleStatus>('permit');
 });

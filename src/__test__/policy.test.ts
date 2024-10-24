@@ -1,31 +1,23 @@
 import AbilityPolicy from '../AbilityPolicy';
-import { sameNameAndGreater21YearsPolicyConfig } from './policies';
-
-test('Throw Error while policies and rules are empty', () => {
-  const policy = AbilityPolicy.parse({
-    id: '<id>',
-    name: '<name>',
-  });
-
-  expect(() => policy.enforce({}, {})).toThrow(Error);
-});
+import { PolicyConfig_CanChangeTheStatus } from './policies';
 
 test('Permit two policies: compare names and the age', () => {
-  const policy = AbilityPolicy.parse(sameNameAndGreater21YearsPolicyConfig);
+  const policy = AbilityPolicy.parse(PolicyConfig_CanChangeTheStatus);
+  const subject = {
+    name: 'Ivan',
+    id: 'df0fa44a-c92f-4062-aed6-20f1e10bdf9d',
+  };
+  const resource = {
+    id: '48cd6772-011a-4335-918c-8f6304507682',
+    creatable: 'df0fa44a-c92f-4062-aed6-20f1e10bdf9d',
+  };
+  const environment = {
+    roles: [
+      'VIEWER',
+    ],
+    prevStatus: 'unknown',
+    nextStatus: 'accepted',
+  };
 
-  expect(policy.isPermit({ name: 'Oleg', age: 21 }, { name: 'Oleg' })).toBeTruthy();
+  expect(policy.isPermit(subject, resource, environment)).toBeTruthy();
 });
-
-// test('Permit if resource is undefined, but compare by value', () => {
-//   const policy = new AbilityPolicy('<name>', '<id>').addRule(
-//     new AbilityRule('s').addStatement(new AbilityStatement('ds', ['subject.age', '=', 28])),
-//     'or',
-//   );
-
-//   const { permission } = policy.check({
-//     name: 'Oleg',
-//     age: 28,
-//   });
-
-//   expect(permission).toBe<AbilityStatementStatus>('permit');
-// });

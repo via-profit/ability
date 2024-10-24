@@ -1,25 +1,19 @@
-import AbilityStatement, { AbilityStatementStatus } from './AbilityStatement';
+import AbilityRule, { AbilityRuleStatus } from './AbilityRule';
 import AbilityPolicy, { AbilityCompareMethod, AbilityPolicyResult } from './AbilityPolicy';
-import AbilityRule from './AbilityRule';
 
 export type AbilityEnforceResult = {
-  readonly permission: AbilityStatementStatus;
+  readonly permission: AbilityRuleStatus;
   readonly deniedRules: readonly AbilityRule[];
-  readonly deniedStatements: readonly AbilityStatement[];
   readonly deniedPolicies: readonly AbilityPolicy[];
 };
 
 class AbilityService {
-  public createRule(...args: ConstructorParameters<typeof AbilityRule>): AbilityRule {
-    return new AbilityRule(...args);
-  }
-
   /**
-   * Create the statement to compare
+   * Create the rule to compare
    *
-   * @param statementName {string} - The statement name
-   * @param effect {AbilityStatementStatus} - Return value
-   * @param matches {AbilityStatementMatches} - The matching rule he matching rule can be on of the format:
+   * @param ruleName {string} - The rule name
+   * @param effect {AbilityRuleStatus} - Return value
+   * @param matches {AbilityRuleMatches} - The matching rule he matching rule can be on of the format:
    * \
    * For example, be compared two's data\
    * \
@@ -71,10 +65,8 @@ class AbilityService {
    * This means that we will compare the entire resource as a whole,\
    * and not search for it by field name.**
    */
-  public createStatement(
-    ...args: ConstructorParameters<typeof AbilityStatement>
-  ): AbilityStatement {
-    return new AbilityStatement(...args);
+  public createRule(...args: ConstructorParameters<typeof AbilityRule>): AbilityRule {
+    return new AbilityRule(...args);
   }
 
   /**
@@ -89,9 +81,8 @@ class AbilityService {
     compareMethod?: AbilityCompareMethod | undefined,
   ): AbilityEnforceResult {
     const deniedRules: AbilityRule[] = [];
-    const deniedStatements: AbilityStatement[] = [];
     const deniedPolicies: AbilityPolicy[] = [];
-    const statuses: AbilityStatementStatus[] = [];
+    const statuses: AbilityRuleStatus[] = [];
 
     policiesResult.forEach(policyResult => {
       statuses.push(policyResult.permission);
@@ -100,8 +91,8 @@ class AbilityService {
         policyResult.deniedRules.forEach(rule => {
           deniedRules.push(rule);
         });
-        policyResult.deniedStatements.forEach(st => {
-          deniedStatements.push(st);
+        policyResult.deniedRules.forEach(st => {
+          deniedRules.push(st);
         });
       }
     });
@@ -115,7 +106,6 @@ class AbilityService {
     return {
       permission,
       deniedRules,
-      deniedStatements,
       deniedPolicies,
     };
   }
@@ -124,10 +114,10 @@ class AbilityService {
     policiesResult: readonly AbilityPolicyResult[],
     compareMethod?: AbilityCompareMethod | undefined,
   ): void | never {
-    const { permission, deniedStatements } = this.checkPolicies(policiesResult, compareMethod);
+    const { permission, deniedRules } = this.checkPolicies(policiesResult, compareMethod);
 
     if (permission === 'deny') {
-      throw new Error(`Permission denied. ${deniedStatements.map(st => st.getName()).join('. ')}`);
+      throw new Error(`Permission denied. ${deniedRules.map(st => st.getName()).join('. ')}`);
     }
   }
 }
