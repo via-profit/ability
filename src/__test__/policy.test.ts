@@ -106,3 +106,37 @@ test('Deny two policies with wrong subject, resource and environment', () => {
 
   expect(policy.isDeny(subject, resource, environment)).toBeTruthy();
 });
+
+
+test('sa', () => {
+  const policy = AbilityPolicy.parse({
+    name: 'Right',
+    id: '1',
+    policiesCompareMethod: 'or',
+    policies: [
+      {
+        id: '2',
+        name: 'sasa',
+        rulesCompareMethod: 'or',
+        rules: [
+          { name: 'Пользователь должен быть из отдела менеджеров', matches: ['subject.departament', '=', 'managers'] },
+          { name: 'Prev status is «unknown»', matches: ['environment.prevStatus', '=', 'новый заказ'] },
+          {
+            name: 'Next status is «unknown»',
+            matches: ['environment.nextStatus', '=', 'подтвержденный заказ'],
+          },
+        ],
+      },
+      {
+        id: '3',
+        name: 'Is admin or developer',
+        rules: [
+          {
+            name: 'Is administrator',
+            matches: ['subject.rules', 'in', 'ADMINISTRATOR'],
+          },
+        ],
+      },
+    ],
+  });
+})
