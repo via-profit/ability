@@ -2,8 +2,6 @@ import AbilityPolicy from '../AbilityPolicy';
 
 test('Permit two policies with right subject, resource and environment', () => {
   const policy = AbilityPolicy.parse({
-    name: 'Right',
-    id: '1',
     policiesCompareMethod: 'or',
     policies: [
       {
@@ -110,8 +108,6 @@ test('Deny two policies with wrong subject, resource and environment', () => {
 
 test('sa', () => {
   const policy = AbilityPolicy.parse({
-    name: 'Right',
-    id: '1',
     policiesCompareMethod: 'or',
     policies: [
       {

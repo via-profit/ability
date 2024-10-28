@@ -1,7 +1,7 @@
 import AbilityRule, { AbilityRuleStatus } from '../AbilityRule';
 
 test('Permit if subject.foo = resource.bar for Oleg and Oleg', () => {
-  const result = new AbilityRule('a', ['subject.foo', '=', 'resource.bar']).check(
+  const result = new AbilityRule(['subject.foo', '=', 'resource.bar']).check(
     { foo: 'Oleg' },
     { bar: 'Oleg' },
   );
@@ -10,7 +10,7 @@ test('Permit if subject.foo = resource.bar for Oleg and Oleg', () => {
 });
 
 test('Deny if subject.foo = resource.bar for Oleg and NotOleg', () => {
-  const result = new AbilityRule('a', ['subject.foo', '=', 'resource.bar']).check(
+  const result = new AbilityRule(['subject.foo', '=', 'resource.bar']).check(
     { foo: 'Oleg' },
     { bar: 'NotOleg' },
   );
@@ -19,7 +19,7 @@ test('Deny if subject.foo = resource.bar for Oleg and NotOleg', () => {
 });
 
 test('Permit if subject.foo in resource for admin and [admin]', () => {
-  const result = new AbilityRule('a', ['subject.foo', 'in', 'resource']).check(
+  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check(
     { foo: 'admin' },
     ['admin', 'manager'],
   );
@@ -28,7 +28,7 @@ test('Permit if subject.foo in resource for admin and [admin]', () => {
 });
 
 test('Permit if subject.foo in resource for [admin] and [admin]', () => {
-  const result = new AbilityRule('a', ['subject.foo', 'in', 'resource']).check(
+  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check(
     { foo: ['admin'] },
     ['admin', 'manager'],
   );
@@ -37,7 +37,7 @@ test('Permit if subject.foo in resource for [admin] and [admin]', () => {
 });
 
 test('Deny if subject.foo in resource for admin and [manager]', () => {
-  const result = new AbilityRule('a', ['subject.foo', 'in', 'resource']).check(
+  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check(
     { foo: 'admin' },
     ['manager'],
   );
@@ -46,7 +46,7 @@ test('Deny if subject.foo in resource for admin and [manager]', () => {
 });
 
 test('Deny if subject.foo in resource for [admin] and [manager]', () => {
-  const result = new AbilityRule('a', ['subject.foo', 'in', 'resource']).check(
+  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check(
     { foo: ['admin'] },
     ['manager'],
   );
@@ -55,7 +55,7 @@ test('Deny if subject.foo in resource for [admin] and [manager]', () => {
 });
 
 test('Permit if subject.foo in resource for 1 and [1, 2, 3]', () => {
-  const result = new AbilityRule('a', ['subject.foo', 'in', 'resource']).check(
+  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check(
     { foo: 1 },
     [1, 2, 3],
   );
@@ -64,7 +64,7 @@ test('Permit if subject.foo in resource for 1 and [1, 2, 3]', () => {
 });
 
 test('Deny if subject.foo = invalid.bar for 1 and 1', () => {
-  const result = new AbilityRule('a', ['subject.foo', '=', 'invalid.bar']).check(
+  const result = new AbilityRule(['subject.foo', '=', 'invalid.bar']).check(
     { foo: 1 },
     { bar: 1 },
   );
@@ -73,7 +73,7 @@ test('Deny if subject.foo = invalid.bar for 1 and 1', () => {
 });
 
 test('Permit if subject.foo > resource.bar for 3 and 1', () => {
-  const result = new AbilityRule('a', ['subject.foo', '>', 'resource.bar']).check(
+  const result = new AbilityRule(['subject.foo', '>', 'resource.bar']).check(
     { foo: 3 },
     { bar: 1 },
   );
@@ -82,7 +82,7 @@ test('Permit if subject.foo > resource.bar for 3 and 1', () => {
 });
 
 test('Deny if subject.foo > resource.bar for 1 and 3', () => {
-  const result = new AbilityRule('a', ['subject.foo', '>', 'resource.bar']).check(
+  const result = new AbilityRule(['subject.foo', '>', 'resource.bar']).check(
     { foo: 1 },
     { bar: 3 },
   );
@@ -91,7 +91,7 @@ test('Deny if subject.foo > resource.bar for 1 and 3', () => {
 });
 
 test('Permit if data have a nested properties subject.foo.bar.baz = resource.bar.taz.baz', () => {
-  const result = new AbilityRule('a', [
+  const result = new AbilityRule([
     'subject.foo.bar.baz',
     '=',
     'resource.bar.taz.baz',
@@ -114,7 +114,7 @@ test('Permit if data have a nested properties subject.foo.bar.baz = resource.bar
 });
 
 test('Permit if subject.user.account.roles has roles [administrator]', () => {
-  const result = new AbilityRule('a', [
+  const result = new AbilityRule([
     'subject.user.account.roles',
     'in',
     'administrator',
@@ -130,7 +130,7 @@ test('Permit if subject.user.account.roles has roles [administrator]', () => {
 });
 
 test('Permit if subject.user.age eq 21', () => {
-  const result = new AbilityRule('a', ['subject.user.age', '=', 21]).check({
+  const result = new AbilityRule(['subject.user.age', '=', 21]).check({
     user: {
       age: 21,
     },
@@ -140,7 +140,7 @@ test('Permit if subject.user.age eq 21', () => {
 });
 
 test('Permit if environment.deparament is NBC-news', () => {
-  const result = new AbilityRule('a', ['environment.departament', '=', 'NBC-news']).check(
+  const result = new AbilityRule(['environment.departament', '=', 'NBC-news']).check(
     null,
     null,
     {

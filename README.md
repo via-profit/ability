@@ -10,9 +10,17 @@
 
     2.1 [Синтаксис правил](#rule-syntax)
 
-    2.1 [Примеры](#rule-recipes)
+    2.2 [Примеры](#rule-recipes)
+
+    2.3 [Класс AbilityRule](#ability-rule-class)
 
 3.  [Политики](#policies)
+
+    3.1 [Синтаксис правил](#policy-syntax)
+
+    3.2 [Примеры](#policy-recipes)
+
+    3.3 [Класс AbilityPolicy](#ability-policy-class)
 
 4.  [Создание политики из конфига](#policy-config)
 
@@ -382,7 +390,7 @@ import { AbilityPolicy } from '@via-profit/ability';
 const policy = AbilityPolicy.parse({
   name: 'Название политики',
   id: '1',
-  policiesCompareMethod: 'or', //
+  policiesCompareMethod: 'or',
   policies: [
     {
       id: '2',
@@ -396,3 +404,18 @@ const policy = AbilityPolicy.parse({
   ],
 });
 ```
+
+
+## Класс AbilityRule <a name="ability-rule-class"></a>
+
+Класс `AbilityRule` предназначен для создания правил
+
+
+## Класс AbilityPolicy <a name="ability-policy-class"></a>
+
+Класс `AbilityPolicy` предназначен для создания политик
+
+Метод `enforce`. В качестве текста сообщения об ошибке доступа, будет возвращено название политики, причем, только первой, политики, которая не прошла проверку.
+
+
+### Синтаксис политик <a name="policy-syntax"></a>

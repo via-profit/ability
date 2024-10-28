@@ -8,12 +8,12 @@ export type AbilityRuleMatches = [
 export type AbilityCondition = '=' | '<>' | '>' | '<' | '<=' | '>=' | 'in';
 
 export type AbilityRuleConfig = {
-  readonly name: string;
+  readonly name?: string | symbol;
   readonly effect?: AbilityRuleStatus;
   readonly matches: AbilityRuleMatches;
 };
 
-class AbilityRule<Subject = unknown, Resource = unknown, Environment = unknown> {
+export class AbilityRule<Subject = unknown, Resource = unknown, Environment = unknown> {
   public matches: AbilityRuleMatches;
   public name: string | symbol;
   public effect: AbilityRuleStatus;
@@ -92,11 +92,11 @@ class AbilityRule<Subject = unknown, Resource = unknown, Environment = unknown> 
    * ["subject.user.account.roles", "in", "admin"]
    */
   public constructor(
-    ruleName: string | symbol,
     matches: AbilityRuleMatches,
     effect: AbilityRuleStatus = 'permit',
+    ruleName?: string | symbol,
   ) {
-    this.name = ruleName;
+    this.name = ruleName || Symbol('name');
     this.effect = effect;
     this.matches = matches;
   }
@@ -262,15 +262,15 @@ class AbilityRule<Subject = unknown, Resource = unknown, Environment = unknown> 
    * Parsing the rule config object or JSON string\
    * of config and returns the AbilityRule class instance
    */
-  public static parse(
+  public static parse<Subject = unknown, Resource = unknown, Environment = unknown>(
     configOrJson: AbilityRuleConfig | string,
-  ): AbilityRule {
+  ): AbilityRule<Subject, Resource, Environment> {
     const { name, effect, matches } =
       typeof configOrJson === 'string'
         ? (JSON.parse(configOrJson) as AbilityRuleConfig)
         : configOrJson;
 
-    return new AbilityRule(name, matches, effect);
+    return new AbilityRule<Subject, Resource, Environment>(matches, effect, name);
   }
 }
 

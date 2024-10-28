@@ -117,7 +117,7 @@ class AbilityService {
     const { permission, deniedRules } = this.checkPolicies(policiesResult, compareMethod);
 
     if (permission === 'deny') {
-      throw new Error(`Permission denied. ${deniedRules.map(st => st.getName()).join('. ')}`);
+      throw new Error(`Permission denied. ${deniedRules[0].getName().toString()}`);
     }
   }
 }

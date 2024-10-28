@@ -91,20 +91,12 @@ test('dsd', () => {
   };
 
   const policy1 = new AbilityPolicy('name', '<id>');
-  const rule1 = new AbilityRule('subject.roles contains ADMINISTRATOR', [
-    'subject.roles',
-    'in',
-    'ADMINISTRATOR',
-  ]);
+  const rule1 = new AbilityRule(['subject.roles', 'in', 'ADMINISTRATOR']);
 
-  const rule133 = new AbilityRule('Пользователь должен быть из отдела аналитики', [
-    'subject.departament',
-    '=',
-    'resource.departament',
-  ]);
+  const rule133 = new AbilityRule(['subject.departament', '=', 'resource.departament']);
 
   const policy2 = new AbilityPolicy('', '');
-  const rule2 = new AbilityRule('', ['subject.id', '=', 'resource.creator']);
+  const rule2 = new AbilityRule(['subject.id', '=', 'resource.creator']);
 
   const { permission } = new AbilityService().checkPolicies(
     [policy1.addRule(rule1).check(account), policy2.addRule(rule2).check(user, task)],
@@ -117,7 +109,7 @@ test('dsd', () => {
 
 test('dsds', () => {
   // Создание правила
-  const rule = new AbilityRule('Пользователь должен быть из отдела аналитики', [
+  const rule = new AbilityRule([
     'subject.departament', // субъект и адрес поля, в которое записано название отдела
     '=', // оператор сравнения
     'resource.type', // Ресурс и адрес поля, в которое записан тип отчета

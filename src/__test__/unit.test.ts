@@ -20,7 +20,7 @@ test('Dot notation path foo.bar.baz.taz returns 2', () => {
       },
     },
   };
-  const value = new Test('sa', ['subject.', '=', '']).proxyDotNotation(resource, 'foo.bar.baz.taz');
+  const value = new Test(['subject.', '=', '']).proxyDotNotation(resource, 'foo.bar.baz.taz');
 
   expect(value).toBe(resource.foo.bar.baz.taz);
 });

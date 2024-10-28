@@ -15,8 +15,8 @@ export type AbilityPolicyResult = {
 };
 
 export type AbilityPolicyConfig = {
-  readonly id: string;
-  readonly name: string;
+  readonly id?: string;
+  readonly name?: string;
   readonly description?: string;
   readonly rulesCompareMethod?: AbilityCompareMethod;
   readonly policiesCompareMethod?: AbilityCompareMethod;
@@ -24,7 +24,7 @@ export type AbilityPolicyConfig = {
   readonly policies?: AbilityPolicyConfig[] | null;
 };
 
-class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown> {
+export class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown> {
   /**
    * List of rules
    */
@@ -64,11 +64,15 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
   /**
    * Policy ID
    */
-  public id: string;
+  public id: string | symbol;
 
-  public constructor(policyName: string | symbol, policyID: string, description?: string) {
-    this.name = policyName;
-    this.id = policyID;
+  public constructor(
+    policyName: string | symbol | undefined,
+    policyID: string | symbol | undefined,
+    description?: string,
+  ) {
+    this.name = policyName || Symbol('name');
+    this.id = policyID || Symbol('id');
     this.description = typeof description === 'string' ? description : null;
   }
 
@@ -128,9 +132,7 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
     const { permission, deniedPolicies } = this.check(subject, resource, environment);
 
     if (permission === 'deny') {
-      throw new Error(
-        `Permission denied. ${deniedPolicies.map(policy => policy.getName()).join('. ')}`,
-      );
+      throw new Error(`Permission denied. ${deniedPolicies[0].getName().toString()}`);
     }
   }
 
@@ -211,22 +213,16 @@ class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown
   /**
    * Parse the config JSON format to Policy class instance
    */
-  public static parse(configOrJson: AbilityPolicyConfig | string): AbilityPolicy {
-    const {
-      id,
-      name,
-      description,
-      rules,
-      policies,
-      rulesCompareMethod,
-      policiesCompareMethod,
-    } =
+  public static parse<Subject = unknown, Resource = unknown, Environment = unknown>(
+    configOrJson: AbilityPolicyConfig | string,
+  ): AbilityPolicy<Subject, Resource, Environment> {
+    const { id, name, description, rules, policies, rulesCompareMethod, policiesCompareMethod } =
       typeof configOrJson === 'string'
         ? (JSON.parse(configOrJson) as AbilityPolicyConfig)
         : configOrJson;
 
     // Create the empty policy
-    const policy = new AbilityPolicy(name, id, description);
+    const policy = new AbilityPolicy<Subject, Resource, Environment>(name, id, description);
 
     if (description) {
       policy.setDescription(description);
