@@ -18,13 +18,9 @@ const webpackBaseConfig: Configuration = {
   optimization: {
     minimize: false,
   },
-  entry: isDev
-    ? {
-        playground: path.resolve(__dirname, '../src/playground.ts'),
-      }
-    : {
-        index: path.resolve(__dirname, '../src/index.ts'),
-      },
+  entry: {
+    index: path.resolve(__dirname, '../src/index.ts'),
+  },
   output: {
     libraryTarget: 'commonjs2',
     path: isDev ? path.join(__dirname, '../build/') : path.join(__dirname, '../dist/'),
