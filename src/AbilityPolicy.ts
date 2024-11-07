@@ -67,8 +67,8 @@ export class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = 
   public id: string | symbol;
 
   public constructor(
-    policyName: string | symbol | undefined,
-    policyID: string | symbol | undefined,
+    policyName?: string | symbol,
+    policyID?: string | symbol,
     description?: string,
   ) {
     this.name = policyName || Symbol('name');
