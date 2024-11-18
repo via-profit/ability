@@ -1,4 +1,4 @@
-import AbilityRule, { AbilityRuleStatus } from '../AbilityRule';
+import AbilityRule, { AbilityRuleConfig, AbilityRuleStatus } from '../AbilityRule';
 
 test('Permit if subject.foo = resource.bar for Oleg and Oleg', () => {
   const result = new AbilityRule(['subject.foo', '=', 'resource.bar']).check(
@@ -19,55 +19,47 @@ test('Deny if subject.foo = resource.bar for Oleg and NotOleg', () => {
 });
 
 test('Permit if subject.foo in resource for admin and [admin]', () => {
-  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check(
-    { foo: 'admin' },
-    ['admin', 'manager'],
-  );
+  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check({ foo: 'admin' }, [
+    'admin',
+    'manager',
+  ]);
 
   expect(result).toBe<AbilityRuleStatus>('permit');
 });
 
 test('Permit if subject.foo in resource for [admin] and [admin]', () => {
-  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check(
-    { foo: ['admin'] },
-    ['admin', 'manager'],
-  );
+  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check({ foo: ['admin'] }, [
+    'admin',
+    'manager',
+  ]);
 
   expect(result).toBe<AbilityRuleStatus>('permit');
 });
 
 test('Deny if subject.foo in resource for admin and [manager]', () => {
-  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check(
-    { foo: 'admin' },
-    ['manager'],
-  );
+  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check({ foo: 'admin' }, [
+    'manager',
+  ]);
 
   expect(result).toBe<AbilityRuleStatus>('deny');
 });
 
 test('Deny if subject.foo in resource for [admin] and [manager]', () => {
-  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check(
-    { foo: ['admin'] },
-    ['manager'],
-  );
+  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check({ foo: ['admin'] }, [
+    'manager',
+  ]);
 
   expect(result).toBe<AbilityRuleStatus>('deny');
 });
 
 test('Permit if subject.foo in resource for 1 and [1, 2, 3]', () => {
-  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check(
-    { foo: 1 },
-    [1, 2, 3],
-  );
+  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check({ foo: 1 }, [1, 2, 3]);
 
   expect(result).toBe<AbilityRuleStatus>('permit');
 });
 
 test('Deny if subject.foo = invalid.bar for 1 and 1', () => {
-  const result = new AbilityRule(['subject.foo', '=', 'invalid.bar']).check(
-    { foo: 1 },
-    { bar: 1 },
-  );
+  const result = new AbilityRule(['subject.foo', '=', 'invalid.bar']).check({ foo: 1 }, { bar: 1 });
 
   expect(result).toBe<AbilityRuleStatus>('deny');
 });
@@ -91,11 +83,7 @@ test('Deny if subject.foo > resource.bar for 1 and 3', () => {
 });
 
 test('Permit if data have a nested properties subject.foo.bar.baz = resource.bar.taz.baz', () => {
-  const result = new AbilityRule([
-    'subject.foo.bar.baz',
-    '=',
-    'resource.bar.taz.baz',
-  ]).check(
+  const result = new AbilityRule(['subject.foo.bar.baz', '=', 'resource.bar.taz.baz']).check(
     {
       foo: {
         bar: {
@@ -114,11 +102,7 @@ test('Permit if data have a nested properties subject.foo.bar.baz = resource.bar
 });
 
 test('Permit if subject.user.account.roles has roles [administrator]', () => {
-  const result = new AbilityRule([
-    'subject.user.account.roles',
-    'in',
-    'administrator',
-  ]).check({
+  const result = new AbilityRule(['subject.user.account.roles', 'in', 'administrator']).check({
     user: {
       account: {
         roles: ['viewer', 'administrator', 'manager'],
@@ -140,13 +124,21 @@ test('Permit if subject.user.age eq 21', () => {
 });
 
 test('Permit if environment.deparament is NBC-news', () => {
-  const result = new AbilityRule(['environment.departament', '=', 'NBC-news']).check(
-    null,
-    null,
-    {
-      departament: 'NBC-news',
-    },
-  );
+  const result = new AbilityRule(['environment.departament', '=', 'NBC-news']).check(null, null, {
+    departament: 'NBC-news',
+  });
 
   expect(result).toBe<AbilityRuleStatus>('permit');
+});
+
+test('parse and export', () => {
+  const ruleConfig: AbilityRuleConfig = {
+    name: 'rule',
+    effect: 'permit',
+    matches: ['subject.foo', '=', 'resource.bar'],
+  };
+
+  const config = AbilityRule.export(AbilityRule.parse(ruleConfig));
+
+  expect(JSON.stringify(ruleConfig)).toBe(JSON.stringify(config));
 });

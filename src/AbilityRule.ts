@@ -272,6 +272,19 @@ export class AbilityRule<Subject = unknown, Resource = unknown, Environment = un
 
     return new AbilityRule<Subject, Resource, Environment>(matches, effect, name);
   }
+
+  /**
+   * Export the rule to config object
+   */
+  public static export(rule: AbilityRule): AbilityRuleConfig {
+    const config: AbilityRuleConfig = {
+      name: rule.name,
+      effect: rule.effect,
+      matches: rule.matches,
+    };
+
+    return config;
+  }
 }
 
 export default AbilityRule;

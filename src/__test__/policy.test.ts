@@ -1,4 +1,4 @@
-import AbilityPolicy from '../AbilityPolicy';
+import AbilityPolicy, { AbilityPolicyConfig } from '../AbilityPolicy';
 
 test('Permit two policies with right subject, resource and environment', () => {
   const policy = AbilityPolicy.parse({
@@ -105,7 +105,6 @@ test('Deny two policies with wrong subject, resource and environment', () => {
   expect(policy.isDeny(subject, resource, environment)).toBeTruthy();
 });
 
-
 test('sa', () => {
   const policy = AbilityPolicy.parse({
     policiesCompareMethod: 'or',
@@ -115,8 +114,14 @@ test('sa', () => {
         name: 'sasa',
         rulesCompareMethod: 'or',
         rules: [
-          { name: 'Пользователь должен быть из отдела менеджеров', matches: ['subject.departament', '=', 'managers'] },
-          { name: 'Prev status is «unknown»', matches: ['environment.prevStatus', '=', 'новый заказ'] },
+          {
+            name: 'Пользователь должен быть из отдела менеджеров',
+            matches: ['subject.departament', '=', 'managers'],
+          },
+          {
+            name: 'Prev status is «unknown»',
+            matches: ['environment.prevStatus', '=', 'новый заказ'],
+          },
           {
             name: 'Next status is «unknown»',
             matches: ['environment.nextStatus', '=', 'подтвержденный заказ'],
@@ -135,4 +140,32 @@ test('sa', () => {
       },
     ],
   });
-})
+});
+
+test('parse and export', () => {
+  const policyConfig: AbilityPolicyConfig = {
+    id: '1',
+    name: 'policy',
+    rulesCompareMethod: 'and',
+    policiesCompareMethod: 'or',
+    policies: [],
+    rules: [
+      {
+        name: 'rule',
+        effect: 'permit',
+        matches: ['subject.foo', '=', 'resource.bar'],
+      },
+      {
+        name: 'rule',
+        effect: 'permit',
+        matches: ['subject.baz', '=', 'resource.taz'],
+      },
+    ],
+  };
+
+  const config = AbilityPolicy.export(AbilityPolicy.parse(policyConfig));
+
+  expect(JSON.stringify(policyConfig.policiesCompareMethod)).toBe(
+    JSON.stringify(config.policiesCompareMethod),
+  );
+});

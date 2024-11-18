@@ -224,6 +224,14 @@ export class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = 
     // Create the empty policy
     const policy = new AbilityPolicy<Subject, Resource, Environment>(name, id, description);
 
+    if (policiesCompareMethod) {
+      policy.policiesCompareMethod = policiesCompareMethod;
+    }
+
+    if (rulesCompareMethod) {
+      policy.rulesCompareMethod = rulesCompareMethod;
+    }
+
     if (description) {
       policy.setDescription(description);
     }
@@ -243,6 +251,19 @@ export class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = 
     }
 
     return policy;
+  }
+
+  public static export(policy: AbilityPolicy): AbilityPolicyConfig {
+    const config: AbilityPolicyConfig = {
+      id: policy.id.toString(),
+      name: policy.name.toString(),
+      rulesCompareMethod: policy.rulesCompareMethod,
+      policiesCompareMethod: policy.policiesCompareMethod,
+      policies: policy.policies ? policy.policies.map(p => AbilityPolicy.export(p)) : undefined,
+      rules: policy.rules ? policy.rules.map(rule => AbilityRule.export(rule)) : undefined,
+    };
+
+    return config;
   }
 
   public static validatePolicy(policy: AbilityPolicy): void | never {
