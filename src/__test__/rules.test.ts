@@ -1,89 +1,111 @@
-import AbilityRule, { AbilityRuleConfig, AbilityRuleStatus } from '../AbilityRule';
+import AbilityRule, { AbilityRuleConfig, AbilityRuleState } from '../AbilityRule';
 
-test('Permit if subject.foo = resource.bar for Oleg and Oleg', () => {
-  const result = new AbilityRule(['subject.foo', '=', 'resource.bar']).check(
+test('Match if subject.foo = resource.bar for Oleg and Oleg', () => {
+  const result = new AbilityRule({
+    matches: ['subject.foo', '=', 'resource.bar']
+  }).check(
     { foo: 'Oleg' },
     { bar: 'Oleg' },
   );
 
-  expect(result).toBe<AbilityRuleStatus>('permit');
+  expect(result).toBe<AbilityRuleState>('match');
 });
 
-test('Deny if subject.foo = resource.bar for Oleg and NotOleg', () => {
-  const result = new AbilityRule(['subject.foo', '=', 'resource.bar']).check(
+test('Mismatch if subject.foo = resource.bar for Oleg and NotOleg', () => {
+  const result = new AbilityRule({
+    matches: ['subject.foo', '=', 'resource.bar'],
+  }).check(
     { foo: 'Oleg' },
     { bar: 'NotOleg' },
   );
 
-  expect(result).toBe<AbilityRuleStatus>('deny');
+  expect(result).toBe<AbilityRuleState>('mismatch');
 });
 
-test('Permit if subject.foo in resource for admin and [admin]', () => {
-  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check({ foo: 'admin' }, [
+test('Match if subject.foo in resource for admin and [admin]', () => {
+  const result = new AbilityRule({
+    matches: ['subject.foo', 'in', 'resource'],
+  }).check({ foo: 'admin' }, [
     'admin',
     'manager',
   ]);
 
-  expect(result).toBe<AbilityRuleStatus>('permit');
+  expect(result).toBe<AbilityRuleState>('match');
 });
 
-test('Permit if subject.foo in resource for [admin] and [admin]', () => {
-  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check({ foo: ['admin'] }, [
+test('Match if subject.foo in resource for [admin] and [admin]', () => {
+  const result = new AbilityRule({
+    matches: ['subject.foo', 'in', 'resource'],
+  }).check({ foo: ['admin'] }, [
     'admin',
     'manager',
   ]);
 
-  expect(result).toBe<AbilityRuleStatus>('permit');
+  expect(result).toBe<AbilityRuleState>('match');
 });
 
-test('Deny if subject.foo in resource for admin and [manager]', () => {
-  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check({ foo: 'admin' }, [
+test('Mismatch if subject.foo in resource for admin and [manager]', () => {
+  const result = new AbilityRule({
+    matches: ['subject.foo', 'in', 'resource'],
+  }).check({ foo: 'admin' }, [
     'manager',
   ]);
 
-  expect(result).toBe<AbilityRuleStatus>('deny');
+  expect(result).toBe<AbilityRuleState>('mismatch');
 });
 
-test('Deny if subject.foo in resource for [admin] and [manager]', () => {
-  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check({ foo: ['admin'] }, [
+test('Mismatch if subject.foo in resource for [admin] and [manager]', () => {
+  const result = new AbilityRule({
+    matches: ['subject.foo', 'in', 'resource'],
+  }).check({ foo: ['admin'] }, [
     'manager',
   ]);
 
-  expect(result).toBe<AbilityRuleStatus>('deny');
+  expect(result).toBe<AbilityRuleState>('mismatch');
 });
 
-test('Permit if subject.foo in resource for 1 and [1, 2, 3]', () => {
-  const result = new AbilityRule(['subject.foo', 'in', 'resource']).check({ foo: 1 }, [1, 2, 3]);
+test('Match if subject.foo in resource for 1 and [1, 2, 3]', () => {
+  const result = new AbilityRule({
+    matches: ['subject.foo', 'in', 'resource'],
+  }).check({ foo: 1 }, [1, 2, 3]);
 
-  expect(result).toBe<AbilityRuleStatus>('permit');
+  expect(result).toBe<AbilityRuleState>('match');
 });
 
-test('Deny if subject.foo = invalid.bar for 1 and 1', () => {
-  const result = new AbilityRule(['subject.foo', '=', 'invalid.bar']).check({ foo: 1 }, { bar: 1 });
+test('Mismatch if subject.foo = invalid.bar for 1 and 1', () => {
+  const result = new AbilityRule({
+    matches: ['subject.foo', '=', 'invalid.bar'],
+  }).check({ foo: 1 }, { bar: 1 });
 
-  expect(result).toBe<AbilityRuleStatus>('deny');
+  expect(result).toBe<AbilityRuleState>('mismatch');
 });
 
-test('Permit if subject.foo > resource.bar for 3 and 1', () => {
-  const result = new AbilityRule(['subject.foo', '>', 'resource.bar']).check(
+test('Match if subject.foo > resource.bar for 3 and 1', () => {
+  const result = new AbilityRule({
+    matches: ['subject.foo', '>', 'resource.bar']
+  }).check(
     { foo: 3 },
     { bar: 1 },
   );
 
-  expect(result).toBe<AbilityRuleStatus>('permit');
+  expect(result).toBe<AbilityRuleState>('match');
 });
 
-test('Deny if subject.foo > resource.bar for 1 and 3', () => {
-  const result = new AbilityRule(['subject.foo', '>', 'resource.bar']).check(
+test('Mismatch if subject.foo > resource.bar for 1 and 3', () => {
+  const result = new AbilityRule({
+    matches: ['subject.foo', '>', 'resource.bar'],
+  }).check(
     { foo: 1 },
     { bar: 3 },
   );
 
-  expect(result).toBe<AbilityRuleStatus>('deny');
+  expect(result).toBe<AbilityRuleState>('mismatch');
 });
 
-test('Permit if data have a nested properties subject.foo.bar.baz = resource.bar.taz.baz', () => {
-  const result = new AbilityRule(['subject.foo.bar.baz', '=', 'resource.bar.taz.baz']).check(
+test('Match if data have a nested properties subject.foo.bar.baz = resource.bar.taz.baz', () => {
+  const result = new AbilityRule({
+    matches: ['subject.foo.bar.baz', '=', 'resource.bar.taz.baz'],
+  }).check(
     {
       foo: {
         bar: {
@@ -98,11 +120,13 @@ test('Permit if data have a nested properties subject.foo.bar.baz = resource.bar
     },
   );
 
-  expect(result).toBe<AbilityRuleStatus>('permit');
+  expect(result).toBe<AbilityRuleState>('match');
 });
 
-test('Permit if subject.user.account.roles has roles [administrator]', () => {
-  const result = new AbilityRule(['subject.user.account.roles', 'in', 'administrator']).check({
+test('Match if subject.user.account.roles has roles [administrator]', () => {
+  const result = new AbilityRule({
+    matches: ['subject.user.account.roles', 'in', 'administrator'],
+  }).check({
     user: {
       account: {
         roles: ['viewer', 'administrator', 'manager'],
@@ -110,31 +134,34 @@ test('Permit if subject.user.account.roles has roles [administrator]', () => {
     },
   });
 
-  expect(result).toBe<AbilityRuleStatus>('permit');
+  expect(result).toBe<AbilityRuleState>('match');
 });
 
-test('Permit if subject.user.age eq 21', () => {
-  const result = new AbilityRule(['subject.user.age', '=', 21]).check({
+test('Match if subject.user.age eq 21', () => {
+  const result = new AbilityRule({
+    matches: ['subject.user.age', '=', 21],
+  }).check({
     user: {
       age: 21,
     },
   });
 
-  expect(result).toBe<AbilityRuleStatus>('permit');
+  expect(result).toBe<AbilityRuleState>('match');
 });
 
-test('Permit if environment.deparament is NBC-news', () => {
-  const result = new AbilityRule(['environment.departament', '=', 'NBC-news']).check(null, null, {
+test('Match if environment.deparament is NBC-news', () => {
+  const result = new AbilityRule({
+    matches: ['environment.departament', '=', 'NBC-news'],
+  }).check(null, null, {
     departament: 'NBC-news',
   });
 
-  expect(result).toBe<AbilityRuleStatus>('permit');
+  expect(result).toBe<AbilityRuleState>('match');
 });
 
 test('parse and export', () => {
   const ruleConfig: AbilityRuleConfig = {
     name: 'rule',
-    effect: 'permit',
     matches: ['subject.foo', '=', 'resource.bar'],
   };
 

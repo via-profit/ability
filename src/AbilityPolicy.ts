@@ -1,4 +1,4 @@
-import AbilityRule, { AbilityRuleStatus, AbilityRuleConfig } from './AbilityRule';
+import AbilityRule, { AbilityRuleConfig, AbilityRuleState } from './AbilityRule';
 
 /**
  * Compare method.\
@@ -7,14 +7,18 @@ import AbilityRule, { AbilityRuleStatus, AbilityRuleConfig } from './AbilityRule
  * one of the entities returns as «permit»
  */
 export type AbilityCompareMethod = 'or' | 'and';
+export type AbilityPolicyStatus = 'permit' | 'deny';
 
 export type AbilityPolicyResult = {
-  readonly permission: AbilityRuleStatus;
-  readonly deniedRules: readonly AbilityRule[];
-  readonly deniedPolicies: readonly AbilityPolicy[];
+  readonly permission: AbilityPolicyStatus;
+  readonly matchingRules: readonly AbilityRule[];
+  // readonly affectedPolicies: readonly AbilityPolicy[];
 };
 
 export type AbilityPolicyConfig = {
+  readonly influence?: string;
+  readonly action?: AbilityPolicyAction;
+  readonly effect: AbilityPolicyStatus;
   readonly id?: string;
   readonly name?: string;
   readonly description?: string;
@@ -24,11 +28,23 @@ export type AbilityPolicyConfig = {
   readonly policies?: AbilityPolicyConfig[] | null;
 };
 
+export type AbilityPolicyAction =
+  | 'create'
+  | 'read'
+  | 'update'
+  | 'delete'
+  | '*';
+
 export class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = unknown> {
   /**
    * List of rules
    */
   public rules: AbilityRule[] = [];
+
+  /**
+   * Policy effect
+   */
+  public effect: AbilityPolicyStatus;
 
   /**
    * Nested policies
@@ -66,60 +82,58 @@ export class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = 
    */
   public id: string | symbol;
 
+  /**
+   * Soon
+   */
+  public influence: string;
+
+  /**
+   * Soon
+   */
+  public action: AbilityPolicyAction;
+
+
   public constructor(
-    policyName?: string | symbol,
-    policyID?: string | symbol,
-    description?: string,
+    params: {
+      influence?: string,
+      action?: AbilityPolicyAction,
+      effect: AbilityPolicyStatus,
+      name?: string | symbol,
+      id?: string | symbol,
+      description?: string,
+    },
   ) {
-    this.name = policyName || Symbol('name');
-    this.id = policyID || Symbol('id');
+    const { name, id, description, action, influence, effect } = params;
+    this.name = name || Symbol('name');
+    this.id = id || Symbol('id');
     this.description = typeof description === 'string' ? description : null;
+    this.action = action || '*';
+    this.influence = influence || '*';
+    this.effect = effect;
   }
 
-  public addRule(rule: AbilityRule, compareMethod: AbilityCompareMethod = 'and'): this {
+  public addRule(rule: AbilityRule, compareMethod: AbilityCompareMethod): this {
     this.rules.push(rule);
     this.rulesCompareMethod = compareMethod;
 
     return this;
   }
 
-  public addRules(rules: AbilityRule[], compareMethod: AbilityCompareMethod = 'and'): this {
+  public addRules(rules: AbilityRule[], compareMethod: AbilityCompareMethod): this {
     rules.forEach(rule => this.addRule(rule, compareMethod));
 
     return this;
   }
 
-  public addPolicy(policy: AbilityPolicy, compareMethod: AbilityCompareMethod = 'and'): this {
+  public addPolicy(policy: AbilityPolicy, compareMethod: AbilityCompareMethod): this {
     this.policies.push(policy);
     this.policiesCompareMethod = compareMethod;
 
     return this;
   }
 
-  public addPolicies(policies: AbilityPolicy[], compareMethod: AbilityCompareMethod = 'and'): this {
+  public addPolicies(policies: AbilityPolicy[], compareMethod: AbilityCompareMethod): this {
     policies.forEach(policy => this.addPolicy(policy, compareMethod));
-
-    return this;
-  }
-
-  public getName() {
-    return this.name;
-  }
-
-  public getID() {
-    return this.id;
-  }
-
-  public getPolicies() {
-    return this.policies;
-  }
-
-  public getRules() {
-    return this.rules;
-  }
-
-  public setDescription(description: string): this {
-    this.description = description;
 
     return this;
   }
@@ -129,86 +143,112 @@ export class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = 
     resource?: Resource | null,
     environment?: Environment | null,
   ): void | never {
-    const { permission, deniedPolicies } = this.check(subject, resource, environment);
+    const { permission } = this.check(subject, resource, environment);
 
     if (permission === 'deny') {
-      throw new Error(`Permission denied. ${deniedPolicies[0].getName().toString()}`);
+      throw new Error(`Permission denied. ${this.name.toString()}`);
     }
   }
 
-  public isPermit(subject: Subject, resource?: Resource, environment?: Environment): boolean {
-    const { permission } = this.check(subject, resource, environment);
-
-    return permission === 'permit';
-  }
-
-  public isDeny(subject: Subject, resource?: Resource, environment?: Environment): boolean {
-    const { permission } = this.check(subject, resource, environment);
-
-    return permission === 'deny';
-  }
+  // public isPermit(subject: Subject, resource?: Resource, environment?: Environment): boolean {
+  //   const { permission } = this.check(subject, resource, environment);
+  //
+  //   return permission === 'permit';
+  // }
+  //
+  // public isDeny(subject: Subject, resource?: Resource, environment?: Environment): boolean {
+  //   const { permission } = this.check(subject, resource, environment);
+  //
+  //   return permission === 'deny';
+  // }
 
   public check(
     subject: Subject | null,
     resource?: Resource | null,
     environment?: Environment | null,
+    options?: {
+      influence?: string;
+      action?: AbilityPolicyAction | readonly AbilityPolicyAction[];
+    },
   ): AbilityPolicyResult {
-    const deniedRules: AbilityRule[] = [];
-    const deniedPolicies: AbilityPolicy[] = [];
-    const ruleStatuses: AbilityRuleStatus[] = [];
-    const policyStatuses: AbilityRuleStatus[] = [];
+    const matchingRules: AbilityRule[] = [];
+    // const affectedPolicies: AbilityPolicy[] = [];
+    // const ruleStates: AbilityRuleState[] = [];
+    const influence = options?.influence || '*';
+    const action: readonly AbilityPolicyAction[] = options?.action && Array.isArray(options?.action) ? options?.action : options?.action ? [options.action] : ['*'];
 
     AbilityPolicy.validatePolicy(this);
 
-    this.policies.forEach(policy => {
-      const policyResult = policy.check(subject, resource, environment);
 
-      policyStatuses.push(policyResult.permission);
+    this.policies
+      // filter by influence and action
+      .filter(policy => {
+        return (policy.influence === influence || policy.influence === '*') && (action.includes(policy.action) || policy.action === '*');
+      })
+      // just iterate
+      .forEach(policy => {
+        const policyResult = policy.check(subject, resource, environment,
+          { influence, action },
+        );
 
-      if (policyResult.permission === 'deny') {
-        deniedPolicies.push(policy);
-      }
 
-      policyResult.deniedRules.forEach(rule => {
-        deniedRules.push(rule);
+        // if (policyResult.permission === 'deny') {
+        //   affectedPolicies.push(policy);
+        // }
+
+        policyResult.matchingRules.forEach(rule => {
+          matchingRules.push(rule);
+        });
       });
-    });
 
     this.rules.forEach(rule => {
-      const permission = rule.check(subject, resource, environment);
+      const ruleCheckResult = rule.check(subject, resource, environment);
 
-      ruleStatuses.push(permission);
-
-      if (permission === 'deny') {
-        deniedRules.push(rule);
-        deniedPolicies.push(this);
+      if (ruleCheckResult === 'match') {
+        matchingRules.push(rule);
       }
     });
 
-    let res: AbilityRuleStatus = 'deny';
 
-    if (policyStatuses.length) {
-      res = policyStatuses[this.policiesCompareMethod === 'and' ? 'every' : 'some'](
-        status => status === 'permit',
-      )
-        ? 'permit'
-        : 'deny';
+    let permission: AbilityPolicyStatus = this.effect;
+
+    if (matchingRules.length) {
+      permission = matchingRules[this.rulesCompareMethod === 'and' ? 'every' : 'some'](
+        ({ state }) => state === 'match',
+      ) ? this.effect : AbilityPolicy.reverseEffect(this.effect);
     }
 
-    if (ruleStatuses.length) {
-      res = ruleStatuses[this.rulesCompareMethod === 'and' ? 'every' : 'some'](
-        status => status === 'permit',
-      )
-        ? 'permit'
-        : 'deny';
-    }
 
     return {
-      permission: res,
-      deniedRules,
-      deniedPolicies,
+      permission,
+      matchingRules,
     };
   }
+
+  public static createRootPolicy(policiesOrRules?: (AbilityPolicy | AbilityRule)[] | undefined) {
+    const root = new AbilityPolicy({
+      name: 'Root',
+      effect: 'permit',
+      influence: '*',
+      action: '*',
+    });
+
+    if (policiesOrRules) {
+      if (policiesOrRules[0] instanceof AbilityPolicy) {
+        root.addPolicies(policiesOrRules as AbilityPolicy[], 'and');
+      }
+      if (policiesOrRules[0] instanceof AbilityRule) {
+        root.addRules(policiesOrRules as AbilityRule[], 'and');
+      }
+    }
+
+
+    return root;
+  }
+
+  public static reverseEffect(effect: AbilityPolicyStatus) {
+    return effect === 'permit' ? 'deny' : 'permit';
+  };
 
   /**
    * Parse the config JSON format to Policy class instance
@@ -216,13 +256,31 @@ export class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = 
   public static parse<Subject = unknown, Resource = unknown, Environment = unknown>(
     configOrJson: AbilityPolicyConfig | string,
   ): AbilityPolicy<Subject, Resource, Environment> {
-    const { id, name, description, rules, policies, rulesCompareMethod, policiesCompareMethod } =
+    const {
+      id,
+      name,
+      description,
+      rules,
+      policies,
+      rulesCompareMethod,
+      policiesCompareMethod,
+      action,
+      influence,
+      effect,
+    } =
       typeof configOrJson === 'string'
         ? (JSON.parse(configOrJson) as AbilityPolicyConfig)
         : configOrJson;
 
     // Create the empty policy
-    const policy = new AbilityPolicy<Subject, Resource, Environment>(name, id, description);
+    const policy = new AbilityPolicy<Subject, Resource, Environment>({
+      name,
+      id,
+      description,
+      action,
+      influence,
+      effect,
+    });
 
     if (policiesCompareMethod) {
       policy.policiesCompareMethod = policiesCompareMethod;
@@ -233,42 +291,44 @@ export class AbilityPolicy<Subject = unknown, Resource = unknown, Environment = 
     }
 
     if (description) {
-      policy.setDescription(description);
+      policy.description = description;
     }
 
     // Adding rules if exists
     if (rules && rules.length > 0) {
       const abilityRules = rules.map(ruleConfig => AbilityRule.parse(ruleConfig));
 
-      policy.addRules(abilityRules, rulesCompareMethod);
+      policy.addRules(abilityRules, policy.rulesCompareMethod);
     }
 
-    // Adding policies if exixts
+    // Adding policies if exist
     if (policies && policies.length > 0) {
       const nestedPolicies = policies.map(nestedConfig => AbilityPolicy.parse(nestedConfig));
 
-      policy.addPolicies(nestedPolicies, policiesCompareMethod);
+      policy.addPolicies(nestedPolicies, policy.policiesCompareMethod);
     }
 
     return policy;
   }
 
   public static export(policy: AbilityPolicy): AbilityPolicyConfig {
-    const config: AbilityPolicyConfig = {
+    return {
       id: policy.id.toString(),
       name: policy.name.toString(),
       rulesCompareMethod: policy.rulesCompareMethod,
       policiesCompareMethod: policy.policiesCompareMethod,
       policies: policy.policies ? policy.policies.map(p => AbilityPolicy.export(p)) : undefined,
       rules: policy.rules ? policy.rules.map(rule => AbilityRule.export(rule)) : undefined,
+      action: policy.action,
+      influence: policy.influence,
+      effect: policy.effect,
     };
 
-    return config;
   }
 
   public static validatePolicy(policy: AbilityPolicy): void | never {
     if (policy.policies.length > 0 && policy.rules.length > 0) {
-      throw new Error("The policy can't have a policies and rules at the same time");
+      throw new Error('The policy can\'t have a policies and rules at the same time');
     }
 
     if (policy.policies.length === 0 && policy.rules.length === 0) {
