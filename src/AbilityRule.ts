@@ -1,6 +1,6 @@
-import AbilityPolicy from './AbilityPolicy';
 import AbilityMatch from './AbilityMatch';
 import AbilityCondition from './AbilityCondition';
+import AbilityParser from './AbilityParser';
 
 export type AbilityRuleMatches = [string, AbilityCondition, string | number | boolean];
 
@@ -9,11 +9,11 @@ export type AbilityRuleConfig = {
   readonly matches: [string, string, string | number | boolean];
 };
 
+
 export class AbilityRule<Subject = unknown> {
   public matches: AbilityRuleMatches;
   public name: string | symbol;
   public state: AbilityMatch = AbilityMatch.PENDING;
-  public parentPolicy: AbilityPolicy | null = null;
 
   public constructor(params: { matches: AbilityRuleMatches; name?: string | symbol }) {
     const { name, matches } = params;
@@ -21,12 +21,10 @@ export class AbilityRule<Subject = unknown> {
     this.matches = matches;
   }
 
-  public setParentPolicy(policy: AbilityPolicy): this {
-    this.parentPolicy = policy;
-
-    return this;
-  }
-
+  /**
+   * Check if the rule is matched
+   * @param subject - The subject to check
+   */
   public check(subject: Subject): AbilityMatch {
     const [_subjectPathName, condition, _staticValueOrPathName] = this.matches;
 
@@ -92,11 +90,15 @@ export class AbilityRule<Subject = unknown> {
     return this.state;
   }
 
+  /**
+   * Extract values from the subject
+   * @param subject - The subject to extract values from
+   */
   public extractValues(
     subject: unknown,
   ): [
-    string | number | boolean | (string | number)[] | null | undefined,
-    string | number | boolean | (string | number)[] | null | undefined,
+      string | number | boolean | (string | number)[] | null | undefined,
+      string | number | boolean | (string | number)[] | null | undefined,
   ] {
     const [subjectPathName, _condition, staticValueOrPathName] = this.matches;
     let leftSideValue;
@@ -124,6 +126,11 @@ export class AbilityRule<Subject = unknown> {
     return [leftSideValue, rightSideValue];
   }
 
+  /**
+   * Get the value of the object by dot notation
+   * @param resource - The object to get the value from
+   * @param desc - The dot notation string
+   */
   public getDotNotationValue<T = unknown>(resource: unknown, desc: string): T | undefined {
     const arr = desc.split('.');
 
@@ -150,18 +157,19 @@ export class AbilityRule<Subject = unknown> {
     return resource as T;
   }
 
-  /**
-   * Parsing the rule config object or JSON string\
-   * of config and returns the AbilityRule class instance
-   */
+
   public static parse<Subject = unknown>(
     configOrJson: AbilityRuleConfig | string,
   ): AbilityRule<Subject> {
-    const { name, matches } =
-      typeof configOrJson === 'string'
-        ? (JSON.parse(configOrJson) as AbilityRuleConfig)
-        : configOrJson;
 
+    const config = AbilityParser.prepareAndValidateConfig<AbilityRuleConfig>(configOrJson, [
+      ['id', 'string', false],
+      ['name', 'string', true],
+      ['matches', 'array', true],
+    ]);
+
+
+    const { name, matches } = config;
     const [leftField, condition, rightField] = matches;
 
     return new AbilityRule<Subject>({

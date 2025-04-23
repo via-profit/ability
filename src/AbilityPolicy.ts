@@ -3,6 +3,7 @@ import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
 import AbilityMatch from './AbilityMatch';
 import AbilityCompare from './AbilityCompare';
 import AbilityPolicyEffect from './AbilityPolicyEffect';
+import AbilityParser from './AbilityParser';
 
 export type AbilityPolicyConfig = {
   readonly action: string;
@@ -61,12 +62,21 @@ export class AbilityPolicy<Resource = unknown> {
     this.effect = effect;
   }
 
+
+  /**
+   * Add rule set to the policy
+   * @param ruleSet - The rule set to add
+   */
   public addRuleSet(ruleSet: AbilityRuleSet): this {
     this.ruleSet.push(ruleSet);
 
     return this;
   }
 
+  /**
+   * Add rule to the policy
+   * @param rule - The rule to add
+   */
   public addRule(rule: AbilityRule): this {
     this.addRuleSet(
       new AbilityRuleSet({
@@ -77,6 +87,11 @@ export class AbilityPolicy<Resource = unknown> {
     return this;
   }
 
+
+  /**
+   * Check if the policy is matched
+   * @param resource - The resource to check
+   */
   public check(resource: Resource | null): AbilityMatch {
     this.matchState = AbilityMatch.MISMATCH;
 
@@ -106,9 +121,14 @@ export class AbilityPolicy<Resource = unknown> {
     return this.matchState;
   }
 
+  /**
+   * Check if the action is contained in another action
+   * @param actionA - The first action to check
+   * @param actionB - The second action to check
+   */
   public static isInActionContain(actionA: string, actionB: string) {
-    const actionAArray = actionA.split('.');
-    const actionBArray = actionB.split('.');
+    const actionAArray = String(actionA).split('.');
+    const actionBArray = String(actionB).split('.');
 
     const a = actionAArray.length >= actionBArray.length ? actionAArray : actionBArray;
     const b = actionBArray.length >= actionAArray.length ? actionBArray : actionAArray;
@@ -122,16 +142,25 @@ export class AbilityPolicy<Resource = unknown> {
       .every(Boolean);
   }
 
+
   /**
    * Parse the config JSON format to Policy class instance
    */
   public static parse<Resource = unknown>(
     configOrJson: AbilityPolicyConfig | string,
   ): AbilityPolicy<Resource> {
-    const { id, name, ruleSet, compareMethod, action, effect } =
-      typeof configOrJson === 'string'
-        ? (JSON.parse(configOrJson) as AbilityPolicyConfig)
-        : configOrJson;
+
+
+    const config = AbilityParser.prepareAndValidateConfig<AbilityPolicyConfig>(configOrJson, [
+      ['id', 'string', false],
+      ['name', 'string', true],
+      ['action', 'string', true],
+      ['effect', 'number', true],
+      ['compareMethod', 'number', true],
+      ['ruleSet', 'array', true],
+    ]);
+
+    const { id, name, ruleSet, compareMethod, action, effect } = config;
 
     // Create the empty policy
     const policy = new AbilityPolicy<Resource>({

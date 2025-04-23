@@ -9,6 +9,13 @@ class AbilityResolver {
     this.policies = policies;
   }
 
+  /**
+   * Resolve policy for the resource and action
+   *
+   * @param policyOrPolicies - Policy or policies
+   * @param resource - Resource
+   * @param action - Action
+   */
   public static resolve(
     policyOrPolicies: AbilityPolicy | readonly AbilityPolicy[],
     resource: unknown,
@@ -26,6 +33,11 @@ class AbilityResolver {
     return new AbilityResolver(filteredPolicies);
   }
 
+  /**
+   * Get the last effect of the policy
+   *
+   * @returns {AbilityPolicyEffect | null}
+   */
   public getEffect(): AbilityPolicyEffect | null {
     const effects = this.policies.reduce<AbilityPolicyEffect[]>((collect, policy, _index) => {
       if (policy.matchState.isEqual(AbilityMatch.MATCH)) {
@@ -40,6 +52,7 @@ class AbilityResolver {
 
     return null;
   }
+
 
   public isPermit() {
     const effect = this.getEffect();

@@ -1,6 +1,7 @@
 import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
 import AbilityCompare from './AbilityCompare';
 import AbilityMatch from './AbilityMatch';
+import AbilityParser from './AbilityParser';
 
 export type AbilityRuleSetConfig = {
   readonly id?: string | symbol;
@@ -80,18 +81,23 @@ export class AbilityRuleSet<Resource = unknown> {
     return this.state;
   }
 
+
   /**
    * Parse the config JSON format to Group class instance
    */
   public static parse<Resource = unknown>(
     configOrJson: AbilityRuleSetConfig | string,
   ): AbilityRuleSet<Resource> {
-    const { id, name, rules, compareMethod } =
-      typeof configOrJson === 'string'
-        ? (JSON.parse(configOrJson) as AbilityRuleSetConfig)
-        : configOrJson;
 
-    // Create the empty group
+    const config = AbilityParser.prepareAndValidateConfig<AbilityRuleSetConfig>(configOrJson, [
+      ['id', 'string', false],
+      ['name', 'string', true],
+      ['compareMethod', 'number', true],
+      ['rules', 'array', true],
+    ]);
+
+    const { id, name, rules, compareMethod } = config;
+
     const ruleSet = new AbilityRuleSet<Resource>({
       name,
       id,
