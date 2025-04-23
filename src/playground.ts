@@ -1,7 +1,7 @@
 import http from 'node:http';
-import AbilityPolicy, { AbilityPolicyConfig } from '~/AbilityPolicy';
-import AbilityCondition from '~/AbilityCondition';
-import AbilityPolicyEffect from '~/AbilityPolicyEffect';
+import AbilityPolicy, { AbilityPolicyConfig } from './AbilityPolicy';
+import AbilityCondition from './AbilityCondition';
+import AbilityPolicyEffect from './AbilityPolicyEffect';
 import AbilityCompare from '~/AbilityCompare';
 import AbilityResolver from '~/AbilityResolver';
 

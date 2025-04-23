@@ -1,5 +1,5 @@
 import AbilityPolicy from './AbilityPolicy';
-import AbilityPolicyEffect from '~/AbilityPolicyEffect';
+import AbilityPolicyEffect from './AbilityPolicyEffect';
 import AbilityMatch from '~/AbilityMatch';
 
 class AbilityResolver {

@@ -1,5 +1,5 @@
 import AbilityPolicy from './AbilityPolicy';
-import AbilityMatch from '~/AbilityMatch';
+import AbilityMatch from './AbilityMatch';
 import AbilityCondition from './AbilityCondition';
 
 export type AbilityRuleMatches = [string, AbilityCondition, string | number | boolean];

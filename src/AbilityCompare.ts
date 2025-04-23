@@ -1,4 +1,4 @@
-import AbilityCode from '~/AbilityCode';
+import AbilityCode from './AbilityCode';
 
 class AbilityCompare extends AbilityCode {
   public static OR = new AbilityCompare(0);

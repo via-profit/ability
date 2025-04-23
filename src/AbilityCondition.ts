@@ -1,4 +1,4 @@
-import AbilityCode from '~/AbilityCode';
+import AbilityCode from './AbilityCode';
 
 class AbilityCondition extends AbilityCode<string> {
   public static EQUAL = new AbilityCondition('=');

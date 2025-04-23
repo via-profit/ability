@@ -1,7 +1,7 @@
 import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
 import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
-import AbilityMatch from '~/AbilityMatch';
-import AbilityCompare from '~/AbilityCompare';
+import AbilityMatch from './AbilityMatch';
+import AbilityCompare from './AbilityCompare';
 import AbilityPolicyEffect from './AbilityPolicyEffect';
 
 export type AbilityPolicyConfig = {

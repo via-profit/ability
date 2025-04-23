@@ -1,4 +1,4 @@
-import AbilityCode from '~/AbilityCode';
+import AbilityCode from './AbilityCode';
 
 class AbilityMatch extends AbilityCode{
   public static PENDING = new AbilityMatch(0);
