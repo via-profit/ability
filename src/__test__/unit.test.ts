@@ -1,4 +1,5 @@
 import AbilityRule from '../AbilityRule';
+import AbilityCondition from '../AbilityCondition';
 
 test('Dot notation path foo.bar.baz.taz returns 2', () => {
   class Test extends AbilityRule {
@@ -21,7 +22,7 @@ test('Dot notation path foo.bar.baz.taz returns 2', () => {
     },
   };
   const value = new Test({
-    matches: ['subject.', '=', ''],
+    matches: ['subject.', AbilityCondition.EQUAL, ''],
   }).proxyDotNotation(resource, 'foo.bar.baz.taz');
 
   expect(value).toBe(resource.foo.bar.baz.taz);
