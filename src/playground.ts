@@ -61,7 +61,17 @@ server.on('request', (_req, res) => {
   const policy1 = AbilityPolicy.parse(policyConfig1);
   const policy2 = AbilityPolicy.parse(policy2Config);
 
- const isPermit = AbilityResolver.isPermit([policy1, policy2], resource, 'order.update');
+  const resolver = AbilityResolver.resolve([policy1, policy2], resource, 'order.update');
+
+  const policy = resolver.getPolicy();
+
+  if (policy !== null) {
+    const a = {
+      effect: policy.effect,
+      message: policy.name,
+    };
+    console.log(a);
+  }
 
   res.statusCode = 200;
   res.setHeader('content-type', 'application/json');

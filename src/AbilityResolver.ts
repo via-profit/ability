@@ -1,28 +1,38 @@
 import AbilityPolicy from './AbilityPolicy';
 import AbilityPolicyEffect from './AbilityPolicyEffect';
-import AbilityMatch from '~/AbilityMatch';
+import AbilityMatch from './AbilityMatch';
 
 class AbilityResolver {
+  public policies: readonly AbilityPolicy[];
+
+  public constructor(policies: readonly AbilityPolicy[]) {
+    this.policies = policies;
+  }
 
   public static resolve(
     policyOrPolicies: AbilityPolicy | readonly AbilityPolicy[],
     resource: unknown,
     action: string,
-  ): AbilityPolicyEffect | null {
+  ): AbilityResolver {
     const policies =
       policyOrPolicies instanceof AbilityPolicy ? [policyOrPolicies] : policyOrPolicies;
 
-    const effects = policies
-      .filter(policy => AbilityPolicy.isInActionContain(policy.action, action))
-      .reduce<AbilityPolicyEffect[]>((collect, policy, _index) => {
-        const matchState = policy.check(resource);
+    const filteredPolicies = policies.filter(policy =>
+      AbilityPolicy.isInActionContain(policy.action, action),
+    );
 
-        if (matchState.isEqual(AbilityMatch.MATCH)) {
-          return collect.concat(policy.effect);
-        }
+    filteredPolicies.map(policy => policy.check(resource));
 
-        return collect;
-      }, []);
+    return new AbilityResolver(filteredPolicies);
+  }
+
+  public getEffect(): AbilityPolicyEffect | null {
+    const effects = this.policies.reduce<AbilityPolicyEffect[]>((collect, policy, _index) => {
+      if (policy.matchState.isEqual(AbilityMatch.MATCH)) {
+        return collect.concat(policy.effect);
+      }
+      return collect;
+    }, []);
 
     if (effects.length) {
       return effects[effects.length - 1];
@@ -31,24 +41,20 @@ class AbilityResolver {
     return null;
   }
 
-  public static isPermit(
-    policyOrPolicies: AbilityPolicy | readonly AbilityPolicy[],
-    resource: unknown,
-    action: string,
-  ): boolean {
-    const effect = AbilityResolver.resolve(policyOrPolicies, resource, action);
+  public isPermit() {
+    const effect = this.getEffect();
 
     return effect !== null && effect.isEqual(AbilityPolicyEffect.PERMIT);
   }
 
-  public static isDeny(
-    policyOrPolicies: AbilityPolicy | readonly AbilityPolicy[],
-    resource: unknown,
-    action: string,
-  ): boolean {
-    const effect = AbilityResolver.resolve(policyOrPolicies, resource, action);
+  public isDeny() {
+    const effect = this.getEffect();
 
     return effect !== null && effect.isEqual(AbilityPolicyEffect.DENY);
+  }
+
+  public getPolicy(): AbilityPolicy | null {
+    return this.policies.length ? this.policies[this.policies.length - 1] : null;
   }
 }
 
