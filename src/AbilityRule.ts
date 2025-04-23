@@ -1,158 +1,63 @@
-export type AbilityRuleState = 'match' | 'mismatch' | 'pending';
-export type SubjectPrefix = 'subject.' | 'environment.';
-export type AbilityRuleMatches = [
-  `${SubjectPrefix}${string}`,
-  AbilityCondition,
-    string | number | boolean,
-];
-export type AbilityCondition = '=' | '<>' | '>' | '<' | '<=' | '>=' | 'in' | 'not in';
+import AbilityPolicy from './AbilityPolicy';
+import AbilityMatch from '~/AbilityMatch';
+import AbilityCondition from './AbilityCondition';
+
+export type AbilityRuleMatches = [string, AbilityCondition, string | number | boolean];
 
 export type AbilityRuleConfig = {
   readonly name?: string | symbol;
-  readonly matches: AbilityRuleMatches;
+  readonly matches: [string, string, string | number | boolean];
 };
 
-
-export class AbilityRule<Subject = unknown, Resource = unknown, Environment = unknown> {
+export class AbilityRule<Subject = unknown> {
   public matches: AbilityRuleMatches;
   public name: string | symbol;
-  public state: AbilityRuleState = 'pending';
+  public state: AbilityMatch = AbilityMatch.PENDING;
+  public parentPolicy: AbilityPolicy | null = null;
 
-  /**
-   * Create the rule to compare
-   *
-   * \
-   * For example, be compared two's data\
-   * \
-   * _The subject_
-   * ```json
-   * {"userID": "1", "userDepartment": "NBC"}
-   * ```
-   * and _The resource_
-   * ```json
-   * {"departmentID": "154", "departmentName": "NBC"}
-   * ```
-   * \
-   * Now we can make the matching rule:
-   * ```json
-   * ["subject.userDepartment", "=", "resource.departmentName"]
-   * ```
-   *
-   * \
-   * **Example 2.**\
-   * In this case will be compared resource and string:
-   * \
-   * _The subject_
-   * ```json
-   * {"userID": "1", "userDepartment": "NBC"}
-   * ```
-   * and _The resource_ will be «undefined».\
-   * Now we can make the matching rule:
-   * ```json
-   * ["subject.userDepartment", "=", "NBC"]
-   * ```
-   * \
-   * **Example 3.**\
-   * In this case will be compared resource and array of string:\
-   * \
-   * _The subject_
-   * ```json
-   * {"userID": "1", "userDepartment": "NBC"}
-   * ```
-   * and _The resource_
-   * ```json
-   * ["FOX", "NBC", "AONE"]
-   * ```
-   * \
-   * Now we can make the matching rule:
-   * ```json
-   * ["subject.userDepartment", "=", "resource"]
-   * ```
-   * **Note: In this rule whe set the resource field as the «resource» string.\
-   * This means that we will compare the entire resource as a whole,\
-   * and not search for it by field name.**
-   * \
-   * **Example 4.**\
-   * In this case will be compared resource and array of string:\
-   * \
-   * _The subject_
-   * ```json
-   * {"user": {"account": {"roles": ["admin", "viewer"]}}}
-   * ```
-   * and _The resource_
-   * ```json
-   * undefined
-   * ```
-   * \
-   * Now we can make the matching rule:
-   * ```json
-   * ["subject.user.account.roles", "in", "admin"]
-   */
-  public constructor(
-    params: {
-      matches: AbilityRuleMatches;
-      name?: string | symbol;
-    },
-  ) {
-    const {
-      name,
-      matches,
-    } = params;
+  public constructor(params: { matches: AbilityRuleMatches; name?: string | symbol }) {
+    const { name, matches } = params;
     this.name = name || Symbol('name');
     this.matches = matches;
   }
 
-  // public isPermit(
-  //   subject: Subject,
-  //   resource?: Resource | undefined,
-  //   environment?: Environment | undefined,
-  // ): boolean {
-  //   return 'permit' === this.check(subject, resource, environment);
-  // }
-  //
-  // public isDeny(
-  //   subject: Subject,
-  //   resource?: Resource | undefined,
-  //   environment?: Environment | undefined,
-  // ): boolean {
-  //   return 'deny' === this.check(subject, resource, environment);
-  // }
+  public setParentPolicy(policy: AbilityPolicy): this {
+    this.parentPolicy = policy;
 
-  public check(
-    subject: Subject,
-    resource?: Resource | undefined,
-    environment?: Environment | undefined,
-  ): AbilityRuleState {
-    const [_subjectFieldName, condition, _resourceFieldName] = this.matches;
+    return this;
+  }
+
+  public check(subject: Subject): AbilityMatch {
+    const [_subjectPathName, condition, _staticValueOrPathName] = this.matches;
 
     let is: boolean = false;
-    const [valueS, valueO] = this.extractValues(subject, resource, environment);
+    const [valueS, valueO] = this.extractValues(subject);
 
-    if (condition === '<') {
+    if (AbilityCondition.LESS_THAN.isEqual(condition)) {
       is = Number(valueS) < Number(valueO);
     }
 
-    if (condition === '<=') {
+    if (AbilityCondition.LESS_OR_EQUAL.isEqual(condition)) {
       is = Number(valueS) <= Number(valueO);
     }
 
-    if (condition === '>') {
+    if (AbilityCondition.MORE_THAN.isEqual(condition)) {
       is = Number(valueS) > Number(valueO);
     }
 
-    if (condition === '>=') {
+    if (AbilityCondition.MORE_OR_EQUAL.isEqual(condition)) {
       is = Number(valueS) >= Number(valueO);
     }
 
-    if (condition === '=') {
+    if (AbilityCondition.EQUAL.isEqual(condition)) {
       is = valueS === valueO;
     }
 
-    if (condition === '<>') {
+    if (AbilityCondition.NOT_EQUAL.isEqual(condition)) {
       is = valueS !== valueO;
     }
 
-    if (condition === 'in') {
+    if (AbilityCondition.IN.isEqual(condition)) {
       // [<some>] and [<some>]
       if (Array.isArray(valueS) && Array.isArray(valueO)) {
         is = valueS.some(v => valueO.find(v1 => v1 === v));
@@ -167,7 +72,7 @@ export class AbilityRule<Subject = unknown, Resource = unknown, Environment = un
       }
     }
 
-    if (condition === 'not in') {
+    if (AbilityCondition.NOT_IN.isEqual(condition)) {
       // [<some>] and [<some>]
       if (Array.isArray(valueS) && Array.isArray(valueO)) {
         is = !valueS.some(v => valueO.find(v1 => v1 === v));
@@ -182,68 +87,44 @@ export class AbilityRule<Subject = unknown, Resource = unknown, Environment = un
       }
     }
 
-    this.state = is ? 'match' : 'mismatch';
+    this.state = is ? AbilityMatch.MATCH : AbilityMatch.MISMATCH;
 
     return this.state;
   }
 
-
   public extractValues(
-    sub: unknown,
-    res?: unknown | undefined,
-    env?: unknown | undefined,
+    subject: unknown,
   ): [
-      string | number | boolean | (string | number)[] | null | undefined,
-      string | number | boolean | (string | number)[] | null | undefined,
+    string | number | boolean | (string | number)[] | null | undefined,
+    string | number | boolean | (string | number)[] | null | undefined,
   ] {
-    const [subjectFieldName, _condition, resourceFieldName] = this.matches;
-    const REGEXP = /^(subject|resource|environment)\./;
+    const [subjectPathName, _condition, staticValueOrPathName] = this.matches;
+    let leftSideValue;
+    let rightSideValue;
 
-    //  The subject field must be named at «subject.<field-name>»
-    if (!subjectFieldName.match(/^(subject|environment)\./)) {
-      throw new Error(
-        `Matches error. The subject field must be named at «subject.<field-name>», but got ${subjectFieldName}`,
+    const isPath = (str: unknown): str is string => {
+      return typeof str === 'string' && str.match(/\./g) !== null;
+    };
+
+    if (isPath(subjectPathName)) {
+      leftSideValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
+        subject,
+        subjectPathName,
       );
     }
-
-    const sFieldName = subjectFieldName.replace(/^(subject|environment)\./, '');
-    const subject = typeof sub === 'undefined' || sub === null ? {} : sub;
-    const resource = typeof res === 'undefined' || res === null ? {} : res;
-
-    const sValue = subject
-      ? this.getDotNotationValue(
-        subjectFieldName.match(/^subject\./)
-          ? subject
-          : subjectFieldName.match(/^environment\./)
-            ? env
-            : {},
-        sFieldName,
-      )
-      : subject;
-
-    // The resource field name can be «resource».
-    // In this case the resource be comparing as is
-    if (resourceFieldName === 'resource') {
-      return [sValue, resource] as ReturnType<AbilityRule['extractValues']>;
+    if (isPath(staticValueOrPathName)) {
+      rightSideValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
+        subject,
+        staticValueOrPathName,
+      );
+    } else {
+      rightSideValue = staticValueOrPathName as number | boolean | string | (string | number)[];
     }
 
-    // Object field name - is a «resource.<field-name>»
-    if (resource && String(resourceFieldName).match(REGEXP)) {
-      const oFieldName = String(resourceFieldName).replace(REGEXP, '');
-      return [sValue, this.getDotNotationValue(resource, oFieldName)] as ReturnType<
-        AbilityRule['extractValues']
-      >;
-    }
-
-    // The resource field can be «<some-value>» only
-    if (String(resourceFieldName).match(REGEXP) === null) {
-      return [sValue, resourceFieldName] as ReturnType<AbilityRule['extractValues']>;
-    }
-
-    return [NaN, NaN];
+    return [leftSideValue, rightSideValue];
   }
 
-  public getDotNotationValue(resource: unknown, desc: string) {
+  public getDotNotationValue<T = unknown>(resource: unknown, desc: string): T | undefined {
     const arr = desc.split('.');
 
     while (arr.length && resource) {
@@ -266,35 +147,39 @@ export class AbilityRule<Subject = unknown, Resource = unknown, Environment = un
       }
     }
 
-    return resource;
+    return resource as T;
   }
 
   /**
    * Parsing the rule config object or JSON string\
    * of config and returns the AbilityRule class instance
    */
-  public static parse<Subject = unknown, Resource = unknown, Environment = unknown>(
+  public static parse<Subject = unknown>(
     configOrJson: AbilityRuleConfig | string,
-  ): AbilityRule<Subject, Resource, Environment> {
+  ): AbilityRule<Subject> {
     const { name, matches } =
       typeof configOrJson === 'string'
         ? (JSON.parse(configOrJson) as AbilityRuleConfig)
         : configOrJson;
 
-    return new AbilityRule<Subject, Resource, Environment>({
-      matches, name,
+    const [leftField, condition, rightField] = matches;
+
+    return new AbilityRule<Subject>({
+      name,
+      matches: [leftField, new AbilityCondition(condition), rightField],
     });
   }
 
   /**
    * Export the rule to config object
    */
-  public static export(rule: AbilityRule): AbilityRuleConfig {
-    return {
-      name: rule.name,
-      matches: rule.matches,
-    };
+  public export(): AbilityRuleConfig {
+    const [leftField, condition, rightField] = this.matches;
 
+    return {
+      name: this.name,
+      matches: [leftField, condition.code, rightField],
+    };
   }
 }
 

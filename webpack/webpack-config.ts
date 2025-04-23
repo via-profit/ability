@@ -3,7 +3,6 @@
 import path from 'node:path';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /* @ts-ignore */
-import NodemonPlugin from 'nodemon-webpack-plugin';
 import { Configuration, DefinePlugin } from 'webpack';
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -51,20 +50,6 @@ const webpackBaseConfig: Configuration = {
     new DefinePlugin({
       'process.env.WEBPACK_INJECT_APP_VERSION': JSON.stringify(packageInfo.version),
     }),
-    ...(isDev
-      ? /**
-         * Development only plugins
-         */
-        [
-          new NodemonPlugin({
-            watch: ['./build'],
-            exec: 'node --inspect=9229 ./build/index.js',
-          }),
-        ]
-      : /**
-         * Production only plugins
-         */
-        []),
   ],
 };
 
