@@ -1,6 +1,6 @@
 import AbilityCode from './AbilityCode';
 
-class AbilityCondition extends AbilityCode<string> {
+export class AbilityCondition extends AbilityCode<string> {
   public static EQUAL = new AbilityCondition('=');
   public static NOT_EQUAL = new AbilityCondition('<>');
   public static MORE_THAN = new AbilityCondition('>');

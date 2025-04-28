@@ -9,8 +9,7 @@ export type AbilityRuleConfig = {
   readonly matches: [string, string, string | number | boolean];
 };
 
-
-export class AbilityRule<Subject = unknown> {
+export class AbilityRule<Resources extends object = object> {
   public matches: AbilityRuleMatches;
   public name: string | symbol;
   public state: AbilityMatch = AbilityMatch.PENDING;
@@ -23,13 +22,14 @@ export class AbilityRule<Subject = unknown> {
 
   /**
    * Check if the rule is matched
-   * @param subject - The subject to check
+   * @param resource - The resource to check
    */
-  public check(subject: Subject): AbilityMatch {
+  public check(resource: Resources | null): AbilityMatch {
     const [_subjectPathName, condition, _staticValueOrPathName] = this.matches;
 
     let is: boolean = false;
-    const [valueS, valueO] = this.extractValues(subject);
+
+    const [valueS, valueO] = this.extractValues(resource);
 
     if (AbilityCondition.LESS_THAN.isEqual(condition)) {
       is = Number(valueS) < Number(valueO);
@@ -91,18 +91,22 @@ export class AbilityRule<Subject = unknown> {
   }
 
   /**
-   * Extract values from the subject
-   * @param subject - The subject to extract values from
+   * Extract values from the resource
+   * @param resource - The resource to extract values from
    */
   public extractValues(
-    subject: unknown,
+    resource: Resources | null,
   ): [
-      string | number | boolean | (string | number)[] | null | undefined,
-      string | number | boolean | (string | number)[] | null | undefined,
+    string | number | boolean | (string | number)[] | null | undefined,
+    string | number | boolean | (string | number)[] | null | undefined,
   ] {
     const [subjectPathName, _condition, staticValueOrPathName] = this.matches;
     let leftSideValue;
     let rightSideValue;
+
+    if (resource === null || typeof resource === 'undefined') {
+      return [NaN, NaN];
+    }
 
     const isPath = (str: unknown): str is string => {
       return typeof str === 'string' && str.match(/\./g) !== null;
@@ -110,13 +114,13 @@ export class AbilityRule<Subject = unknown> {
 
     if (isPath(subjectPathName)) {
       leftSideValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
-        subject,
+        resource,
         subjectPathName,
       );
     }
     if (isPath(staticValueOrPathName)) {
       rightSideValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
-        subject,
+        resource,
         staticValueOrPathName,
       );
     } else {
@@ -157,22 +161,19 @@ export class AbilityRule<Subject = unknown> {
     return resource as T;
   }
 
-
-  public static parse<Subject = unknown>(
+  public static parse<Resources extends object>(
     configOrJson: AbilityRuleConfig | string,
-  ): AbilityRule<Subject> {
-
+  ): AbilityRule<Resources> {
     const config = AbilityParser.prepareAndValidateConfig<AbilityRuleConfig>(configOrJson, [
       ['id', 'string', false],
       ['name', 'string', true],
       ['matches', 'array', true],
     ]);
 
-
     const { name, matches } = config;
     const [leftField, condition, rightField] = matches;
 
-    return new AbilityRule<Subject>({
+    return new AbilityRule<Resources>({
       name,
       matches: [leftField, new AbilityCondition(condition), rightField],
     });

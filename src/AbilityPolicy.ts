@@ -14,7 +14,7 @@ export type AbilityPolicyConfig = {
   readonly name?: string;
 };
 
-export class AbilityPolicy<Resource = unknown> {
+export class AbilityPolicy<Resources extends object = object> {
   public matchState: AbilityMatch = AbilityMatch.PENDING;
   /**
    * List of rules
@@ -77,7 +77,7 @@ export class AbilityPolicy<Resource = unknown> {
    * Add rule to the policy
    * @param rule - The rule to add
    */
-  public addRule(rule: AbilityRule): this {
+  public addRule(rule: AbilityRule<Resources>): this {
     this.addRuleSet(
       new AbilityRuleSet({
         name: rule.name,
@@ -92,7 +92,7 @@ export class AbilityPolicy<Resource = unknown> {
    * Check if the policy is matched
    * @param resource - The resource to check
    */
-  public check(resource: Resource | null): AbilityMatch {
+  public check(resource: Resources): AbilityMatch {
     this.matchState = AbilityMatch.MISMATCH;
 
     /**
@@ -121,34 +121,15 @@ export class AbilityPolicy<Resource = unknown> {
     return this.matchState;
   }
 
-  /**
-   * Check if the action is contained in another action
-   * @param actionA - The first action to check
-   * @param actionB - The second action to check
-   */
-  public static isInActionContain(actionA: string, actionB: string) {
-    const actionAArray = String(actionA).split('.');
-    const actionBArray = String(actionB).split('.');
 
-    const a = actionAArray.length >= actionBArray.length ? actionAArray : actionBArray;
-    const b = actionBArray.length >= actionAArray.length ? actionBArray : actionAArray;
-
-    return a
-      .reduce<boolean[]>((acc, chunk, index) => {
-        const iterationRes = chunk === b[index] || b[index] === '*' || chunk === '*';
-
-        return acc.concat(iterationRes);
-      }, [])
-      .every(Boolean);
-  }
 
 
   /**
    * Parse the config JSON format to Policy class instance
    */
-  public static parse<Resource = unknown>(
+  public static parse<Resources extends object = object>(
     configOrJson: AbilityPolicyConfig | string,
-  ): AbilityPolicy<Resource> {
+  ): AbilityPolicy<Resources> {
 
 
     const config = AbilityParser.prepareAndValidateConfig<AbilityPolicyConfig>(configOrJson, [
@@ -163,7 +144,7 @@ export class AbilityPolicy<Resource = unknown> {
     const { id, name, ruleSet, compareMethod, action, effect } = config;
 
     // Create the empty policy
-    const policy = new AbilityPolicy<Resource>({
+    const policy = new AbilityPolicy<Resources>({
       name,
       id,
       action,

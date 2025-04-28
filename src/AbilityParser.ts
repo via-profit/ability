@@ -5,7 +5,7 @@ import AbilityCondition from './AbilityCondition';
 type FieldValidateConfig = [string, 'string' | 'number' | 'array', boolean][];
 
 
-class AbilityParser {
+export class AbilityParser {
 
   /**
    * Validates the configuration object based on the provided field validation configurations.

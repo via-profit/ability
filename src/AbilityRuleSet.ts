@@ -10,7 +10,7 @@ export type AbilityRuleSetConfig = {
   readonly rules: AbilityRuleConfig[];
 };
 
-export class AbilityRuleSet<Resource = unknown> {
+export class AbilityRuleSet<Resources extends object = object> {
   public state: AbilityMatch = AbilityMatch.PENDING;
   /**
    * List of rules
@@ -55,7 +55,7 @@ export class AbilityRuleSet<Resource = unknown> {
     return this;
   }
 
-  public check(subject: Resource | null): AbilityMatch {
+  public check(resources: Resources | null): AbilityMatch {
     this.state = AbilityMatch.MISMATCH;
 
     if (!this.rules.length) {
@@ -63,7 +63,7 @@ export class AbilityRuleSet<Resource = unknown> {
     }
 
     const ruleCheckStates = this.rules.reduce<AbilityMatch[]>((collect, rule) => {
-      return collect.concat(rule.check(subject));
+      return collect.concat(rule.check(resources));
     }, []);
 
     if (AbilityCompare.AND.isEqual(this.compareMethod)) {
@@ -85,7 +85,7 @@ export class AbilityRuleSet<Resource = unknown> {
   /**
    * Parse the config JSON format to Group class instance
    */
-  public static parse<Resource = unknown>(
+  public static parse<Resource extends object = object>(
     configOrJson: AbilityRuleSetConfig | string,
   ): AbilityRuleSet<Resource> {
 

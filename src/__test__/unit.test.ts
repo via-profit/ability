@@ -1,13 +1,14 @@
 import AbilityRule from '../AbilityRule';
 import AbilityCondition from '../AbilityCondition';
 
-test('Dot notation path foo.bar.baz.taz returns 2', () => {
-  class Test extends AbilityRule {
-    public proxyDotNotation(o: unknown, p: string) {
-      return this.getDotNotationValue(o, p);
-    }
-  }
 
+class Test extends AbilityRule {
+  public proxyDotNotation(o: unknown, p: string) {
+    return this.getDotNotationValue(o, p);
+  }
+}
+
+test('Dot notation path foo.bar.baz.taz returns 2', () => {
   const resource = {
     any: 6,
     foo: {

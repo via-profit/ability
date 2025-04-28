@@ -7,14 +7,14 @@ import AbilityResolver from '~/AbilityResolver';
 
 const server = http.createServer();
 
-type Resource = {
-  readonly user: { readonly department: string; readonly roles: string[] };
-  readonly order: { readonly estimatedArrivalAt: number };
-};
-
-const resource: Resource = {
-  user: { department: 'managers', roles: ['logistic'] },
-  order: { estimatedArrivalAt: 8 },
+type Resources = {
+  'order.update': {
+    readonly user: { readonly department: string; readonly roles: string[] };
+    readonly order: { readonly estimatedArrivalAt: number };
+  };
+  'user.create': {
+    readonly user: { readonly department: string; readonly roles: string[] };
+  };
 };
 
 server.on('request', (_req, res) => {
@@ -61,7 +61,16 @@ server.on('request', (_req, res) => {
   const policy1 = AbilityPolicy.parse(policyConfig1);
   const policy2 = AbilityPolicy.parse(policy2Config);
 
-  const resolver = AbilityResolver.resolve([policy1, policy2], resource, 'order.update');
+  const resolver = new AbilityResolver<Resources>([policy1, policy2]).resolve(
+    {
+      user: {
+        roles: [''],
+        department: '',
+      },
+      order: { estimatedArrivalAt: 9 },
+    },
+    'order.update',
+  );
 
   const policy = resolver.getPolicy();
 

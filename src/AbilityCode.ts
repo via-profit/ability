@@ -1,4 +1,4 @@
-class AbilityCode<T extends string | number | undefined = number> {
+export class AbilityCode<T extends string | number | undefined = number> {
   public code: T;
 
   constructor(code: T) {
