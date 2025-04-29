@@ -1,0 +1,165 @@
+[
+  {
+    "name": "Просмотр чужого логина разрешен только владельцу аккаунта и администраторам",
+    "action": "account.read",
+    "effect": 0,
+    "compareMethod": 0,
+    "ruleSet": [
+      {
+        "name": "Не владелец аккаунта и не администратор",
+        "compareMethod": 1,
+        "rules": [
+          {
+            "name": "Владелец аккаунта",
+            "matches": [
+              "account.id",
+              "<>",
+              "resource.id"
+            ]
+          },
+          {
+            "name": "Администратор",
+            "matches": [
+              "account.roles",
+              "not in",
+              "administrator"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Unauthorized. Access token expected",
+    "action": "access.auth",
+    "effect": 0,
+    "compareMethod": 1,
+    "ruleSet": [
+      {
+        "name": "Токен - AccessToken",
+        "matches": [
+          "token.type",
+          "=",
+          "access"
+        ]
+      },
+      {
+        "name": "Токен не пустой",
+        "matches": [
+          "token.id",
+          "<>",
+          "ACCESS_TOKEN_EMPTY_ID"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "1121",
+    "name": "Менеджеры не могут редактировать заказы, созданные более 3-х дней назад, а так же завершенные и отменённые заявки",
+    "action": "order.update",
+    "effect": 0,
+    "compareMethod": 1,
+    "ruleSet": [
+      {
+        "name": "Менеджеры",
+        "compareMethod": 0,
+        "rules": [
+          {
+            "name": "Отдел - Менеджеры",
+            "matches": [
+              "user.department",
+              "=",
+              "managers"
+            ]
+          },
+          {
+            "name": "Роль - Менеджер",
+            "matches": [
+              "user.roles",
+              "in",
+              "manager"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Заказы более 3-х дней, а так же завершённые и отменённые заказы",
+        "compareMethod": 0,
+        "rules": [
+          {
+            "name": "заказ создан более 3-х дней назад",
+            "matches": [
+              "order.createdDaysAgo",
+              ">",
+              3
+            ]
+          },
+          {
+            "name": "заказ завершён",
+            "matches": [
+              "order.status",
+              "=",
+              "COMPLETED"
+            ]
+          },
+          {
+            "name": "заказ отменён",
+            "matches": [
+              "order.status",
+              "=",
+              "CANCELLED"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+
+  {
+    "name": "Менеджеры не могут создавать заказы",
+    "action": "order.create",
+    "effect":0,
+    "compareMethod": 0,
+    "ruleSet": [
+      {
+        "name": "Менеджеры",
+        "compareMethod": 0,
+        "rules": [
+          {
+            "name": "Отдел - Менеджеры",
+            "matches": [
+              "user.department",
+              "=",
+              "managers"
+            ]
+          },
+          {
+            "name": "Роль - Менеджер",
+            "matches": [
+              "user.roles",
+              "in",
+              "manager"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Уборщицы не могут видеть стоимость заказа",
+    "action": "order.read",
+    "effect": 0,
+    "compareMethod": 0,
+    "ruleSet": [
+      {
+        "name": "все из отдела уборщиц",
+        "matches": [
+          "user.department",
+          "in",
+          "cleaner"
+        ]
+      }
+    ]
+  }
+
+]

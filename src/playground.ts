@@ -1,86 +1,25 @@
 import http from 'node:http';
 import AbilityPolicy, { AbilityPolicyConfig } from './AbilityPolicy';
-import AbilityCondition from './AbilityCondition';
-import AbilityPolicyEffect from './AbilityPolicyEffect';
-import AbilityCompare from '~/AbilityCompare';
 import AbilityResolver from '~/AbilityResolver';
+
+import policies from './policies.json';
 
 const server = http.createServer();
 
-type Resources = {
-  'order.update': {
-    readonly user: { readonly department: string; readonly roles: string[] };
-    readonly order: { readonly estimatedArrivalAt: number };
-  };
-  'user.create': {
-    readonly user: { readonly department: string; readonly roles: string[] };
-  };
-};
-
 server.on('request', (_req, res) => {
-  const policyConfig1: AbilityPolicyConfig = {
-    action: 'order.update',
-    name: 'Менеджеры не могут редактировать заказы, созданные более 3-х дней назад, а так же завершенные заявки',
-    compareMethod: AbilityCompare.AND.code,
-    effect: AbilityPolicyEffect.DENY.code,
-    ruleSet: [
-      {
-        name: 'Менеджеры',
-        compareMethod: AbilityCompare.OR.code,
-        rules: [
-          {
-            name: 'отдел - менеджеры',
-            matches: ['user.department', AbilityCondition.EQUAL.code, 'managers'],
-          },
-          {
-            name: 'роль - менеджер',
-            matches: ['user.roles', AbilityCondition.IN.code, 'manager'],
-          },
-        ],
-      },
-      {
-        name: 'заказ создан более 3-х дней назад',
-        matches: ['order.estimatedArrivalAt', AbilityCondition.MORE_THAN.code, 3],
-      },
-    ],
-  };
-
-  const policy2Config: AbilityPolicyConfig = {
-    name: 'Developer может всё',
-    action: '*',
-    effect: AbilityPolicyEffect.PERMIT.code,
-    compareMethod: AbilityCompare.AND.code,
-    ruleSet: [
-      {
-        name: 'Developer может всё',
-        matches: ['user.roles', AbilityCondition.IN.code, 'developer'],
-      },
-    ],
-  };
-
-  const policy1 = AbilityPolicy.parse(policyConfig1);
-  const policy2 = AbilityPolicy.parse(policy2Config);
-
-  const resolver = new AbilityResolver<Resources>([policy1, policy2]).resolve(
-    {
-      user: {
-        roles: [''],
-        department: '',
-      },
-      order: { estimatedArrivalAt: 9 },
+  new AbilityResolver<Resources>(
+    policies.map(p => {
+      return AbilityPolicy.parse(p as AbilityPolicyConfig);
+    }),
+  ).enforce('account.read', {
+    account: {
+      id: '1',
+      roles: ['managers'],
     },
-    'order.update',
-  );
-
-  const policy = resolver.getPolicy();
-
-  if (policy !== null) {
-    const a = {
-      effect: policy.effect,
-      message: policy.name,
-    };
-    console.log(a);
-  }
+    resource: {
+      id: '1',
+    },
+  });
 
   res.statusCode = 200;
   res.setHeader('content-type', 'application/json');
@@ -96,3 +35,30 @@ server.on('request', (_req, res) => {
 server.listen(8080, 'localhost', () => {
   console.debug('server started at http://localhost:8080');
 });
+
+export type Resources = {
+  readonly ['account.read']: {
+    readonly account: {
+      readonly id: string;
+      readonly roles: readonly string[];
+    };
+    readonly resource: {
+      readonly id: string;
+    };
+  };
+  readonly ['access.auth']: {
+    readonly token: {
+      readonly type: string;
+      readonly id: string;
+    };
+  };
+  readonly ['order.update']: {
+    readonly account: {
+      readonly roles: readonly string[];
+      readonly department: string;
+    };
+    readonly order: {
+      readonly status: string;
+    };
+  };
+};

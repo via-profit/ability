@@ -13,12 +13,12 @@ export class AbilityResolver<Resources extends object = object> {
   /**
    * Resolve policy for the resource and action
    *
+   @param action - Action
    * @param resource - Resource
-   * @param action - Action
    */
   public resolve<Action extends keyof Resources>(
-    resource: Resources[Action],
     action: Action,
+    resource: Resources[Action],
   ): this {
     const filteredPolicies: AbilityPolicy[] = this.policies.filter(policy => {
       return AbilityResolver.isInActionContain(policy.action, String(action));
@@ -32,10 +32,10 @@ export class AbilityResolver<Resources extends object = object> {
   }
 
   public enforce<Action extends keyof Resources>(
-    resource: Resources[Action],
     action: Action,
+    resource: Resources[Action],
   ): void | never {
-    const resolver = this.resolve(resource, action);
+    const resolver = this.resolve(action, resource);
     if (resolver) {
       if (resolver.isDeny()) {
         throw new PermissionError(
