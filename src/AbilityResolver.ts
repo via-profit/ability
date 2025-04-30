@@ -38,9 +38,7 @@ export class AbilityResolver<Resources extends object = object> {
     const resolver = this.resolve(action, resource);
     if (resolver) {
       if (resolver.isDeny()) {
-        throw new PermissionError(
-          ['Permission denied', resolver.getPolicy()?.name?.toString()].join('. '),
-        );
+        throw new PermissionError(resolver.getPolicy()?.name?.toString() || 'Unknown permission error');
       }
     }
   }
