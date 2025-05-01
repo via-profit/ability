@@ -1,165 +1,32 @@
 [
   {
+    "id": "d7c491d2-b937-4f75-b26a-e989fb12f051",
     "name": "Просмотр чужого логина разрешен только владельцу аккаунта и администраторам",
     "action": "account.read",
     "effect": 0,
     "compareMethod": 0,
     "ruleSet": [
       {
+        "id": "3f3e2b42-55ae-4bf9-8438-5dfa7fd4b93e",
         "name": "Не владелец аккаунта и не администратор",
         "compareMethod": 1,
         "rules": [
           {
+            "id": "46d9aa89-e507-455d-9e8c-7544f75bbb8b",
             "name": "Владелец аккаунта",
-            "matches": [
-              "account.id",
-              "<>",
-              "resource.id"
-            ]
+            "subject": "account.id",
+            "resource": "resource.id",
+            "condition": "<>"
           },
           {
+            "id": "8ab0075a-1670-4d44-b643-16d55ec96831",
             "name": "Администратор",
-            "matches": [
-              "account.roles",
-              "not in",
-              "administrator"
-            ]
+            "subject": "account.roles",
+            "resource": "administrator",
+            "condition": "not in"
           }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Unauthorized. Access token expected",
-    "action": "access.auth",
-    "effect": 0,
-    "compareMethod": 1,
-    "ruleSet": [
-      {
-        "name": "Токен - AccessToken",
-        "matches": [
-          "token.type",
-          "=",
-          "access"
-        ]
-      },
-      {
-        "name": "Токен не пустой",
-        "matches": [
-          "token.id",
-          "<>",
-          "ACCESS_TOKEN_EMPTY_ID"
-        ]
-      }
-    ]
-  },
-  {
-    "id": "1121",
-    "name": "Менеджеры не могут редактировать заказы, созданные более 3-х дней назад, а так же завершенные и отменённые заявки",
-    "action": "order.update",
-    "effect": 0,
-    "compareMethod": 1,
-    "ruleSet": [
-      {
-        "name": "Менеджеры",
-        "compareMethod": 0,
-        "rules": [
-          {
-            "name": "Отдел - Менеджеры",
-            "matches": [
-              "user.department",
-              "=",
-              "managers"
-            ]
-          },
-          {
-            "name": "Роль - Менеджер",
-            "matches": [
-              "user.roles",
-              "in",
-              "manager"
-            ]
-          }
-        ]
-      },
-      {
-        "name": "Заказы более 3-х дней, а так же завершённые и отменённые заказы",
-        "compareMethod": 0,
-        "rules": [
-          {
-            "name": "заказ создан более 3-х дней назад",
-            "matches": [
-              "order.createdDaysAgo",
-              ">",
-              3
-            ]
-          },
-          {
-            "name": "заказ завершён",
-            "matches": [
-              "order.status",
-              "=",
-              "COMPLETED"
-            ]
-          },
-          {
-            "name": "заказ отменён",
-            "matches": [
-              "order.status",
-              "=",
-              "CANCELLED"
-            ]
-          }
-        ]
-      }
-    ]
-  },
-
-  {
-    "name": "Менеджеры не могут создавать заказы",
-    "action": "order.create",
-    "effect":0,
-    "compareMethod": 0,
-    "ruleSet": [
-      {
-        "name": "Менеджеры",
-        "compareMethod": 0,
-        "rules": [
-          {
-            "name": "Отдел - Менеджеры",
-            "matches": [
-              "user.department",
-              "=",
-              "managers"
-            ]
-          },
-          {
-            "name": "Роль - Менеджер",
-            "matches": [
-              "user.roles",
-              "in",
-              "manager"
-            ]
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Уборщицы не могут видеть стоимость заказа",
-    "action": "order.read",
-    "effect": 0,
-    "compareMethod": 0,
-    "ruleSet": [
-      {
-        "name": "все из отдела уборщиц",
-        "matches": [
-          "user.department",
-          "in",
-          "cleaner"
         ]
       }
     ]
   }
-
 ]

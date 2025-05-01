@@ -1,4 +1,4 @@
-import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
+import AbilityRule from './AbilityRule';
 import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
 import AbilityMatch from './AbilityMatch';
 import AbilityCompare from './AbilityCompare';
@@ -9,9 +9,9 @@ export type AbilityPolicyConfig = {
   readonly action: string;
   readonly effect: number;
   readonly compareMethod: number;
-  readonly ruleSet: (AbilityRuleConfig | AbilityRuleSetConfig)[];
-  readonly id?: string;
-  readonly name?: string;
+  readonly ruleSet: AbilityRuleSetConfig[];
+  readonly id: string;
+  readonly name: string;
 };
 
 export class AbilityPolicy<Resources extends object = object> {
@@ -37,12 +37,12 @@ export class AbilityPolicy<Resources extends object = object> {
   /**
    * Policy name
    */
-  public name: string | symbol;
+  public name: string;
 
   /**
    * Policy ID
    */
-  public id: string | symbol;
+  public id: string;
 
   /**
    * Soon
@@ -50,14 +50,14 @@ export class AbilityPolicy<Resources extends object = object> {
   public action: string;
 
   public constructor(params: {
+    id: string;
+    name: string;
     action: string;
     effect: AbilityPolicyEffect;
-    name?: string | symbol;
-    id?: string | symbol;
   }) {
     const { name, id, action, effect } = params;
-    this.name = name || Symbol('name');
-    this.id = id || Symbol('id');
+    this.name = name;
+    this.id = id;
     this.action = action;
     this.effect = effect;
   }
@@ -69,20 +69,6 @@ export class AbilityPolicy<Resources extends object = object> {
    */
   public addRuleSet(ruleSet: AbilityRuleSet): this {
     this.ruleSet.push(ruleSet);
-
-    return this;
-  }
-
-  /**
-   * Add rule to the policy
-   * @param rule - The rule to add
-   */
-  public addRule(rule: AbilityRule<Resources>): this {
-    this.addRuleSet(
-      new AbilityRuleSet({
-        name: rule.name,
-      }).addRule(rule, AbilityCompare.AND),
-    );
 
     return this;
   }
@@ -133,7 +119,7 @@ export class AbilityPolicy<Resources extends object = object> {
 
 
     const config = AbilityParser.prepareAndValidateConfig<AbilityPolicyConfig>(configOrJson, [
-      ['id', 'string', false],
+      ['id', 'string', true],
       ['name', 'string', true],
       ['action', 'string', true],
       ['effect', 'number', true],
@@ -153,16 +139,8 @@ export class AbilityPolicy<Resources extends object = object> {
 
     policy.compareMethod = new AbilityCompare(compareMethod);
 
-    ruleSet.forEach(ruleOrRuleSet => {
-      // is ruleset
-      if ('rules' in ruleOrRuleSet) {
-        policy.addRuleSet(AbilityRuleSet.parse(ruleOrRuleSet));
-      }
-
-      // is simple rule
-      if (!('rules' in ruleOrRuleSet)) {
-        policy.addRule(AbilityRule.parse(ruleOrRuleSet));
-      }
+    ruleSet.forEach(ruleSetConfig => {
+      policy.addRuleSet(AbilityRuleSet.parse(ruleSetConfig));
     });
 
     return policy;

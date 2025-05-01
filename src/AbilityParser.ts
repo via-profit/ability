@@ -109,28 +109,27 @@ export class AbilityParser {
     policies.forEach(policy => {
       policy.ruleSet.forEach(ruleSet => {
         ruleSet.rules.forEach(rule => {
-          const [leftFieldPath, condition, rightFiledPath] = rule.matches;
           let value: string = 'any';
 
           switch (true) {
-            case condition.isEqual(AbilityCondition.NOT_EQUAL):
-            case condition.isEqual(AbilityCondition.EQUAL):
-              value = typeof rightFiledPath;
+            case rule.condition.isEqual(AbilityCondition.NOT_EQUAL):
+            case rule.condition.isEqual(AbilityCondition.EQUAL):
+              value = typeof rule.resource;
               break;
 
-            case condition.isEqual(AbilityCondition.IN):
-            case condition.isEqual(AbilityCondition.NOT_IN):
-              value = `${typeof rightFiledPath}[]`;
+            case rule.condition.isEqual(AbilityCondition.IN):
+            case rule.condition.isEqual(AbilityCondition.NOT_IN):
+              value = `${typeof rule.resource}[]`;
               break;
 
-            case condition.isEqual(AbilityCondition.MORE_OR_EQUAL):
-            case condition.isEqual(AbilityCondition.MORE_THAN):
-            case condition.isEqual(AbilityCondition.LESS_OR_EQUAL):
-            case condition.isEqual(AbilityCondition.LESS_THAN):
+            case rule.condition.isEqual(AbilityCondition.MORE_OR_EQUAL):
+            case rule.condition.isEqual(AbilityCondition.MORE_THAN):
+            case rule.condition.isEqual(AbilityCondition.LESS_OR_EQUAL):
+            case rule.condition.isEqual(AbilityCondition.LESS_THAN):
               value = 'number';
               break;
           }
-          AbilityParser.setValueDotValue(record, leftFieldPath, value);
+          AbilityParser.setValueDotValue(record, rule.subject, value);
         });
       });
     });

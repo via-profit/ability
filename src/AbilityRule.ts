@@ -1,23 +1,45 @@
 import AbilityMatch from './AbilityMatch';
-import AbilityCondition from './AbilityCondition';
+import AbilityCondition, { AbilityConditionVariantType } from './AbilityCondition';
 import AbilityParser from './AbilityParser';
 
-export type AbilityRuleMatches = [string, AbilityCondition, string | number | boolean];
-
 export type AbilityRuleConfig = {
-  readonly name?: string | symbol;
-  readonly matches: [string, string, string | number | boolean];
+  readonly id: string;
+  readonly name: string;
+
+  /**
+   * Subject key path like a 'user.name'
+   */
+  readonly subject: string;
+  /**
+   * Resource key path like a 'user.name' or value
+   */
+  readonly resource: string | number | boolean | (string | number)[];
+
+  readonly condition: AbilityConditionVariantType;
 };
 
 export class AbilityRule<Resources extends object = object> {
-  public matches: AbilityRuleMatches;
-  public name: string | symbol;
+  /**
+   * Subject key path like a 'user.name'
+   */
+  public subject: string;
+  /**
+   * Resource key path like a 'user.name' or value
+   */
+  public resource: string | number | boolean | (string | number)[];
+
+  public condition: AbilityCondition;
+  public name: string;
+  public id: string;
   public state: AbilityMatch = AbilityMatch.PENDING;
 
-  public constructor(params: { matches: AbilityRuleMatches; name?: string | symbol }) {
-    const { name, matches } = params;
-    this.name = name || Symbol('name');
-    this.matches = matches;
+  public constructor(params: AbilityRuleConfig) {
+    const { id, name, subject, resource, condition } = params;
+    this.id = id;
+    this.name = name;
+    this.subject = subject;
+    this.resource = resource;
+    this.condition = new AbilityCondition(condition);
   }
 
   /**
@@ -25,37 +47,35 @@ export class AbilityRule<Resources extends object = object> {
    * @param resource - The resource to check
    */
   public check(resource: Resources | null): AbilityMatch {
-    const [_subjectPathName, condition, _staticValueOrPathName] = this.matches;
-
     let is: boolean = false;
 
     const [valueS, valueO] = this.extractValues(resource);
 
-    if (AbilityCondition.LESS_THAN.isEqual(condition)) {
+    if (AbilityCondition.LESS_THAN.isEqual(this.condition)) {
       is = Number(valueS) < Number(valueO);
     }
 
-    if (AbilityCondition.LESS_OR_EQUAL.isEqual(condition)) {
+    if (AbilityCondition.LESS_OR_EQUAL.isEqual(this.condition)) {
       is = Number(valueS) <= Number(valueO);
     }
 
-    if (AbilityCondition.MORE_THAN.isEqual(condition)) {
+    if (AbilityCondition.MORE_THAN.isEqual(this.condition)) {
       is = Number(valueS) > Number(valueO);
     }
 
-    if (AbilityCondition.MORE_OR_EQUAL.isEqual(condition)) {
+    if (AbilityCondition.MORE_OR_EQUAL.isEqual(this.condition)) {
       is = Number(valueS) >= Number(valueO);
     }
 
-    if (AbilityCondition.EQUAL.isEqual(condition)) {
+    if (AbilityCondition.EQUAL.isEqual(this.condition)) {
       is = valueS === valueO;
     }
 
-    if (AbilityCondition.NOT_EQUAL.isEqual(condition)) {
+    if (AbilityCondition.NOT_EQUAL.isEqual(this.condition)) {
       is = valueS !== valueO;
     }
 
-    if (AbilityCondition.IN.isEqual(condition)) {
+    if (AbilityCondition.IN.isEqual(this.condition)) {
       // [<some>] and [<some>]
       if (Array.isArray(valueS) && Array.isArray(valueO)) {
         is = valueS.some(v => valueO.find(v1 => v1 === v));
@@ -70,7 +90,7 @@ export class AbilityRule<Resources extends object = object> {
       }
     }
 
-    if (AbilityCondition.NOT_IN.isEqual(condition)) {
+    if (AbilityCondition.NOT_IN.isEqual(this.condition)) {
       // [<some>] and [<some>]
       if (Array.isArray(valueS) && Array.isArray(valueO)) {
         is = !valueS.some(v => valueO.find(v1 => v1 === v));
@@ -91,20 +111,19 @@ export class AbilityRule<Resources extends object = object> {
   }
 
   /**
-   * Extract values from the resource
-   * @param resource - The resource to extract values from
+   * Extract values from the resourceData
+   * @param resourceData - The resourceData to extract values from
    */
   public extractValues(
-    resource: Resources | null,
+    resourceData: Resources | null,
   ): [
     string | number | boolean | (string | number)[] | null | undefined,
     string | number | boolean | (string | number)[] | null | undefined,
   ] {
-    const [subjectPathName, _condition, staticValueOrPathName] = this.matches;
     let leftSideValue;
     let rightSideValue;
 
-    if (resource === null || typeof resource === 'undefined') {
+    if (resourceData === null || typeof resourceData === 'undefined') {
       return [NaN, NaN];
     }
 
@@ -112,19 +131,23 @@ export class AbilityRule<Resources extends object = object> {
       return typeof str === 'string' && str.match(/\./g) !== null;
     };
 
-    if (isPath(subjectPathName)) {
+    if (isPath(this.subject)) {
       leftSideValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
-        resource,
-        subjectPathName,
+        resourceData,
+        this.subject,
       );
     }
-    if (isPath(staticValueOrPathName)) {
+    if (isPath(this.resource)) {
       rightSideValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
-        resource,
-        staticValueOrPathName,
+        resourceData,
+        this.resource,
       );
     } else {
-      rightSideValue = staticValueOrPathName as number | boolean | string | (string | number)[];
+      rightSideValue = this.resource as
+        | number
+        | boolean
+        | string
+        | (string | number)[];
     }
 
     return [leftSideValue, rightSideValue];
@@ -165,17 +188,19 @@ export class AbilityRule<Resources extends object = object> {
     configOrJson: AbilityRuleConfig | string,
   ): AbilityRule<Resources> {
     const config = AbilityParser.prepareAndValidateConfig<AbilityRuleConfig>(configOrJson, [
-      ['id', 'string', false],
+      ['id', 'string', true],
       ['name', 'string', true],
-      ['matches', 'array', true],
+      ['subject', 'string', true],
     ]);
 
-    const { name, matches } = config;
-    const [leftField, condition, rightField] = matches;
+    const { id, name, subject, resource, condition } = config;
 
     return new AbilityRule<Resources>({
+      id,
       name,
-      matches: [leftField, new AbilityCondition(condition), rightField],
+      subject,
+      resource,
+      condition,
     });
   }
 
@@ -183,11 +208,12 @@ export class AbilityRule<Resources extends object = object> {
    * Export the rule to config object
    */
   public export(): AbilityRuleConfig {
-    const [leftField, condition, rightField] = this.matches;
-
     return {
+      id: this.id,
       name: this.name,
-      matches: [leftField, condition.code, rightField],
+      subject: this.subject,
+      resource: this.resource,
+      condition: this.condition.code,
     };
   }
 }

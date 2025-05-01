@@ -1,6 +1,8 @@
 import AbilityCode from './AbilityCode';
 
-export class AbilityCondition extends AbilityCode<string> {
+export type AbilityConditionVariantType = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'in' | 'not in';
+
+export class AbilityCondition extends AbilityCode<AbilityConditionVariantType> {
   public static EQUAL = new AbilityCondition('=');
   public static NOT_EQUAL = new AbilityCondition('<>');
   public static MORE_THAN = new AbilityCondition('>');

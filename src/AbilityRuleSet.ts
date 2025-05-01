@@ -4,7 +4,7 @@ import AbilityMatch from './AbilityMatch';
 import AbilityParser from './AbilityParser';
 
 export type AbilityRuleSetConfig = {
-  readonly id?: string | symbol;
+  readonly id: string;
   readonly name: string;
   readonly compareMethod: number;
   readonly rules: AbilityRuleConfig[];
@@ -28,18 +28,19 @@ export class AbilityRuleSet<Resources extends object = object> {
   /**
    * Group name
    */
-  public name: string | symbol;
+  public name: string;
 
   /**
    * Group ID
    */
-  public id: string | symbol;
+  public id: string;
 
-  public constructor(params?: { name?: string | symbol; id?: string | symbol }) {
-    const { name, id } = params || {};
+  public constructor(params: Pick<AbilityRuleSetConfig, 'id' | 'name' | 'compareMethod'>) {
+    const { name, id, compareMethod } = params;
 
-    this.name = name || Symbol('name');
-    this.id = id || Symbol('id');
+    this.name = name;
+    this.id = id;
+    this.compareMethod = new AbilityCompare(compareMethod);
   }
 
   public addRule(rule: AbilityRule, compareMethod: AbilityCompare): this {
@@ -81,16 +82,14 @@ export class AbilityRuleSet<Resources extends object = object> {
     return this.state;
   }
 
-
   /**
    * Parse the config JSON format to Group class instance
    */
   public static parse<Resource extends object = object>(
     configOrJson: AbilityRuleSetConfig | string,
   ): AbilityRuleSet<Resource> {
-
     const config = AbilityParser.prepareAndValidateConfig<AbilityRuleSetConfig>(configOrJson, [
-      ['id', 'string', false],
+      ['id', 'string', true],
       ['name', 'string', true],
       ['compareMethod', 'number', true],
       ['rules', 'array', true],
@@ -99,11 +98,10 @@ export class AbilityRuleSet<Resources extends object = object> {
     const { id, name, rules, compareMethod } = config;
 
     const ruleSet = new AbilityRuleSet<Resource>({
+      compareMethod,
       name,
       id,
     });
-
-    ruleSet.compareMethod = new AbilityCompare(compareMethod);
 
     // Adding rules if exists
     if (rules && rules.length > 0) {
