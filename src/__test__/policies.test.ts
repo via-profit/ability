@@ -1,56 +1,61 @@
 import AbilityPolicy, { AbilityPolicyConfig } from '../AbilityPolicy';
-import AbilityPolicyEffect from '../AbilityPolicyEffect';
-import AbilityCondition from '../AbilityCondition';
 import AbilityMatch from '../AbilityMatch';
-import AbilityCompare from '../AbilityCompare';
+import AbilityResolver from '../AbilityResolver';
 
 test('Deny for all managers, but not administrator', () => {
   type Resources = {
-    readonly user: {
-      readonly department: string;
-      readonly roles: readonly string[];
-    };
+    ['order.status']: {
+      readonly user: {
+        readonly roles: readonly string[];
+      };
+      readonly order: {
+        readonly status: string;
+      }
+      readonly feature: {
+        readonly status: string;
+      }
+    }
   };
 
   const config: AbilityPolicyConfig = {
-    id: 'a114e906-7d2d-41a2-82ea-7411638021e3',
-    name: 'Deny for all managers, but not administrator',
-    effect: AbilityPolicyEffect.DENY.code,
-    action: 'order.update',
-    compareMethod: AbilityCompare.AND.code,
+    id: 'bb758c1b-1015-4894-ba25-d23156e063cf',
+    name: 'Status hui',
+    action: 'order.status',
+    effect: 'deny',
+    compareMethod: 'and',
     ruleSet: [
       {
-        id: '431cb3e5-0f98-404c-8a2f-21ca65b02869',
-        name: 'Is a managers',
-        compareMethod: AbilityCompare.OR.code,
+        id: '9cc009e5-0aa9-453a-a668-cb3f418ced92',
+        name: 'Не администратор',
+        compareMethod: 'and',
         rules: [
           {
-            id: 'd4ec6ad3-2c2b-4031-bf01-74b8459ec9fb',
-            name: 'The department is a managers',
-            condition: AbilityCondition.EQUAL.code,
-            subject: 'user.department',
-            resource: 'managers',
-          },
-          {
-            id: '961272ea-3901-4a65-9ac7-45f1f0f0e892',
-            name: 'The user role is a manager',
-            condition: AbilityCondition.IN.code,
-            subject: 'user.roles',
-            resource: 'manager',
+            id: '4093cd50-e54f-4062-8053-2d3b5966fad3',
+            name: 'Нет роли администраторв',
+            subject: 'account.roles',
+            resource: 'administrator',
+            condition: '<>',
           },
         ],
       },
       {
-        id: '5d862132-b914-4ba6-ab8d-586dfca9a34c',
-        name: 'Is not an Administrator',
-        compareMethod: AbilityCompare.AND.code,
+        id: '2f8f9d71-860b-4fa6-b395-9331f1f0848e',
+        name: 'Rule set',
+        compareMethod: 'and',
         rules: [
           {
-            id: 'fcade87a-aa63-4d28-8e9d-911e6fbf3f0b',
-            name: 'Has not an administrator role',
-            condition: AbilityCondition.NOT_IN.code,
-            subject: 'user.roles',
-            resource: 'administrator',
+            id: 'a3c7d66f-5c2d-4a24-83bc-03b0a2d9c32b',
+            name: 'Rule 1',
+            subject: 'order.status',
+            resource: 'не обработан',
+            condition: '=',
+          },
+          {
+            id: 'a3c7d66f-5c2d-4a24-83bc-03b0a2d9c32b',
+            name: 'Rule 2',
+            subject: 'feature.status',
+            resource: 'завершен',
+            condition: '=',
           },
         ],
       },
@@ -58,13 +63,17 @@ test('Deny for all managers, but not administrator', () => {
   };
 
   const policy = AbilityPolicy.parse<Resources>(config);
-
-  const result = policy.check({
+  const result = new AbilityResolver(policy).resolve('order.status', {
     user: {
-      department: 'managers',
-      roles: ['manager', 'couch'],
+      roles: ['user', 'couch'],
     },
-  });
+    order: {
+      status: 'не обработан'
+    },
+    feature: {
+      status: 'завершен'
+    }
+  })
 
-  expect(result).toBe(AbilityMatch.MATCH);
+  expect(result.isDeny()).toBeTruthy();
 });

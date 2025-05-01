@@ -1,6 +1,5 @@
 import AbilityMatch from './AbilityMatch';
 import AbilityCondition, { AbilityConditionVariantType } from './AbilityCondition';
-import AbilityParser from './AbilityParser';
 
 export type AbilityRuleConfig = {
   readonly id: string;
@@ -31,7 +30,7 @@ export class AbilityRule<Resources extends object = object> {
   public condition: AbilityCondition;
   public name: string;
   public id: string;
-  public state: AbilityMatch = AbilityMatch.PENDING;
+  public state: AbilityMatch = AbilityMatch.pending;
 
   public constructor(params: AbilityRuleConfig) {
     const { id, name, subject, resource, condition } = params;
@@ -105,7 +104,7 @@ export class AbilityRule<Resources extends object = object> {
       }
     }
 
-    this.state = is ? AbilityMatch.MATCH : AbilityMatch.MISMATCH;
+    this.state = is ? AbilityMatch.match : AbilityMatch.mismatch;
 
     return this.state;
   }
@@ -136,6 +135,8 @@ export class AbilityRule<Resources extends object = object> {
         resourceData,
         this.subject,
       );
+    } else {
+      leftSideValue = this.subject;
     }
     if (isPath(this.resource)) {
       rightSideValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
@@ -143,11 +144,7 @@ export class AbilityRule<Resources extends object = object> {
         this.resource,
       );
     } else {
-      rightSideValue = this.resource as
-        | number
-        | boolean
-        | string
-        | (string | number)[];
+      rightSideValue = this.resource as number | boolean | string | (string | number)[];
     }
 
     return [leftSideValue, rightSideValue];
@@ -185,14 +182,8 @@ export class AbilityRule<Resources extends object = object> {
   }
 
   public static parse<Resources extends object>(
-    configOrJson: AbilityRuleConfig | string,
+    config: AbilityRuleConfig,
   ): AbilityRule<Resources> {
-    const config = AbilityParser.prepareAndValidateConfig<AbilityRuleConfig>(configOrJson, [
-      ['id', 'string', true],
-      ['name', 'string', true],
-      ['subject', 'string', true],
-    ]);
-
     const { id, name, subject, resource, condition } = config;
 
     return new AbilityRule<Resources>({

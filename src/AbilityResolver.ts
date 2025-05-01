@@ -6,8 +6,12 @@ import { PermissionError } from './AbilityError';
 export class AbilityResolver<Resources extends object = object> {
   policies: readonly AbilityPolicy<Resources>[];
 
-  public constructor(policies: readonly AbilityPolicy<Resources>[]) {
-    this.policies = policies;
+  public constructor(
+    policyOrListOfPolicies: readonly AbilityPolicy<Resources>[] | AbilityPolicy<Resources>,
+  ) {
+    this.policies = Array.isArray(policyOrListOfPolicies)
+      ? policyOrListOfPolicies
+      : [policyOrListOfPolicies];
   }
 
   /**
@@ -38,7 +42,9 @@ export class AbilityResolver<Resources extends object = object> {
     const resolver = this.resolve(action, resource);
     if (resolver) {
       if (resolver.isDeny()) {
-        throw new PermissionError(resolver.getPolicy()?.name?.toString() || 'Unknown permission error');
+        throw new PermissionError(
+          resolver.getPolicy()?.name?.toString() || 'Unknown permission error',
+        );
       }
     }
   }
@@ -50,7 +56,7 @@ export class AbilityResolver<Resources extends object = object> {
    */
   public getEffect(): AbilityPolicyEffect | null {
     const effects = this.policies.reduce<AbilityPolicyEffect[]>((collect, policy, _index) => {
-      if (policy.matchState.isEqual(AbilityMatch.MATCH)) {
+      if (policy.matchState.isEqual(AbilityMatch.match)) {
         return collect.concat(policy.effect);
       }
       return collect;
@@ -66,19 +72,19 @@ export class AbilityResolver<Resources extends object = object> {
   public isPermit() {
     const effect = this.getEffect();
 
-    return effect !== null && effect.isEqual(AbilityPolicyEffect.PERMIT);
+    return effect !== null && effect.isEqual(AbilityPolicyEffect.permit);
   }
 
   public isDeny() {
     const effect = this.getEffect();
 
-    return effect !== null && effect.isEqual(AbilityPolicyEffect.DENY);
+    return effect !== null && effect.isEqual(AbilityPolicyEffect.deny);
   }
 
   public getPolicy(): AbilityPolicy<Resources> | null {
     const lastPolicy = this.policies.length ? this.policies[this.policies.length - 1] : null;
 
-    return lastPolicy && lastPolicy.matchState.isEqual(AbilityMatch.MATCH) ? lastPolicy : null;
+    return lastPolicy && lastPolicy.matchState.isEqual(AbilityMatch.match) ? lastPolicy : null;
   }
 
   /**

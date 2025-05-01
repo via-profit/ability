@@ -1,8 +1,10 @@
 import AbilityCode from './AbilityCode';
 
-export class AbilityPolicyEffect extends AbilityCode{
-  public static DENY = new AbilityPolicyEffect(0);
-  public static PERMIT = new AbilityPolicyEffect(1);
+export type AbilityPolicyEffectVariantType = 'deny' | 'permit';
+
+export class AbilityPolicyEffect extends AbilityCode<AbilityPolicyEffectVariantType> {
+  public static deny = new AbilityPolicyEffect('deny');
+  public static permit = new AbilityPolicyEffect('permit');
 }
 
-export default  AbilityPolicyEffect;
+export default AbilityPolicyEffect;

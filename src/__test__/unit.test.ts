@@ -1,5 +1,7 @@
 import AbilityRule from '../AbilityRule';
 import AbilityCondition from '../AbilityCondition';
+import AbilityCode from '../AbilityCode';
+import AbilityCompare from '../AbilityCompare';
 
 class Test extends AbilityRule {
   public proxyDotNotation(o: unknown, p: string) {
@@ -31,3 +33,11 @@ test('Dot notation path foo.bar.baz.taz returns 2', () => {
 
   expect(value).toBe(resource.foo.bar.baz.taz);
 });
+
+
+test('Code from literal', () => {
+  const Code = AbilityCompare.fromLiteral('and');
+
+
+  expect(Code.code).toBe(AbilityCompare.and.code);
+})

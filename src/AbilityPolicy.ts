@@ -1,21 +1,19 @@
-import AbilityRule from './AbilityRule';
 import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
 import AbilityMatch from './AbilityMatch';
-import AbilityCompare from './AbilityCompare';
-import AbilityPolicyEffect from './AbilityPolicyEffect';
-import AbilityParser from './AbilityParser';
+import AbilityCompare, { AbilityCompareVariantType } from './AbilityCompare';
+import AbilityPolicyEffect, { AbilityPolicyEffectVariantType } from './AbilityPolicyEffect';
 
 export type AbilityPolicyConfig = {
   readonly action: string;
-  readonly effect: number;
-  readonly compareMethod: number;
+  readonly effect: AbilityPolicyEffectVariantType;
+  readonly compareMethod: AbilityCompareVariantType;
   readonly ruleSet: AbilityRuleSetConfig[];
   readonly id: string;
   readonly name: string;
 };
 
 export class AbilityPolicy<Resources extends object = object> {
-  public matchState: AbilityMatch = AbilityMatch.PENDING;
+  public matchState: AbilityMatch = AbilityMatch.pending;
   /**
    * List of rules
    */
@@ -32,7 +30,7 @@ export class AbilityPolicy<Resources extends object = object> {
    * rules will be returns «permit» status and for the «or» - if\
    * one of the rules returns as «permit»
    */
-  public compareMethod: AbilityCompare = AbilityCompare.AND;
+  public compareMethod: AbilityCompare = AbilityCompare.and;
 
   /**
    * Policy name
@@ -62,7 +60,6 @@ export class AbilityPolicy<Resources extends object = object> {
     this.effect = effect;
   }
 
-
   /**
    * Add rule set to the policy
    * @param ruleSet - The rule set to add
@@ -73,60 +70,42 @@ export class AbilityPolicy<Resources extends object = object> {
     return this;
   }
 
-
   /**
    * Check if the policy is matched
-   * @param resource - The resource to check
+   * @param resources - The resource to check
    */
-  public check(resource: Resources): AbilityMatch {
-    this.matchState = AbilityMatch.MISMATCH;
+  public check(resources: Resources): AbilityMatch {
+    this.matchState = AbilityMatch.mismatch;
 
-    /**
-     * If policy contain a rules
-     */
-    if (this.ruleSet.length) {
-      const ruleCheckStates: AbilityMatch[] = [];
-      this.ruleSet.forEach(rule => {
-        const ruleCheckState = rule.check(resource);
-        ruleCheckStates.push(ruleCheckState);
-      });
+    if (!this.ruleSet.length) {
+      return this.matchState;
+    }
 
-      if (AbilityCompare.AND.isEqual(this.compareMethod)) {
-        if (ruleCheckStates.every(ruleState => AbilityMatch.MATCH.isEqual(ruleState))) {
-          this.matchState = AbilityMatch.MATCH;
-        }
+    const rulesetCheckStates = this.ruleSet.reduce<AbilityMatch[]>((collect, ruleSet) => {
+      return collect.concat(ruleSet.check(resources));
+    }, []);
+
+    if (AbilityCompare.and.isEqual(this.compareMethod)) {
+      if (rulesetCheckStates.every(ruleState => AbilityMatch.match.isEqual(ruleState))) {
+        this.matchState = AbilityMatch.match;
       }
+    }
 
-      if (AbilityCompare.OR.isEqual(this.compareMethod)) {
-        if (ruleCheckStates.some(ruleState => AbilityMatch.MATCH.isEqual(ruleState))) {
-          this.matchState = AbilityMatch.MATCH;
-        }
+    if (AbilityCompare.or.isEqual(this.compareMethod)) {
+      if (rulesetCheckStates.some(ruleState => AbilityMatch.match.isEqual(ruleState))) {
+        this.matchState = AbilityMatch.match;
       }
     }
 
     return this.matchState;
   }
 
-
-
-
   /**
    * Parse the config JSON format to Policy class instance
    */
   public static parse<Resources extends object = object>(
-    configOrJson: AbilityPolicyConfig | string,
+    config: AbilityPolicyConfig,
   ): AbilityPolicy<Resources> {
-
-
-    const config = AbilityParser.prepareAndValidateConfig<AbilityPolicyConfig>(configOrJson, [
-      ['id', 'string', true],
-      ['name', 'string', true],
-      ['action', 'string', true],
-      ['effect', 'number', true],
-      ['compareMethod', 'number', true],
-      ['ruleSet', 'array', true],
-    ]);
-
     const { id, name, ruleSet, compareMethod, action, effect } = config;
 
     // Create the empty policy
@@ -137,7 +116,7 @@ export class AbilityPolicy<Resources extends object = object> {
       effect: new AbilityPolicyEffect(effect),
     });
 
-    policy.compareMethod = new AbilityCompare(compareMethod);
+    policy.compareMethod = AbilityCompare.fromLiteral(compareMethod);
 
     ruleSet.forEach(ruleSetConfig => {
       policy.addRuleSet(AbilityRuleSet.parse(ruleSetConfig));
@@ -150,7 +129,7 @@ export class AbilityPolicy<Resources extends object = object> {
     return {
       id: this.id.toString(),
       name: this.name.toString(),
-      compareMethod: this.compareMethod.code,
+      compareMethod: this.compareMethod.code.toString() as AbilityPolicyConfig['compareMethod'],
       ruleSet: this.ruleSet.map(rule => rule.export()),
       action: this.action,
       effect: this.effect.code,

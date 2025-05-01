@@ -1,17 +1,16 @@
 import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
-import AbilityCompare from './AbilityCompare';
+import AbilityCompare, { AbilityCompareVariantType } from './AbilityCompare';
 import AbilityMatch from './AbilityMatch';
-import AbilityParser from './AbilityParser';
 
 export type AbilityRuleSetConfig = {
   readonly id: string;
   readonly name: string;
-  readonly compareMethod: number;
+  readonly compareMethod: AbilityCompareVariantType;
   readonly rules: AbilityRuleConfig[];
 };
 
 export class AbilityRuleSet<Resources extends object = object> {
-  public state: AbilityMatch = AbilityMatch.PENDING;
+  public state: AbilityMatch = AbilityMatch.pending;
   /**
    * List of rules
    */
@@ -23,7 +22,7 @@ export class AbilityRuleSet<Resources extends object = object> {
    * rules will be returns «permit» status and for the «or» - if\
    * one of the rules returns as «permit»
    */
-  public compareMethod: AbilityCompare = AbilityCompare.AND;
+  public compareMethod: AbilityCompare = AbilityCompare.and;
 
   /**
    * Group name
@@ -40,7 +39,8 @@ export class AbilityRuleSet<Resources extends object = object> {
 
     this.name = name;
     this.id = id;
-    this.compareMethod = new AbilityCompare(compareMethod);
+    this.compareMethod = AbilityCompare.fromLiteral(compareMethod);
+    // this.compareMethod = new AbilityCompare(compareMethod);
   }
 
   public addRule(rule: AbilityRule, compareMethod: AbilityCompare): this {
@@ -57,7 +57,7 @@ export class AbilityRuleSet<Resources extends object = object> {
   }
 
   public check(resources: Resources | null): AbilityMatch {
-    this.state = AbilityMatch.MISMATCH;
+    this.state = AbilityMatch.mismatch;
 
     if (!this.rules.length) {
       return this.state;
@@ -67,15 +67,15 @@ export class AbilityRuleSet<Resources extends object = object> {
       return collect.concat(rule.check(resources));
     }, []);
 
-    if (AbilityCompare.AND.isEqual(this.compareMethod)) {
-      if (ruleCheckStates.every(ruleState => AbilityMatch.MATCH.isEqual(ruleState))) {
-        this.state = AbilityMatch.MATCH;
+    if (AbilityCompare.and.isEqual(this.compareMethod)) {
+      if (ruleCheckStates.every(ruleState => AbilityMatch.match.isEqual(ruleState))) {
+        this.state = AbilityMatch.match;
       }
     }
 
-    if (AbilityCompare.OR.isEqual(this.compareMethod)) {
-      if (ruleCheckStates.some(ruleState => AbilityMatch.MATCH.isEqual(ruleState))) {
-        this.state = AbilityMatch.MATCH;
+    if (AbilityCompare.or.isEqual(this.compareMethod)) {
+      if (ruleCheckStates.some(ruleState => AbilityMatch.match.isEqual(ruleState))) {
+        this.state = AbilityMatch.match;
       }
     }
 
@@ -86,15 +86,8 @@ export class AbilityRuleSet<Resources extends object = object> {
    * Parse the config JSON format to Group class instance
    */
   public static parse<Resource extends object = object>(
-    configOrJson: AbilityRuleSetConfig | string,
+    config: AbilityRuleSetConfig,
   ): AbilityRuleSet<Resource> {
-    const config = AbilityParser.prepareAndValidateConfig<AbilityRuleSetConfig>(configOrJson, [
-      ['id', 'string', true],
-      ['name', 'string', true],
-      ['compareMethod', 'number', true],
-      ['rules', 'array', true],
-    ]);
-
     const { id, name, rules, compareMethod } = config;
 
     const ruleSet = new AbilityRuleSet<Resource>({
@@ -117,7 +110,7 @@ export class AbilityRuleSet<Resources extends object = object> {
     return {
       id: this.id.toString(),
       name: this.name.toString(),
-      compareMethod: this.compareMethod.code,
+      compareMethod: this.compareMethod.code.toString() as AbilityRuleSetConfig['compareMethod'],
       rules: this.rules.map(rule => rule.export()),
     };
   }

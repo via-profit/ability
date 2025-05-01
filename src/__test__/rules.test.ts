@@ -19,5 +19,6 @@ test('Match if subject.foo = resource.bar for Oleg and Oleg', () => {
     },
   });
 
-  expect(result).toBe(AbilityMatch.MATCH);
+  expect(result).toBe(AbilityMatch.match);
 });
+

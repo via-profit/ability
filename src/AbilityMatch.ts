@@ -1,9 +1,11 @@
 import AbilityCode from './AbilityCode';
 
-export class AbilityMatch extends AbilityCode{
-  public static PENDING = new AbilityMatch(2);
-  public static MATCH = new AbilityMatch(1);
-  public static MISMATCH = new AbilityMatch(0);
+export type AbilityMatchVariantType = 'pending' | 'match' | 'mismatch';
+
+export class AbilityMatch extends AbilityCode<AbilityMatchVariantType>{
+  public static pending = new AbilityMatch('pending');
+  public static match = new AbilityMatch('match');
+  public static mismatch = new AbilityMatch('mismatch');
 }
 
 export default AbilityMatch;

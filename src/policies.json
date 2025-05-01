@@ -1,32 +1,3 @@
 [
-  {
-    "id": "d7c491d2-b937-4f75-b26a-e989fb12f051",
-    "name": "Просмотр чужого логина разрешен только владельцу аккаунта и администраторам",
-    "action": "account.read",
-    "effect": 0,
-    "compareMethod": 0,
-    "ruleSet": [
-      {
-        "id": "3f3e2b42-55ae-4bf9-8438-5dfa7fd4b93e",
-        "name": "Не владелец аккаунта и не администратор",
-        "compareMethod": 1,
-        "rules": [
-          {
-            "id": "46d9aa89-e507-455d-9e8c-7544f75bbb8b",
-            "name": "Владелец аккаунта",
-            "subject": "account.id",
-            "resource": "resource.id",
-            "condition": "<>"
-          },
-          {
-            "id": "8ab0075a-1670-4d44-b643-16d55ec96831",
-            "name": "Администратор",
-            "subject": "account.roles",
-            "resource": "administrator",
-            "condition": "not in"
-          }
-        ]
-      }
-    ]
-  }
+
 ]

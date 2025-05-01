@@ -2,74 +2,22 @@ import { AbilityParserError } from './AbilityError';
 import AbilityPolicy from './AbilityPolicy';
 import AbilityCondition from './AbilityCondition';
 
-type FieldValidateConfig = [string, 'string' | 'number' | 'array', boolean][];
-
 
 export class AbilityParser {
-
-  /**
-   * Validates the configuration object based on the provided field validation configurations.
-   * @param config - The configuration object to validate.
-   * @param fields - An array of field validation configurations.
-   * @throws {AbilityParserError} If a required field is missing or if a field has an incorrect type.
-   */
-  public static validateConfig(config: Record<string, any>, fields: FieldValidateConfig): void | never {
-    fields.forEach(([field, type, isRequired]) => {
-      const value = config[field as keyof typeof config];
-      if (isRequired) {
-        if (typeof value === 'undefined') {
-          throw new AbilityParserError(`Missing required field [${field}]`);
-        }
-      }
-
-      switch (type) {
-        case 'array':
-          if (typeof value !== 'object' || !Array.isArray(value)) {
-            throw new AbilityParserError(`Field [${field}] must be an type of [${type}], bit got [${typeof value}]`);
-          }
-          break;
-
-        default:
-          if (typeof value !== type && typeof value !== 'undefined') {
-            throw new AbilityParserError(`Field [${field}] must be a type of [${type}], bit got [${typeof value}]`);
-          }
-          break;
-      }
-
-
-    });
-  }
-
-  /**
-   * Prepares and validates the configuration object or JSON string.
-   * @param configOrJson - The configuration object or JSON string to validate.
-   * @param fields - An array of field validation configurations.
-   * @returns The validated configuration object.
-   */
-  public static prepareAndValidateConfig<T>(configOrJson: string | unknown, fields: FieldValidateConfig): T {
-    const config = typeof configOrJson === 'string'
-      ? (JSON.parse(configOrJson))
-      : configOrJson;
-
-    AbilityParser.validateConfig(config, fields);
-
-    return config;
-  }
-
   /*
-  *
-  *  readonly ['order.update']: {
-  *     readonly user: {
-  *       readonly roles: readonly string[];
-  *       readonly department: string;
-  *     };
-  *     readonly order: {
-  *       readonly estimatedArrivalAt: number;
-  *       readonly status: string;
-  *     }
-  *  }
-  *
-  * */
+   *
+   *  readonly ['order.update']: {
+   *     readonly user: {
+   *       readonly roles: readonly string[];
+   *       readonly department: string;
+   *     };
+   *     readonly order: {
+   *       readonly estimatedArrivalAt: number;
+   *       readonly status: string;
+   *     }
+   *  }
+   *
+   * */
 
   /**
    * Sets a value in a nested object structure based on a dot/bracket notation path.
@@ -80,7 +28,7 @@ export class AbilityParser {
   public static setValueDotValue(
     object: Record<string, any>,
     path: string,
-    value: string | number | boolean
+    value: string | number | boolean,
   ): void {
     const way = path.replace(/\[/g, '.').replace(/\]/g, '').split('.');
     const last = way.pop();
@@ -138,7 +86,6 @@ export class AbilityParser {
 
     return record;
   }
-
 }
 
 export default AbilityParser;
