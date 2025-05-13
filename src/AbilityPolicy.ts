@@ -1,12 +1,12 @@
 import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
 import AbilityMatch from './AbilityMatch';
-import AbilityCompare, { AbilityCompareLiteralType } from './AbilityCompare';
-import AbilityPolicyEffect, { AbilityPolicyEffectVariantType } from './AbilityPolicyEffect';
+import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
+import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from './AbilityPolicyEffect';
 
 export type AbilityPolicyConfig = {
   readonly action: string;
-  readonly effect: AbilityPolicyEffectVariantType;
-  readonly compareMethod: AbilityCompareLiteralType;
+  readonly effect: AbilityPolicyEffectCodeType;
+  readonly compareMethod: AbilityCompareCodeType;
   readonly ruleSet: readonly AbilityRuleSetConfig[];
   readonly id: string;
   readonly name: string;
@@ -116,7 +116,7 @@ export class AbilityPolicy<Resources extends object = object> {
       effect: new AbilityPolicyEffect(effect),
     });
 
-    policy.compareMethod = AbilityCompare.fromLiteral(compareMethod);
+    policy.compareMethod = new AbilityCompare(compareMethod);
 
     ruleSet.forEach(ruleSetConfig => {
       policy.addRuleSet(AbilityRuleSet.parse(ruleSetConfig));

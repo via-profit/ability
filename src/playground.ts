@@ -1,6 +1,7 @@
 import http from 'node:http';
 import AbilityPolicy, { AbilityPolicyConfig } from './AbilityPolicy';
 import AbilityResolver from '~/AbilityResolver';
+import AbilityCondition from '~/AbilityCondition';
 
 const server = http.createServer();
 
@@ -91,6 +92,8 @@ server.on('request', (_req, res) => {
 
   res.statusCode = 200;
   res.setHeader('content-type', 'application/json');
+
+  const literal = new AbilityCondition('=').literal;
 
   res.write(
     JSON.stringify({

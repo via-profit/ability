@@ -1,10 +1,10 @@
 import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
-import AbilityCompare, { AbilityCompareLiteralType } from './AbilityCompare';
+import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
 import AbilityMatch from './AbilityMatch';
 export type AbilityRuleSetConfig = {
     readonly id: string;
     readonly name: string;
-    readonly compareMethod: AbilityCompareLiteralType;
+    readonly compareMethod: AbilityCompareCodeType;
     readonly rules: readonly AbilityRuleConfig[];
 };
 export declare class AbilityRuleSet<Resources extends object = object> {

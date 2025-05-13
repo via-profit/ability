@@ -1,7 +1,8 @@
-export declare class AbilityCode<Literal extends string, Code extends string | number | undefined = Literal> {
-    code: Code;
+export declare class AbilityCode<Code extends string | number> {
+    _code: Code;
     constructor(code: Code);
-    isEqual(compareWith: AbilityCode<Literal, Code> | null): boolean;
-    isNotEqual(compareWith: AbilityCode<Literal, Code> | null): boolean;
+    get code(): Code;
+    isEqual(compareWith: AbilityCode<Code> | null): boolean;
+    isNotEqual(compareWith: AbilityCode<Code> | null): boolean;
 }
 export default AbilityCode;

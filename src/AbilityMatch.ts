@@ -1,15 +1,11 @@
 import AbilityCode from './AbilityCode';
 
-export type AbilityMatchLiteralType = 'pending' | 'match' | 'mismatch';
+export type AbilityMatchCodeType = 'pending' | 'match' | 'mismatch';
 
-export class AbilityMatch extends AbilityCode<AbilityMatchLiteralType>{
+export class AbilityMatch extends AbilityCode<AbilityMatchCodeType>{
   public static pending = new AbilityMatch('pending');
   public static match = new AbilityMatch('match');
   public static mismatch = new AbilityMatch('mismatch');
-
-  public static fromLiteral(literal: AbilityMatchLiteralType): AbilityMatch {
-    return new this(this[literal].code);
-  }
 }
 
 export default AbilityMatch;

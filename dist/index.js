@@ -9,9 +9,12 @@
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AbilityCode = void 0;
 class AbilityCode {
-    code;
+    _code;
     constructor(code) {
-        this.code = code;
+        this._code = code;
+    }
+    get code() {
+        return this._code;
     }
     isEqual(compareWith) {
         return compareWith !== null && this.code === compareWith.code;
@@ -39,9 +42,6 @@ const AbilityCode_1 = __importDefault(__webpack_require__(19));
 class AbilityCompare extends AbilityCode_1.default {
     static and = new AbilityCompare('and');
     static or = new AbilityCompare('or');
-    static fromLiteral(literal) {
-        return new this(this[literal].code);
-    }
 }
 exports.AbilityCompare = AbilityCompare;
 exports["default"] = AbilityCompare;
@@ -70,6 +70,12 @@ class AbilityCondition extends AbilityCode_1.default {
     static not_in = new AbilityCondition('not in');
     static fromLiteral(literal) {
         return new this(this[literal].code);
+    }
+    get literal() {
+        return Object.keys(AbilityCondition).find(member => {
+            const val = AbilityCondition[member];
+            return val.code === this.code;
+        });
     }
 }
 exports.AbilityCondition = AbilityCondition;
@@ -120,9 +126,6 @@ class AbilityMatch extends AbilityCode_1.default {
     static pending = new AbilityMatch('pending');
     static match = new AbilityMatch('match');
     static mismatch = new AbilityMatch('mismatch');
-    static fromLiteral(literal) {
-        return new this(this[literal].code);
-    }
 }
 exports.AbilityMatch = AbilityMatch;
 exports["default"] = AbilityMatch;
@@ -310,7 +313,7 @@ class AbilityPolicy {
             action,
             effect: new AbilityPolicyEffect_1.default(effect),
         });
-        policy.compareMethod = AbilityCompare_1.default.fromLiteral(compareMethod);
+        policy.compareMethod = new AbilityCompare_1.default(compareMethod);
         ruleSet.forEach(ruleSetConfig => {
             policy.addRuleSet(AbilityRuleSet_1.default.parse(ruleSetConfig));
         });
@@ -346,9 +349,6 @@ const AbilityCode_1 = __importDefault(__webpack_require__(19));
 class AbilityPolicyEffect extends AbilityCode_1.default {
     static deny = new AbilityPolicyEffect('deny');
     static permit = new AbilityPolicyEffect('permit');
-    static fromLiteral(literal) {
-        return new this(this[literal].code);
-    }
 }
 exports.AbilityPolicyEffect = AbilityPolicyEffect;
 exports["default"] = AbilityPolicyEffect;
@@ -660,7 +660,7 @@ class AbilityRuleSet {
         const { name, id, compareMethod } = params;
         this.name = name;
         this.id = id;
-        this.compareMethod = AbilityCompare_1.default.fromLiteral(compareMethod);
+        this.compareMethod = new AbilityCompare_1.default(compareMethod);
     }
     addRule(rule, compareMethod) {
         this.rules.push(rule);

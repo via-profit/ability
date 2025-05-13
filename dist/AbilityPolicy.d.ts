@@ -1,11 +1,11 @@
 import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
 import AbilityMatch from './AbilityMatch';
-import AbilityCompare, { AbilityCompareLiteralType } from './AbilityCompare';
-import AbilityPolicyEffect, { AbilityPolicyEffectVariantType } from './AbilityPolicyEffect';
+import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
+import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from './AbilityPolicyEffect';
 export type AbilityPolicyConfig = {
     readonly action: string;
-    readonly effect: AbilityPolicyEffectVariantType;
-    readonly compareMethod: AbilityCompareLiteralType;
+    readonly effect: AbilityPolicyEffectCodeType;
+    readonly compareMethod: AbilityCompareCodeType;
     readonly ruleSet: readonly AbilityRuleSetConfig[];
     readonly id: string;
     readonly name: string;

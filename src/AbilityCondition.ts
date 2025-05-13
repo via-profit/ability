@@ -11,10 +11,7 @@ export type AbilityConditionLiteralType =
   | 'in'
   | 'not_in';
 
-export class AbilityCondition extends AbilityCode<
-  AbilityConditionLiteralType,
-  AbilityConditionCodeType
-> {
+export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
   public static equal = new AbilityCondition('=');
   public static not_equal = new AbilityCondition('<>');
   public static more_than = new AbilityCondition('>');
@@ -26,6 +23,13 @@ export class AbilityCondition extends AbilityCode<
 
   public static fromLiteral(literal: AbilityConditionLiteralType): AbilityCondition {
     return new this(this[literal].code);
+  }
+
+  public get literal() {
+    return Object.keys(AbilityCondition).find(member => {
+      const val = AbilityCondition[member as keyof typeof AbilityCondition] as AbilityCondition;
+      return val.code === this.code;
+    }) as AbilityConditionLiteralType | undefined;
   }
 }
 

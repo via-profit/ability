@@ -1,18 +1,21 @@
 export class AbilityCode<
-  Literal extends string,
-  Code extends string | number | undefined = Literal,
+  Code extends string | number,
 > {
-  public code: Code;
+  public _code: Code;
 
   constructor(code: Code) {
-    this.code = code;
+    this._code = code;
   }
 
-  public isEqual(compareWith: AbilityCode<Literal, Code> | null): boolean {
+  public get code(): Code {
+    return this._code;
+  }
+
+  public isEqual(compareWith: AbilityCode<Code> | null): boolean {
     return compareWith !== null && this.code === compareWith.code;
   }
 
-  public isNotEqual(compareWith: AbilityCode<Literal, Code> | null): boolean {
+  public isNotEqual(compareWith: AbilityCode<Code> | null): boolean {
     return !this.isEqual(compareWith);
   }
 }
