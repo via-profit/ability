@@ -46,7 +46,7 @@ const playgroundConfig: Configuration = {
   plugins: [
     new NodemonPlugin({
       watch: ['./build'],
-      exec: 'node --inspect=9229 ./build/playground.js',
+      exec: 'node --inspect=9226 ./build/playground.js',
     }),
   ]
 }

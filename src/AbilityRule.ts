@@ -1,5 +1,5 @@
 import AbilityMatch from './AbilityMatch';
-import AbilityCondition, { AbilityConditionVariantType } from './AbilityCondition';
+import AbilityCondition, { AbilityConditionLiteralType, AbilityConditionCodeType } from './AbilityCondition';
 
 export type AbilityRuleConfig = {
   readonly id: string;
@@ -14,7 +14,7 @@ export type AbilityRuleConfig = {
    */
   readonly resource: string | number | boolean | (string | number)[];
 
-  readonly condition: AbilityConditionVariantType;
+  readonly condition: AbilityConditionCodeType;
 };
 
 export class AbilityRule<Resources extends object = object> {
@@ -50,31 +50,31 @@ export class AbilityRule<Resources extends object = object> {
 
     const [valueS, valueO] = this.extractValues(resource);
 
-    if (AbilityCondition.LESS_THAN.isEqual(this.condition)) {
+    if (AbilityCondition.less_than.isEqual(this.condition)) {
       is = Number(valueS) < Number(valueO);
     }
 
-    if (AbilityCondition.LESS_OR_EQUAL.isEqual(this.condition)) {
+    if (AbilityCondition.less_or_equal.isEqual(this.condition)) {
       is = Number(valueS) <= Number(valueO);
     }
 
-    if (AbilityCondition.MORE_THAN.isEqual(this.condition)) {
+    if (AbilityCondition.more_than.isEqual(this.condition)) {
       is = Number(valueS) > Number(valueO);
     }
 
-    if (AbilityCondition.MORE_OR_EQUAL.isEqual(this.condition)) {
+    if (AbilityCondition.more_or_equal.isEqual(this.condition)) {
       is = Number(valueS) >= Number(valueO);
     }
 
-    if (AbilityCondition.EQUAL.isEqual(this.condition)) {
+    if (AbilityCondition.equal.isEqual(this.condition)) {
       is = valueS === valueO;
     }
 
-    if (AbilityCondition.NOT_EQUAL.isEqual(this.condition)) {
+    if (AbilityCondition.not_equal.isEqual(this.condition)) {
       is = valueS !== valueO;
     }
 
-    if (AbilityCondition.IN.isEqual(this.condition)) {
+    if (AbilityCondition.in.isEqual(this.condition)) {
       // [<some>] and [<some>]
       if (Array.isArray(valueS) && Array.isArray(valueO)) {
         is = valueS.some(v => valueO.find(v1 => v1 === v));
@@ -89,7 +89,7 @@ export class AbilityRule<Resources extends object = object> {
       }
     }
 
-    if (AbilityCondition.NOT_IN.isEqual(this.condition)) {
+    if (AbilityCondition.not_in.isEqual(this.condition)) {
       // [<some>] and [<some>]
       if (Array.isArray(valueS) && Array.isArray(valueO)) {
         is = !valueS.some(v => valueO.find(v1 => v1 === v));
@@ -181,9 +181,7 @@ export class AbilityRule<Resources extends object = object> {
     return resource as T;
   }
 
-  public static parse<Resources extends object>(
-    config: AbilityRuleConfig,
-  ): AbilityRule<Resources> {
+  public static parse<Resources extends object>(config: AbilityRuleConfig): AbilityRule<Resources> {
     const { id, name, subject, resource, condition } = config;
 
     return new AbilityRule<Resources>({

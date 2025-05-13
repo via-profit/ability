@@ -60,20 +60,20 @@ export class AbilityParser {
           let value: string = 'any';
 
           switch (true) {
-            case rule.condition.isEqual(AbilityCondition.NOT_EQUAL):
-            case rule.condition.isEqual(AbilityCondition.EQUAL):
+            case rule.condition.isEqual(AbilityCondition.not_equal):
+            case rule.condition.isEqual(AbilityCondition.equal):
               value = typeof rule.resource;
               break;
 
-            case rule.condition.isEqual(AbilityCondition.IN):
-            case rule.condition.isEqual(AbilityCondition.NOT_IN):
+            case rule.condition.isEqual(AbilityCondition.in):
+            case rule.condition.isEqual(AbilityCondition.not_in):
               value = `${typeof rule.resource}[]`;
               break;
 
-            case rule.condition.isEqual(AbilityCondition.MORE_OR_EQUAL):
-            case rule.condition.isEqual(AbilityCondition.MORE_THAN):
-            case rule.condition.isEqual(AbilityCondition.LESS_OR_EQUAL):
-            case rule.condition.isEqual(AbilityCondition.LESS_THAN):
+            case rule.condition.isEqual(AbilityCondition.more_or_equal):
+            case rule.condition.isEqual(AbilityCondition.more_than):
+            case rule.condition.isEqual(AbilityCondition.less_or_equal):
+            case rule.condition.isEqual(AbilityCondition.less_than):
               value = 'number';
               break;
           }

@@ -1,10 +1,14 @@
 import AbilityCode from './AbilityCode';
 
-export type AbilityCompareVariantType = 'and' | 'or'
+export type AbilityCompareLiteralType = 'and' | 'or'
 
-export class AbilityCompare extends AbilityCode {
-  public static and = new AbilityCompare(0);
-  public static or = new AbilityCompare(1);
+export class AbilityCompare extends AbilityCode<AbilityCompareLiteralType> {
+  public static and = new AbilityCompare('and');
+  public static or = new AbilityCompare('or');
+
+  public static fromLiteral(literal: AbilityCompareLiteralType): AbilityCompare {
+    return new this(this[literal].code);
+  }
 }
 
 export default AbilityCompare;

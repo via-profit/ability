@@ -2,6 +2,7 @@ import AbilityRule from '../AbilityRule';
 import AbilityCondition from '../AbilityCondition';
 import AbilityCode from '../AbilityCode';
 import AbilityCompare from '../AbilityCompare';
+import AbilityResolver from '../AbilityResolver';
 
 class Test extends AbilityRule {
   public proxyDotNotation(o: unknown, p: string) {
@@ -40,4 +41,13 @@ test('Code from literal', () => {
 
 
   expect(Code.code).toBe(AbilityCompare.and.code);
+})
+
+test('isInActionContain', () => {
+  const isFalsy = AbilityResolver.isInActionContain('account.read', 'account.private.read');
+  const isTruthy = AbilityResolver.isInActionContain('account.some.foo.bar', 'account.some.foo.bar');
+
+
+  expect(isFalsy).toBeFalsy();
+  expect(isTruthy).toBeTruthy();
 })

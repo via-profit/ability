@@ -43,7 +43,7 @@ export class AbilityResolver<Resources extends object = object> {
     if (resolver) {
       if (resolver.isDeny()) {
         throw new PermissionError(
-          resolver.getPolicy()?.name?.toString() || 'Unknown permission error',
+          resolver.getMatchedPolicy()?.name?.toString() || 'Unknown permission error',
         );
       }
     }
@@ -81,10 +81,12 @@ export class AbilityResolver<Resources extends object = object> {
     return effect !== null && effect.isEqual(AbilityPolicyEffect.deny);
   }
 
-  public getPolicy(): AbilityPolicy<Resources> | null {
-    const lastPolicy = this.policies.length ? this.policies[this.policies.length - 1] : null;
+  public getMatchedPolicy(): AbilityPolicy<Resources> | null {
+    const matchedPolicies = this.policies.filter(policy => policy.matchState.isEqual(AbilityMatch.match));
 
-    return lastPolicy && lastPolicy.matchState.isEqual(AbilityMatch.match) ? lastPolicy : null;
+    const lastPolicy = matchedPolicies.length ? matchedPolicies[matchedPolicies.length - 1] : null;
+
+    return lastPolicy || null;
   }
 
   /**
@@ -97,15 +99,16 @@ export class AbilityResolver<Resources extends object = object> {
     const actionBArray = String(actionB).split('.');
 
     const a = actionAArray.length >= actionBArray.length ? actionAArray : actionBArray;
-    const b = actionBArray.length >= actionAArray.length ? actionBArray : actionAArray;
+    const b = actionBArray.length <= actionAArray.length ? actionBArray : actionAArray;
 
-    return a
+    const c = a
       .reduce<boolean[]>((acc, chunk, index) => {
         const iterationRes = chunk === b[index] || b[index] === '*' || chunk === '*';
 
         return acc.concat(iterationRes);
       }, [])
-      .every(Boolean);
+
+      return c.every(Boolean);
   }
 }
 

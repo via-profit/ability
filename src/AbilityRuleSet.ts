@@ -1,12 +1,12 @@
 import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
-import AbilityCompare, { AbilityCompareVariantType } from './AbilityCompare';
+import AbilityCompare, { AbilityCompareLiteralType } from './AbilityCompare';
 import AbilityMatch from './AbilityMatch';
 
 export type AbilityRuleSetConfig = {
   readonly id: string;
   readonly name: string;
-  readonly compareMethod: AbilityCompareVariantType;
-  readonly rules: AbilityRuleConfig[];
+  readonly compareMethod: AbilityCompareLiteralType;
+  readonly rules: readonly AbilityRuleConfig[];
 };
 
 export class AbilityRuleSet<Resources extends object = object> {
@@ -40,7 +40,6 @@ export class AbilityRuleSet<Resources extends object = object> {
     this.name = name;
     this.id = id;
     this.compareMethod = AbilityCompare.fromLiteral(compareMethod);
-    // this.compareMethod = new AbilityCompare(compareMethod);
   }
 
   public addRule(rule: AbilityRule, compareMethod: AbilityCompare): this {

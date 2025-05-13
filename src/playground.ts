@@ -41,7 +41,7 @@ server.on('request', (_req, res) => {
             },
           ],
         },
-      ]
+      ],
     },
     {
       id: 'bb758c1b-1015-4894-ba25-d23156e063cf',
@@ -100,8 +100,8 @@ server.on('request', (_req, res) => {
   res.end();
 });
 
-server.listen(8080, 'localhost', () => {
-  console.debug('server started at http://localhost:8080');
+server.listen(8081, 'localhost', () => {
+  console.debug('server started at http://localhost:8081');
 });
 
 export type Resources = {
