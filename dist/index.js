@@ -72,10 +72,14 @@ class AbilityCondition extends AbilityCode_1.default {
         return new this(this[literal].code);
     }
     get literal() {
-        return Object.keys(AbilityCondition).find(member => {
+        const literal = Object.keys(AbilityCondition).find(member => {
             const val = AbilityCondition[member];
             return val.code === this.code;
         });
+        if (typeof literal === 'undefined') {
+            throw new Error(`Literal value does not found in class AbilityCondition`);
+        }
+        return literal;
     }
 }
 exports.AbilityCondition = AbilityCondition;

@@ -26,10 +26,17 @@ export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
   }
 
   public get literal() {
-    return Object.keys(AbilityCondition).find(member => {
+    const literal = Object.keys(AbilityCondition).find(member => {
       const val = AbilityCondition[member as keyof typeof AbilityCondition] as AbilityCondition;
       return val.code === this.code;
-    }) as AbilityConditionLiteralType | undefined;
+    }) as AbilityConditionLiteralType;
+
+    if (typeof literal ==='undefined') {
+      throw new Error(`Literal value does not found in class AbilityCondition`);
+    }
+
+    return literal;
+
   }
 }
 

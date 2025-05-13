@@ -11,6 +11,6 @@ export declare class AbilityCondition extends AbilityCode<AbilityConditionCodeTy
     static in: AbilityCondition;
     static not_in: AbilityCondition;
     static fromLiteral(literal: AbilityConditionLiteralType): AbilityCondition;
-    get literal(): AbilityConditionLiteralType | undefined;
+    get literal(): AbilityConditionLiteralType;
 }
 export default AbilityCondition;
