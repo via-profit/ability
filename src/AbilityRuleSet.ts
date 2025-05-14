@@ -48,15 +48,14 @@ export class AbilityRuleSet<Resources extends object = object> {
     this.compareMethod = compareMethod;
   }
 
-  public addRule(rule: AbilityRule, compareMethod: AbilityCompare): this {
+  public addRule(rule: AbilityRule): this {
     this.rules.push(rule);
-    this.compareMethod = compareMethod;
 
     return this;
   }
 
-  public addRules(rules: AbilityRule[], compareMethod: AbilityCompare): this {
-    rules.forEach(rule => this.addRule(rule, compareMethod));
+  public addRules(rules: AbilityRule[]): this {
+    rules.forEach(rule => this.addRule(rule));
 
     return this;
   }
@@ -105,7 +104,7 @@ export class AbilityRuleSet<Resources extends object = object> {
     if (rules && rules.length > 0) {
       const abilityRules = rules.map(ruleConfig => AbilityRule.parse(ruleConfig));
 
-      ruleSet.addRules(abilityRules, ruleSet.compareMethod);
+      ruleSet.addRules(abilityRules);
     }
 
     return ruleSet;

@@ -34,8 +34,8 @@ export declare class AbilityRuleSet<Resources extends object = object> {
      */
     id: string;
     constructor(params: AbilityRuleSetConstructorProps);
-    addRule(rule: AbilityRule, compareMethod: AbilityCompare): this;
-    addRules(rules: AbilityRule[], compareMethod: AbilityCompare): this;
+    addRule(rule: AbilityRule): this;
+    addRules(rules: AbilityRule[]): this;
     check(resources: Resources | null): AbilityMatch;
     /**
      * Parse the config JSON format to Group class instance

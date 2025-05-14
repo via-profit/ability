@@ -666,13 +666,12 @@ class AbilityRuleSet {
         this.id = id;
         this.compareMethod = compareMethod;
     }
-    addRule(rule, compareMethod) {
+    addRule(rule) {
         this.rules.push(rule);
-        this.compareMethod = compareMethod;
         return this;
     }
-    addRules(rules, compareMethod) {
-        rules.forEach(rule => this.addRule(rule, compareMethod));
+    addRules(rules) {
+        rules.forEach(rule => this.addRule(rule));
         return this;
     }
     check(resources) {
@@ -708,7 +707,7 @@ class AbilityRuleSet {
         // Adding rules if exists
         if (rules && rules.length > 0) {
             const abilityRules = rules.map(ruleConfig => AbilityRule_1.default.parse(ruleConfig));
-            ruleSet.addRules(abilityRules, ruleSet.compareMethod);
+            ruleSet.addRules(abilityRules);
         }
         return ruleSet;
     }
