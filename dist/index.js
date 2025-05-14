@@ -485,7 +485,7 @@ class AbilityRule {
         this.name = name;
         this.subject = subject;
         this.resource = resource;
-        this.condition = new AbilityCondition_1.default(condition);
+        this.condition = condition;
     }
     /**
      * Check if the rule is matched
@@ -605,7 +605,7 @@ class AbilityRule {
             name,
             subject,
             resource,
-            condition,
+            condition: new AbilityCondition_1.default(condition),
         });
     }
     /**
@@ -664,7 +664,7 @@ class AbilityRuleSet {
         const { name, id, compareMethod } = params;
         this.name = name;
         this.id = id;
-        this.compareMethod = new AbilityCompare_1.default(compareMethod);
+        this.compareMethod = compareMethod;
     }
     addRule(rule, compareMethod) {
         this.rules.push(rule);
@@ -701,7 +701,7 @@ class AbilityRuleSet {
     static parse(config) {
         const { id, name, rules, compareMethod } = config;
         const ruleSet = new AbilityRuleSet({
-            compareMethod,
+            compareMethod: new AbilityCompare_1.default(compareMethod),
             name,
             id,
         });

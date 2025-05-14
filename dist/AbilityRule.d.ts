@@ -13,7 +13,9 @@ export type AbilityRuleConfig = {
     readonly resource: string | number | boolean | (string | number)[];
     readonly condition: AbilityConditionCodeType;
 };
-export type AbilityRuleConstructorProps = AbilityRuleConfig;
+export type AbilityRuleConstructorProps = Omit<AbilityRuleConfig, 'condition'> & {
+    readonly condition: AbilityCondition;
+};
 export declare class AbilityRule<Resources extends object = object> {
     /**
      * Subject key path like a 'user.name'

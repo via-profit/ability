@@ -1,5 +1,5 @@
 import AbilityMatch from './AbilityMatch';
-import AbilityCondition, { AbilityConditionLiteralType, AbilityConditionCodeType } from './AbilityCondition';
+import AbilityCondition, { AbilityConditionCodeType } from './AbilityCondition';
 
 export type AbilityRuleConfig = {
   readonly id: string;
@@ -17,7 +17,9 @@ export type AbilityRuleConfig = {
   readonly condition: AbilityConditionCodeType;
 };
 
-export type AbilityRuleConstructorProps = AbilityRuleConfig;
+export type AbilityRuleConstructorProps = Omit<AbilityRuleConfig, 'condition'> & {
+  readonly condition: AbilityCondition;
+};
 
 export class AbilityRule<Resources extends object = object> {
   /**
@@ -40,7 +42,7 @@ export class AbilityRule<Resources extends object = object> {
     this.name = name;
     this.subject = subject;
     this.resource = resource;
-    this.condition = new AbilityCondition(condition);
+    this.condition = condition;
   }
 
   /**
@@ -191,7 +193,7 @@ export class AbilityRule<Resources extends object = object> {
       name,
       subject,
       resource,
-      condition,
+      condition: new AbilityCondition(condition),
     });
   }
 

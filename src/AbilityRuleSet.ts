@@ -12,7 +12,7 @@ export type AbilityRuleSetConfig = {
 export type AbilityRuleSetConstructorProps = {
   readonly id: string;
   readonly name: string;
-  readonly compareMethod: AbilityCompareCodeType;
+  readonly compareMethod: AbilityCompare;
 }
 
 export class AbilityRuleSet<Resources extends object = object> {
@@ -45,7 +45,7 @@ export class AbilityRuleSet<Resources extends object = object> {
 
     this.name = name;
     this.id = id;
-    this.compareMethod = new AbilityCompare(compareMethod);
+    this.compareMethod = compareMethod;
   }
 
   public addRule(rule: AbilityRule, compareMethod: AbilityCompare): this {
@@ -96,7 +96,7 @@ export class AbilityRuleSet<Resources extends object = object> {
     const { id, name, rules, compareMethod } = config;
 
     const ruleSet = new AbilityRuleSet<Resource>({
-      compareMethod,
+      compareMethod: new AbilityCompare(compareMethod),
       name,
       id,
     });

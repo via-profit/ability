@@ -10,7 +10,7 @@ export type AbilityRuleSetConfig = {
 export type AbilityRuleSetConstructorProps = {
     readonly id: string;
     readonly name: string;
-    readonly compareMethod: AbilityCompareCodeType;
+    readonly compareMethod: AbilityCompare;
 };
 export declare class AbilityRuleSet<Resources extends object = object> {
     state: AbilityMatch;
