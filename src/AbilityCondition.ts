@@ -1,4 +1,5 @@
 import AbilityCode from './AbilityCode';
+import { AbilityParserError } from '~/AbilityError';
 
 export type AbilityConditionCodeType = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'in' | 'not in';
 export type AbilityConditionLiteralType =
@@ -22,7 +23,12 @@ export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
   public static not_in = new AbilityCondition('not in');
 
   public static fromLiteral(literal: AbilityConditionLiteralType): AbilityCondition {
-    return new this(this[literal].code);
+    const code = AbilityCondition[literal]?.code || null;
+    if (code === null) {
+      throw new AbilityParserError(`Literal ${literal} does not found in AbilityCondition class`);
+    }
+
+    return new AbilityCondition(code);
   }
 
   public get literal() {
@@ -31,12 +37,11 @@ export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
       return val.code === this.code;
     }) as AbilityConditionLiteralType;
 
-    if (typeof literal ==='undefined') {
+    if (typeof literal === 'undefined') {
       throw new Error(`Literal value does not found in class AbilityCondition`);
     }
 
     return literal;
-
   }
 }
 

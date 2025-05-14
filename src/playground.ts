@@ -93,7 +93,8 @@ server.on('request', (_req, res) => {
   res.statusCode = 200;
   res.setHeader('content-type', 'application/json');
 
-  const literal = new AbilityCondition('=').literal;
+  const condition = AbilityCondition.fromLiteral('more_or_equal');
+  // const literal = new AbilityCondition('=').literal;
 
   res.write(
     JSON.stringify({

@@ -59,6 +59,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AbilityCondition = void 0;
 const AbilityCode_1 = __importDefault(__webpack_require__(19));
+const AbilityError_1 = __webpack_require__(122);
 class AbilityCondition extends AbilityCode_1.default {
     static equal = new AbilityCondition('=');
     static not_equal = new AbilityCondition('<>');
@@ -69,7 +70,11 @@ class AbilityCondition extends AbilityCode_1.default {
     static in = new AbilityCondition('in');
     static not_in = new AbilityCondition('not in');
     static fromLiteral(literal) {
-        return new this(this[literal].code);
+        const code = AbilityCondition[literal]?.code || null;
+        if (code === null) {
+            throw new AbilityError_1.AbilityParserError(`Literal ${literal} does not found in AbilityCondition class`);
+        }
+        return new AbilityCondition(code);
     }
     get literal() {
         const literal = Object.keys(AbilityCondition).find(member => {
