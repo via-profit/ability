@@ -12,6 +12,13 @@ export type AbilityPolicyConfig = {
   readonly name: string;
 };
 
+export type AbilityPolicyConstructorProps = {
+  id: string;
+  name: string;
+  action: string;
+  effect: AbilityPolicyEffect;
+}
+
 export class AbilityPolicy<Resources extends object = object> {
   public matchState: AbilityMatch = AbilityMatch.pending;
   /**
@@ -47,12 +54,7 @@ export class AbilityPolicy<Resources extends object = object> {
    */
   public action: string;
 
-  public constructor(params: {
-    id: string;
-    name: string;
-    action: string;
-    effect: AbilityPolicyEffect;
-  }) {
+  public constructor(params: AbilityPolicyConstructorProps) {
     const { name, id, action, effect } = params;
     this.name = name;
     this.id = id;

@@ -9,6 +9,12 @@ export type AbilityRuleSetConfig = {
   readonly rules: readonly AbilityRuleConfig[];
 };
 
+export type AbilityRuleSetConstructorProps = {
+  readonly id: string;
+  readonly name: string;
+  readonly compareMethod: AbilityCompareCodeType;
+}
+
 export class AbilityRuleSet<Resources extends object = object> {
   public state: AbilityMatch = AbilityMatch.pending;
   /**
@@ -34,7 +40,7 @@ export class AbilityRuleSet<Resources extends object = object> {
    */
   public id: string;
 
-  public constructor(params: Pick<AbilityRuleSetConfig, 'id' | 'name' | 'compareMethod'>) {
+  public constructor(params: AbilityRuleSetConstructorProps) {
     const { name, id, compareMethod } = params;
 
     this.name = name;

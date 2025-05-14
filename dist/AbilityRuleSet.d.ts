@@ -7,6 +7,11 @@ export type AbilityRuleSetConfig = {
     readonly compareMethod: AbilityCompareCodeType;
     readonly rules: readonly AbilityRuleConfig[];
 };
+export type AbilityRuleSetConstructorProps = {
+    readonly id: string;
+    readonly name: string;
+    readonly compareMethod: AbilityCompareCodeType;
+};
 export declare class AbilityRuleSet<Resources extends object = object> {
     state: AbilityMatch;
     /**
@@ -28,7 +33,7 @@ export declare class AbilityRuleSet<Resources extends object = object> {
      * Group ID
      */
     id: string;
-    constructor(params: Pick<AbilityRuleSetConfig, 'id' | 'name' | 'compareMethod'>);
+    constructor(params: AbilityRuleSetConstructorProps);
     addRule(rule: AbilityRule, compareMethod: AbilityCompare): this;
     addRules(rules: AbilityRule[], compareMethod: AbilityCompare): this;
     check(resources: Resources | null): AbilityMatch;

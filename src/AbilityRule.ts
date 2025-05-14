@@ -17,6 +17,8 @@ export type AbilityRuleConfig = {
   readonly condition: AbilityConditionCodeType;
 };
 
+export type AbilityRuleConstructorProps = AbilityRuleConfig;
+
 export class AbilityRule<Resources extends object = object> {
   /**
    * Subject key path like a 'user.name'
@@ -32,7 +34,7 @@ export class AbilityRule<Resources extends object = object> {
   public id: string;
   public state: AbilityMatch = AbilityMatch.pending;
 
-  public constructor(params: AbilityRuleConfig) {
+  public constructor(params: AbilityRuleConstructorProps) {
     const { id, name, subject, resource, condition } = params;
     this.id = id;
     this.name = name;

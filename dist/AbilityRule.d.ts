@@ -13,6 +13,7 @@ export type AbilityRuleConfig = {
     readonly resource: string | number | boolean | (string | number)[];
     readonly condition: AbilityConditionCodeType;
 };
+export type AbilityRuleConstructorProps = AbilityRuleConfig;
 export declare class AbilityRule<Resources extends object = object> {
     /**
      * Subject key path like a 'user.name'
@@ -26,7 +27,7 @@ export declare class AbilityRule<Resources extends object = object> {
     name: string;
     id: string;
     state: AbilityMatch;
-    constructor(params: AbilityRuleConfig);
+    constructor(params: AbilityRuleConstructorProps);
     /**
      * Check if the rule is matched
      * @param resource - The resource to check

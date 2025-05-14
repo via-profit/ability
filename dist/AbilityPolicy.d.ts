@@ -10,6 +10,12 @@ export type AbilityPolicyConfig = {
     readonly id: string;
     readonly name: string;
 };
+export type AbilityPolicyConstructorProps = {
+    id: string;
+    name: string;
+    action: string;
+    effect: AbilityPolicyEffect;
+};
 export declare class AbilityPolicy<Resources extends object = object> {
     matchState: AbilityMatch;
     /**
@@ -39,12 +45,7 @@ export declare class AbilityPolicy<Resources extends object = object> {
      * Soon
      */
     action: string;
-    constructor(params: {
-        id: string;
-        name: string;
-        action: string;
-        effect: AbilityPolicyEffect;
-    });
+    constructor(params: AbilityPolicyConstructorProps);
     /**
      * Add rule set to the policy
      * @param ruleSet - The rule set to add
