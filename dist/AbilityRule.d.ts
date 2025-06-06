@@ -16,6 +16,9 @@ export type AbilityRuleConfig = {
 export type AbilityRuleConstructorProps = Omit<AbilityRuleConfig, 'condition'> & {
     readonly condition: AbilityCondition;
 };
+/**
+ * Represents a rule that defines a condition to be checked against a subject and resource.
+ */
 export declare class AbilityRule<Resources extends object = object> {
     /**
      * Subject key path like a 'user.name'
@@ -29,6 +32,15 @@ export declare class AbilityRule<Resources extends object = object> {
     name: string;
     id: string;
     state: AbilityMatch;
+    /**
+     * Creates an instance of AbilityRule.
+     * @param {string} options.id - The unique identifier of the rule.
+     * @param {string} options.name - The name of the rule.
+     * @param {AbilityCondition} options.condition - The condition to evaluate.
+     * @param {string} options.subject - The subject of the rule.
+     * @param {string} options.resource - The resource to compare against.
+     * @param params
+     */
     constructor(params: AbilityRuleConstructorProps);
     /**
      * Check if the rule is matched

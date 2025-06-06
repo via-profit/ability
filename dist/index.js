@@ -98,7 +98,7 @@ exports["default"] = AbilityCondition;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.PermissionError = exports.AbilityParserError = exports.AbilityError = void 0;
+exports.AbilityParserError = exports.AbilityError = void 0;
 class AbilityError extends Error {
     constructor(message) {
         super(message);
@@ -111,12 +111,6 @@ class AbilityParserError extends Error {
     }
 }
 exports.AbilityParserError = AbilityParserError;
-class PermissionError extends Error {
-    constructor(message) {
-        super(message);
-    }
-}
-exports.PermissionError = PermissionError;
 
 
 /***/ }),
@@ -400,10 +394,8 @@ class AbilityResolver {
     }
     enforce(action, resource) {
         const resolver = this.resolve(action, resource);
-        if (resolver) {
-            if (resolver.isDeny()) {
-                throw new AbilityError_1.PermissionError(resolver.getMatchedPolicy()?.name?.toString() || 'Unknown permission error');
-            }
+        if (resolver.isDeny()) {
+            throw new AbilityError_1.AbilityError(resolver.getMatchedPolicy()?.name?.toString() || 'Unknown permission error');
         }
     }
     /**
@@ -446,8 +438,7 @@ class AbilityResolver {
         const actionBArray = String(actionB).split('.');
         const a = actionAArray.length >= actionBArray.length ? actionAArray : actionBArray;
         const b = actionBArray.length <= actionAArray.length ? actionBArray : actionAArray;
-        const c = a
-            .reduce((acc, chunk, index) => {
+        const c = a.reduce((acc, chunk, index) => {
             const iterationRes = chunk === b[index] || b[index] === '*' || chunk === '*';
             return acc.concat(iterationRes);
         }, []);
@@ -471,6 +462,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AbilityRule = void 0;
 const AbilityMatch_1 = __importDefault(__webpack_require__(909));
 const AbilityCondition_1 = __importDefault(__webpack_require__(261));
+/**
+ * Represents a rule that defines a condition to be checked against a subject and resource.
+ */
 class AbilityRule {
     /**
      * Subject key path like a 'user.name'
@@ -484,6 +478,15 @@ class AbilityRule {
     name;
     id;
     state = AbilityMatch_1.default.pending;
+    /**
+     * Creates an instance of AbilityRule.
+     * @param {string} options.id - The unique identifier of the rule.
+     * @param {string} options.name - The name of the rule.
+     * @param {AbilityCondition} options.condition - The condition to evaluate.
+     * @param {string} options.subject - The subject of the rule.
+     * @param {string} options.resource - The resource to compare against.
+     * @param params
+     */
     constructor(params) {
         const { id, name, subject, resource, condition } = params;
         this.id = id;

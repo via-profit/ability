@@ -1,7 +1,7 @@
 import AbilityPolicy from './AbilityPolicy';
 import AbilityPolicyEffect from './AbilityPolicyEffect';
 import AbilityMatch from './AbilityMatch';
-import { PermissionError } from './AbilityError';
+import { AbilityError } from './AbilityError';
 
 export class AbilityResolver<Resources extends object = object> {
   policies: readonly AbilityPolicy<Resources>[];
@@ -40,12 +40,11 @@ export class AbilityResolver<Resources extends object = object> {
     resource: Resources[Action],
   ): void | never {
     const resolver = this.resolve(action, resource);
-    if (resolver) {
-      if (resolver.isDeny()) {
-        throw new PermissionError(
-          resolver.getMatchedPolicy()?.name?.toString() || 'Unknown permission error',
-        );
-      }
+
+    if (resolver.isDeny()) {
+      throw new AbilityError(
+        resolver.getMatchedPolicy()?.name?.toString() || 'Unknown permission error',
+      );
     }
   }
 
@@ -82,7 +81,9 @@ export class AbilityResolver<Resources extends object = object> {
   }
 
   public getMatchedPolicy(): AbilityPolicy<Resources> | null {
-    const matchedPolicies = this.policies.filter(policy => policy.matchState.isEqual(AbilityMatch.match));
+    const matchedPolicies = this.policies.filter(policy =>
+      policy.matchState.isEqual(AbilityMatch.match),
+    );
 
     const lastPolicy = matchedPolicies.length ? matchedPolicies[matchedPolicies.length - 1] : null;
 
@@ -101,14 +102,13 @@ export class AbilityResolver<Resources extends object = object> {
     const a = actionAArray.length >= actionBArray.length ? actionAArray : actionBArray;
     const b = actionBArray.length <= actionAArray.length ? actionBArray : actionAArray;
 
-    const c = a
-      .reduce<boolean[]>((acc, chunk, index) => {
-        const iterationRes = chunk === b[index] || b[index] === '*' || chunk === '*';
+    const c = a.reduce<boolean[]>((acc, chunk, index) => {
+      const iterationRes = chunk === b[index] || b[index] === '*' || chunk === '*';
 
-        return acc.concat(iterationRes);
-      }, [])
+      return acc.concat(iterationRes);
+    }, []);
 
-      return c.every(Boolean);
+    return c.every(Boolean);
   }
 }
 

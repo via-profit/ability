@@ -27,7 +27,7 @@ test('Dot notation path foo.bar.baz.taz returns 2', () => {
   const value = new Test({
     id: '23906511-fef3-4c2b-8651-a7a148c01e60',
     name: 'Dot notation path foo.bar.baz.taz returns 2',
-    condition: AbilityCondition.EQUAL.code,
+    condition: AbilityCondition.equal,
     subject: 'subject.',
     resource: '',
   }).proxyDotNotation(resource, 'foo.bar.baz.taz');
@@ -36,18 +36,14 @@ test('Dot notation path foo.bar.baz.taz returns 2', () => {
 });
 
 
-test('Code from literal', () => {
-  const Code = AbilityCompare.fromLiteral('and');
-
-
-  expect(Code.code).toBe(AbilityCompare.and.code);
-})
 
 test('isInActionContain', () => {
   const isFalsy = AbilityResolver.isInActionContain('account.read', 'account.private.read');
   const isTruthy = AbilityResolver.isInActionContain('account.some.foo.bar', 'account.some.foo.bar');
+  const isTruthyToo = AbilityResolver.isInActionContain('account.some.foo', 'account.some.*');
 
 
   expect(isFalsy).toBeFalsy();
   expect(isTruthy).toBeTruthy();
+  expect(isTruthyToo).toBeTruthy();
 })

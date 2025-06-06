@@ -1,24 +1,29 @@
 import http from 'node:http';
-import AbilityPolicy, { AbilityPolicyConfig } from './AbilityPolicy';
-import AbilityResolver from '~/AbilityResolver';
+import { AbilityPolicy, AbilityPolicyConfig } from './AbilityPolicy';
 import AbilityCondition from '~/AbilityCondition';
+import AbilityRule from './AbilityRule';
+import AbilityMatch from './AbilityMatch';
+import AbilityRuleSet from './AbilityRuleSet';
+import AbilityCompare from './AbilityCompare';
+import AbilityResolver from './AbilityResolver';
 
 const server = http.createServer();
 
 server.on('request', (_req, res) => {
   type Resources = {
-    ['order.status']: {
-      readonly account: {
+    ['order.status']: { // <-- название экшена
+      readonly account: { // <-- данные ресурса
         readonly roles: readonly string[];
       };
-      readonly order: {
-        readonly status: string;
-      };
-      readonly feature: {
-        readonly status: string;
+    };
+    ['order.create']: {
+      readonly user: {
+        readonly department: string;
       };
     };
   };
+
+
 
   const config: AbilityPolicyConfig[] = [
     {
@@ -76,29 +81,72 @@ server.on('request', (_req, res) => {
     },
   ];
 
-  const policies = config.map(cfg => AbilityPolicy.parse<Resources>(cfg));
-  const result = new AbilityResolver(policies).resolve('order.status', {
-    account: {
-      roles: ['user', 'couch'],
-    },
-    order: {
-      status: 'не обработан',
-    },
-    feature: {
-      status: 'отменен',
-      // status: 'завершен'
-    },
+  const policies: AbilityPolicy<Resources>[] = config.map(cfg => AbilityPolicy.parse(cfg));
+
+  new AbilityResolver(policies).enforce('order.create', {
+    user: {department: 'managers'},
   });
+
+  new AbilityResolver(policies).enforce('order.status', {
+    account: {roles: ['administrator']},
+  });
+
+  const ruleSet = new AbilityRuleSet({
+    id: '<set-id>',
+    name: '',
+    compareMethod: AbilityCompare.and,
+  });
+
+  ruleSet.addRules([...]);
+
+  ruleSet.check()
+
+  AbilityRuleSet.parse({
+    "id": "<set-id>",
+    "name": "",
+    "compareMethod": "and",
+    "rules": [
+      {
+        "id": "<rule-id>",
+        "name": "Пользователь из отдела managers",
+        "subject": "user.department",
+        "resource": "managers",
+        "condition": "="
+      }
+    ]
+  });
+
+
+
+
+
+
+
+
+  const rule = new AbilityRule({
+    id: '<rule-id>',
+    name: 'Пользователь является владельцем заказа',
+    condition: AbilityCondition.equal,
+    subject: 'user.id',
+    resource: 'order.owner',
+  });
+
+  const matchState = rule.check({
+    user: { id: '1' },
+    order: { owner: '1' },
+  });
+
+  const is = matchState.isEqual(AbilityMatch.match); // true
+
+  const policy = AbilityPolicy.parse(config[0]);
+  policy.c
 
   res.statusCode = 200;
   res.setHeader('content-type', 'application/json');
 
-  const condition = AbilityCondition.fromLiteral('more_or_equal');
-  // const literal = new AbilityCondition('=').literal;
-
   res.write(
     JSON.stringify({
-      status: result.isDeny() ? 'deny' : 'permit',
+      status: 'ok',
     }),
   );
   res.end();
