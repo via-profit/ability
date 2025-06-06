@@ -378,7 +378,7 @@ const is = match.isEqual(AbilityMatch.match);
 
 ___
 
-## Управление политиками
+## Управление политиками <a name="policy-management"></a>
 
 Для управления политиками реализован специальный класс `AbilityResolver`.
 
