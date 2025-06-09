@@ -51,7 +51,7 @@
 
 Структура политики:
 
-![ability-01.png](data:image/png;base64,assets/ability-01.drawio.png)
+![ability-01.png](./assets/ability-01.drawio.png)
 
 JSON-конфигурация:
 
