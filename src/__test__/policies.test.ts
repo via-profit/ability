@@ -1,5 +1,4 @@
 import AbilityPolicy, { AbilityPolicyConfig } from '../AbilityPolicy';
-import AbilityMatch from '../AbilityMatch';
 import AbilityResolver from '../AbilityResolver';
 
 test('Deny for all managers, but not administrator', () => {
@@ -10,11 +9,11 @@ test('Deny for all managers, but not administrator', () => {
       };
       readonly order: {
         readonly status: string;
-      }
+      };
       readonly feature: {
         readonly status: string;
-      }
-    }
+      };
+    };
   };
 
   const config: AbilityPolicyConfig = {
@@ -63,17 +62,22 @@ test('Deny for all managers, but not administrator', () => {
   };
 
   const policy = AbilityPolicy.parse<Resources>(config);
-  const result = new AbilityResolver(policy).resolve('order.status', {
+  const resolver = new AbilityResolver(policy);
+  const explain = resolver.resolveWithExplain('order.status', {
     user: {
       roles: ['user', 'couch'],
     },
     order: {
-      status: 'не обработан'
+      status: 'не обработан',
     },
     feature: {
-      status: 'завершен'
-    }
-  })
+      status: 'завершен',
+    },
+  });
 
-  expect(result.isDeny()).toBeTruthy();
+  explain.forEach((e) => {
+    console.debug(e.toString());
+  });
+
+  expect(resolver.isDeny()).toBeTruthy();
 });
