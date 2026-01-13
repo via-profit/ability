@@ -2,8 +2,8 @@ import AbilityMatch from './AbilityMatch';
 import AbilityCondition, { AbilityConditionCodeType } from './AbilityCondition';
 
 export type AbilityRuleConfig = {
-  readonly id: string;
-  readonly name: string;
+  readonly id?: string | null;
+  readonly name?: string | null;
 
   /**
    * Subject key path like a 'user.name'
@@ -50,8 +50,9 @@ export class AbilityRule<Resources extends object = object> {
    */
   public constructor(params: AbilityRuleConstructorProps) {
     const { id, name, subject, resource, condition } = params;
-    this.id = id;
-    this.name = name;
+    this.name = name || `${JSON.stringify(subject)} ${condition.code} ${JSON.stringify(resource)}`;
+    this.id = id || this.name;
+
     this.subject = subject;
     this.resource = resource;
     this.condition = condition;
@@ -220,6 +221,93 @@ export class AbilityRule<Resources extends object = object> {
       resource: this.resource,
       condition: this.condition.code,
     };
+  }
+
+  static equal<Resources extends object = object>(
+    subject: string,
+    resource: AbilityRuleConfig['resource'],
+  ): AbilityRule<Resources> {
+    return new AbilityRule<Resources>({
+      condition: AbilityCondition.equal,
+      subject,
+      resource,
+    });
+  }
+
+  static notIn<Resources extends object = object>(
+    subject: string,
+    resource: AbilityRuleConfig['resource'],
+  ): AbilityRule<Resources> {
+    return new AbilityRule<Resources>({
+      condition: AbilityCondition.not_in,
+      subject,
+      resource,
+    });
+  }
+
+  static in<Resources extends object = object>(
+    subject: string,
+    resource: AbilityRuleConfig['resource'],
+  ): AbilityRule<Resources> {
+    return new AbilityRule<Resources>({
+      condition: AbilityCondition.in,
+      subject,
+      resource,
+    });
+  }
+
+  static notEqual<Resources extends object = object>(
+    subject: string,
+    resource: AbilityRuleConfig['resource'],
+  ): AbilityRule<Resources> {
+    return new AbilityRule<Resources>({
+      condition: AbilityCondition.not_equal,
+      subject,
+      resource,
+    });
+  }
+
+  static lessThan<Resources extends object = object>(
+    subject: string,
+    resource: AbilityRuleConfig['resource'],
+  ): AbilityRule<Resources> {
+    return new AbilityRule<Resources>({
+      condition: AbilityCondition.less_than,
+      subject,
+      resource,
+    });
+  }
+
+  static lessOrEqual<Resources extends object = object>(
+    subject: string,
+    resource: AbilityRuleConfig['resource'],
+  ): AbilityRule<Resources> {
+    return new AbilityRule<Resources>({
+      condition: AbilityCondition.less_or_equal,
+      subject,
+      resource,
+    });
+  }
+  static moreThan<Resources extends object = object>(
+    subject: string,
+    resource: AbilityRuleConfig['resource'],
+  ): AbilityRule<Resources> {
+    return new AbilityRule<Resources>({
+      condition: AbilityCondition.more_than,
+      subject,
+      resource,
+    });
+  }
+
+  static moreOrEqual<Resources extends object = object>(
+    subject: string,
+    resource: AbilityRuleConfig['resource'],
+  ): AbilityRule<Resources> {
+    return new AbilityRule<Resources>({
+      condition: AbilityCondition.more_or_equal,
+      subject,
+      resource,
+    });
   }
 }
 

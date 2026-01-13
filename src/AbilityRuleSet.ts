@@ -3,17 +3,17 @@ import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
 import AbilityMatch from './AbilityMatch';
 
 export type AbilityRuleSetConfig = {
-  readonly id: string;
-  readonly name: string;
+  readonly id?: string | null;
+  readonly name?: string | null;
   readonly compareMethod: AbilityCompareCodeType;
   readonly rules: readonly AbilityRuleConfig[];
 };
 
 export type AbilityRuleSetConstructorProps = {
-  readonly id: string;
-  readonly name: string;
+  readonly id?: string | null;
+  readonly name?: string | null;
   readonly compareMethod: AbilityCompare;
-}
+};
 
 export class AbilityRuleSet<Resources extends object = object> {
   public state: AbilityMatch = AbilityMatch.pending;
@@ -43,8 +43,8 @@ export class AbilityRuleSet<Resources extends object = object> {
   public constructor(params: AbilityRuleSetConstructorProps) {
     const { name, id, compareMethod } = params;
 
-    this.name = name;
-    this.id = id;
+    this.name = name || 'No name';
+    this.id = id || this.name;
     this.compareMethod = compareMethod;
   }
 
@@ -117,6 +117,18 @@ export class AbilityRuleSet<Resources extends object = object> {
       compareMethod: this.compareMethod.code.toString() as AbilityRuleSetConfig['compareMethod'],
       rules: this.rules.map(rule => rule.export()),
     };
+  }
+
+  static and(rules: AbilityRule[]) {
+    return new AbilityRuleSet({
+      compareMethod: AbilityCompare.and,
+    }).addRules(rules);
+  }
+
+  static or(rules: AbilityRule[]) {
+    return new AbilityRuleSet({
+      compareMethod: AbilityCompare.or,
+    }).addRules(rules);
   }
 }
 

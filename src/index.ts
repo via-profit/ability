@@ -9,3 +9,4 @@ export * from './AbilityPolicyEffect';
 export * from './AbilityResolver';
 export * from './AbilityRule';
 export * from './AbilityRuleSet';
+export * from './AbilityExplain';

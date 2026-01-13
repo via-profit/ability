@@ -2,6 +2,8 @@ import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
 import AbilityMatch from './AbilityMatch';
 import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
 import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from './AbilityPolicyEffect';
+import { AbilityExplain, AbilityExplainPolicy, AbilityExplainRule } from '~/AbilityExplain';
+import { AbilityError } from '~/AbilityError';
 
 export type AbilityPolicyConfig = {
   readonly action: string;
@@ -17,7 +19,7 @@ export type AbilityPolicyConstructorProps = {
   name: string;
   action: string;
   effect: AbilityPolicyEffect;
-}
+};
 
 export class AbilityPolicy<Resources extends object = object> {
   public matchState: AbilityMatch = AbilityMatch.pending;
@@ -50,7 +52,8 @@ export class AbilityPolicy<Resources extends object = object> {
   public id: string;
 
   /**
-   * Soon
+   * Running the `enforce` or `resolve` method
+   * will select only those from all passed policies that fall under the specified action.
    */
   public action: string;
 
@@ -100,6 +103,14 @@ export class AbilityPolicy<Resources extends object = object> {
     }
 
     return this.matchState;
+  }
+
+  public explain(): AbilityExplain {
+    if (this.matchState === AbilityMatch.pending) {
+      throw new AbilityError('First, run the check method, then explain');
+    }
+
+    return new AbilityExplainPolicy(this);
   }
 
   /**
