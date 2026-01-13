@@ -126,7 +126,7 @@ AbilityPolicy.parse(jsonConfig).check({
 - **condition** - `AbilityCondition` Определяет условия сравнения переданных данных
 - **subject** - `string` Dot notation путь в проверяемом субъекте, например: `user.name`.
 - **resource** - `string | number | boolean | (string | number)[]` Dot notation путь в проверяемом ресурсе, например:
-  `user.name` или значение, которое может быть строкой, числом, булеан значением или массивом строк или чисел.
+  `user.name` или значение, которое может быть строкой, числом, булеан значением или массивом строк, или чисел.
 
 _Создание правила через конструктор класса:_
 
@@ -140,6 +140,12 @@ const rule = new AbilityRule({
   resource: 'managers',
   condition: AbilityCondition.equal
 });
+
+// сокращённая запись
+const rule2 = AbilityRule.equal(
+  'user.department', // subject
+  'managers' // resource
+);
 
 ```
 
@@ -223,6 +229,13 @@ const ruleSet = new AbilityRuleSet({
 
 // Добавление правил в группу
 ruleSet.addRules([
+  new AbilityRule(...),
+  new AbilityRule(...),
+]);
+
+
+// Сокращённая запись
+const ruleSet2 = AbilityRuleSet.and([
   new AbilityRule(...),
   new AbilityRule(...),
 ]);
@@ -415,7 +428,7 @@ if (isDeny) {
 }
 
 
-// Типы ресурсов, где каждый ключ будет являться название экшена
+// Типы ресурсов, где каждый ключ будет являться названием экшена
 type Resources = {
   ['order.status']: { // <-- название экшена
     readonly account: { // <-- данные ресурса
