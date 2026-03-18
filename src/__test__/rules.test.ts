@@ -2,7 +2,7 @@ import AbilityRule from '../AbilityRule';
 import AbilityMatch from '../AbilityMatch';
 import AbilityRuleSet from '../AbilityRuleSet';
 
-test('Match if subject.foo = resource.bar for Oleg and Oleg', () => {
+test('Match if user.name = opponent.name and user.age > opponent.age', () => {
   const rule = AbilityRule.equal('user.name', 'opponent.name');
   const rule2 = AbilityRule.moreThan('user.age', 'opponent.age');
 
@@ -15,7 +15,7 @@ test('Match if subject.foo = resource.bar for Oleg and Oleg', () => {
     },
     opponent: {
       name: 'Oleg',
-      age: 42,
+      age: 22,
     },
   });
 

@@ -18,7 +18,7 @@ test('Deny for all managers, but not administrator', () => {
 
   const config: AbilityPolicyConfig = {
     id: 'bb758c1b-1015-4894-ba25-d23156e063cf',
-    name: 'Status hui',
+    name: 'Запрещает менять статус заявки с `не обработан` на `завершен` всем, кроме администраторам',
     action: 'order.status',
     effect: 'deny',
     compareMethod: 'and',
@@ -30,28 +30,28 @@ test('Deny for all managers, but not administrator', () => {
         rules: [
           {
             id: '4093cd50-e54f-4062-8053-2d3b5966fad3',
-            name: 'Нет роли администраторв',
-            subject: 'account.roles',
+            name: 'Нет роли администраторов',
+            subject: 'user.roles',
             resource: 'administrator',
-            condition: '<>',
+            condition: 'not in',
           },
         ],
       },
       {
         id: '2f8f9d71-860b-4fa6-b395-9331f1f0848e',
-        name: 'Rule set',
+        name: 'Проверка статуса `не обработан` -> `завершен`',
         compareMethod: 'and',
         rules: [
           {
             id: 'a3c7d66f-5c2d-4a24-83bc-03b0a2d9c32b',
-            name: 'Rule 1',
+            name: 'Текущий статус `не обработан`',
             subject: 'order.status',
             resource: 'не обработан',
             condition: '=',
           },
           {
             id: 'a3c7d66f-5c2d-4a24-83bc-03b0a2d9c32b',
-            name: 'Rule 2',
+            name: 'Будущий статус `завершен`',
             subject: 'feature.status',
             resource: 'завершен',
             condition: '=',
