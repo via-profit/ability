@@ -39,7 +39,7 @@
 - **`AbilityCompare`** — способы сравнения (`or`, `and`)
 - **`AbilityCondition`** — методы вычисления (`equal`, `not_equal`, `more_than`, `less_than`, `in`, `not_in` и др.)
 - **`AbilityPolicyEffect`** — эффекты политики (`deny`, `permit`)
-- **`AbilityParser`** — парсер конфигурационных правил (JSON)
+- **`AbilityParser`** — парсер конфигурационных правил (JSON) и генератор `Typescript` типов
 - **`AbilityError`** — инстанс ошибок
 - **`AbilityExplain`** — вспомогательный инструмент, который позволяет получить человекочитаемое объяснение того, почему конкретное действие разрешено или запрещено текущей конфигурацией Ability
 
