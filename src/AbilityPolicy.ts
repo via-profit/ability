@@ -2,6 +2,8 @@ import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
 import AbilityMatch from './AbilityMatch';
 import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
 import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from './AbilityPolicyEffect';
+import { AbilityExplain, AbilityExplainPolicy } from '~/AbilityExplain';
+import { AbilityError } from '~/AbilityError';
 
 export type AbilityPolicyConfig = {
   readonly action: string;
@@ -17,7 +19,8 @@ export type AbilityPolicyConstructorProps = {
   name: string;
   action: string;
   effect: AbilityPolicyEffect;
-}
+  compareMethod?: AbilityCompare;
+};
 
 export class AbilityPolicy<Resources extends object = object> {
   public matchState: AbilityMatch = AbilityMatch.pending;
@@ -50,16 +53,18 @@ export class AbilityPolicy<Resources extends object = object> {
   public id: string;
 
   /**
-   * Soon
+   * Running the `enforce` or `resolve` method
+   * will select only those from all passed policies that fall under the specified action.
    */
   public action: string;
 
   public constructor(params: AbilityPolicyConstructorProps) {
-    const { name, id, action, effect } = params;
+    const { name, id, action, effect, compareMethod = AbilityCompare.and } = params;
     this.name = name;
     this.id = id;
     this.action = action;
     this.effect = effect;
+    this.compareMethod = compareMethod;
   }
 
   /**
@@ -100,6 +105,25 @@ export class AbilityPolicy<Resources extends object = object> {
     }
 
     return this.matchState;
+  }
+
+  public explain(): AbilityExplain {
+    if (this.matchState === AbilityMatch.pending) {
+      throw new AbilityError('First, run the check method, then explain');
+    }
+
+    return new AbilityExplainPolicy(this);
+  }
+
+  /**
+   * Parses an array of policy configurations into an array of AbilityPolicy instances.
+   * @param configs - Array of policy configurations
+   * @returns Array of AbilityPolicy instances
+   */
+  public static parseAll<Resources extends object = object>(
+    configs: readonly AbilityPolicyConfig[],
+  ): AbilityPolicy<Resources>[] {
+    return configs.map(config => this.parse<Resources>(config));
   }
 
   /**

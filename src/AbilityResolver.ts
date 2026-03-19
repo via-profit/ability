@@ -2,6 +2,7 @@ import AbilityPolicy from './AbilityPolicy';
 import AbilityPolicyEffect from './AbilityPolicyEffect';
 import AbilityMatch from './AbilityMatch';
 import { AbilityError } from './AbilityError';
+import { AbilityExplain, AbilityExplainPolicy } from '~/AbilityExplain';
 
 export class AbilityResolver<Resources extends object = object> {
   policies: readonly AbilityPolicy<Resources>[];
@@ -33,6 +34,15 @@ export class AbilityResolver<Resources extends object = object> {
     this.policies = filteredPolicies;
 
     return this;
+  }
+
+  public resolveWithExplain<Action extends keyof Resources>(
+    action: Action,
+    resource: Resources[Action],
+  ): readonly AbilityExplain[] {
+    return this.resolve(action, resource).policies.map(policy => {
+      return new AbilityExplainPolicy(policy);
+    });
   }
 
   public enforce<Action extends keyof Resources>(
