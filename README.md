@@ -489,65 +489,215 @@ const is = match.isEqual(AbilityMatch.match);
 
 ___
 
+
 ## Управление политиками <a name="policy-management"></a>
 
-Для управления политиками реализован специальный класс `AbilityResolver`.
+Класс `AbilityResolver` — это основной инструмент для применения политик в рантайме. Он решает две ключевые задачи:
 
-В случае, если вам необходимо запустить лишь разовую проверку cданных, то данный раздел можно опустить.
+1. **Фильтрация политик по действию** — выбирает только те политики, которые применимы к выполняемой операции
+2. **Оценка разрешений** — последовательно проверяет отобранные политики и возвращает итоговый результат (разрешено/запрещено)
 
-**AbilityResolver** необходим для возможности запуска проверки разных политик в разный период времени.
+### Зачем нужен Resolver?
 
-Политики содержат название экшена (поле `action`) определяемого разработчиком. Запуск метода `enforce` или `resolve`
-отберет из всех переданных политик только те, которые попадают под указанный экшен.
+Представим, что в системе есть десятки политик, каждая на своё действие:
+- `order.create` — правила создания заказа
+- `order.update` — правила обновления заказа
+- `order.delete` — правила удаления заказа
+- `user.profile.update` — правила обновления профиля
+- и так далее...
+
+Когда пользователь пытается создать заказ, нам нужно проверить только политики, связанные с действием `order.create`, игнорируя все остальные. Именно это и делает `AbilityResolver`.
+
+### Как это работает
 
 ```ts
-import { AbilityPolicy, AbilityPolicyConfig, AbilityResolver } from '@via-profit/ability';
+import { AbilityPolicy, AbilityResolver } from '@via-profit/ability';
+import type { AbilityPolicyConfig } from '@via-profit/ability';
 
-const config: AbilityPolicyConfig[] = [...]; // массив различных политик (JSON)
-const policies: AbilityPolicy<Resources>[] = config.map(cfg => AbilityPolicy.parse(cfg)); // массив уже созданных политик
+// Загружаем все политики системы (например, из JSON-файлов)
+const configs: AbilityPolicyConfig[] = [
+  {
+    id: 'order-create-policy',
+    name: 'Политика создания заказа',
+    action: 'order.create',
+    effect: 'permit',
+    compareMethod: 'and',
+    ruleSet: [
+      // ... правила для создания заказа
+    ]
+  },
+  {
+    id: 'order-update-policy',
+    name: 'Политика обновления заказа',
+    action: 'order.update',
+    effect: 'deny',
+    compareMethod: 'and',
+    ruleSet: [
+      // ... правила для обновления заказа
+    ]
+  },
+  // ... другие политики
+];
 
-// Проверка политик  с экшеном `order.create`
-// Варинат 1. Будет выброшено исключение AbilityError
-// c название политики, которая вернула deny,
-// либо ничего не произойдет, если ни одна из политик
-// не вернет deny
-new AbilityResolver(policies).enforce('order.create', {
-  user: { department: 'managers' },
+// Создаем экземпляры политик
+const policies = AbilityPolicy.parseAll(configs);
+
+// Создаем резолвер со всеми политиками
+const resolver = new AbilityResolver(policies);
+
+// При выполнении действия указываем только нужный action
+// Resolver автоматически отфильтрует политики и проверит их
+resolver.enforce('order.create', {
+  user: {
+    department: 'managers',
+    roles: ['manager']
+  },
+  order: {
+    amount: 5000
+  }
 });
-
-// Вариант 2.
-const isDeny = new AbilityResolver(policies)
-  .resolve('order.create', {
-    user: { department: 'managers' },
-  })
-  .isDeny();
-
-if (isDeny) {
-  throw new AbilityError('Permission denied');
-}
-
-
-// Типы ресурсов, где каждый ключ будет являться названием экшена
-type Resources = {
-  ['order.status']: { // <-- название экшена
-    readonly account: { // <-- данные ресурса
-      readonly roles: readonly string[];
-    };
-  };
-  ['order.create']: {
-    readonly user: {
-      readonly department: string;
-    };
-  };
-  ...
-};
-
 ```
 
-_Пояснение примера выше. В данном примере создается массив всех политик, а затем запускается проверка политик подходящих
-по указанному экшену, а самое главное, что при помощи типа `Resources`, который необходимо формировать
-вручную, **TypeScript** подскажет какие именно данные следует передать вторым аргументом (ресурс)._
+### Методы Resolver-а
 
+#### `enforce()` — строгая проверка
+
+```typescript
+try {
+  resolver.enforce('order.update', data);
+  // Доступ разрешен - продолжаем выполнение
+  await updateOrder(data);
+} catch (error) {
+  if (error instanceof AbilityError) {
+    // Доступ запрещен - error.message содержит название сработавшей политики
+    console.error(`Доступ запрещен политикой: ${error.message}`);
+    return;
+  }
+  throw error;
+}
+```
+
+**Важно**: `enforce()` выбрасывает исключение, если хотя бы одна подходящая политика вернула `deny`. Если ни одна политика не сработала или все вернули `permit` — исключения не будет.
+
+#### `resolve()` — мягкая проверка
+
+```typescript
+const result = resolver
+  .resolve('order.update', data)
+  .isDeny(); // true если доступ запрещен
+
+if (result) {
+  // Самостоятельно обрабатываем запрет
+  return { error: 'Access denied' };
+}
+
+// Продолжаем выполнение
+await updateOrder(data);
+```
+
+#### `resolveWithExplain()` — проверка с объяснением
+
+```typescript
+const explanations = resolver.resolveWithExplain('order.update', data);
+
+explanations.forEach(explain => {
+  console.log(explain.toString());
+  // ✓ policy «Политика обновления заказа» is match
+  //   ✗ ruleSet «Проверка владельца» is mismatch
+  //   ✓ ruleSet «Проверка статуса» is match
+});
+
+if (resolver.isDeny()) {
+  console.log('Доступ запрещен по причине:');
+  explanations.forEach(e => console.log(e.toString()));
+}
+```
+
+### Интеграция с TypeScript
+
+Для полной типобезопасности определите интерфейс `Resources`, где ключи — это возможные действия, а значения — структура данных, требуемая для проверки:
+
+```typescript
+// Определяем типы данных для каждого действия
+type Resources = {
+  'order.create': {
+    readonly user: {
+      readonly department: string;
+      readonly roles: readonly string[];
+    };
+    readonly order: {
+      readonly amount: number;
+    };
+  };
+  
+  'order.update': {
+    readonly user: {
+      readonly id: string;
+    };
+    readonly order: {
+      readonly id: string;
+      readonly status: string;
+      readonly ownerId: string;
+    };
+  };
+  
+  'user.profile.update': {
+    readonly user: {
+      readonly id: string;
+    };
+    readonly profile: {
+      readonly userId: string;
+    };
+  };
+};
+
+// Теперь TypeScript будет проверять корректность передаваемых данных
+resolver.enforce('order.create', {
+  user: {
+    department: 'managers',
+    roles: ['manager']
+  },
+  order: {
+    amount: 5000  // ✅ все поля на месте
+  }
+});
+
+// ❌ Ошибка компиляции - не хватает required полей
+resolver.enforce('order.create', {
+  user: {
+    department: 'managers'
+    // missing roles
+  }
+});
+```
+
+### Как формируется итоговое решение?
+
+1. Resolver собирает все политики, у которых `action` соответствует запрошенному (поддерживается wildcard `*`)
+2. Последовательно проверяет каждую политику методом `check()`
+3. Если политика вернула `match`, запоминает её `effect` (permit/deny)
+4. Возвращается `effect` **последней сработавшей политики**
+
+```typescript
+// Пример с несколькими политиками на одно действие
+const policies = [
+  permitPolicy, // permit, но не match
+  denyPolicy,   // deny и match
+  permitPolicy2 // permit, но не match
+];
+
+resolver.enforce('some.action', data);
+// Результат: deny (от последней сработавшей политики)
+```
+
+### Когда использовать Resolver?
+
+- **В API endpoints** — проверка прав перед выполнением операции
+- **В middleware** — централизованная проверка доступа
+- **В сервисах** — защита бизнес-логики
+- **В клиентском коде** — условный рендеринг UI на основе прав
+
+Resolver делает систему прав предсказуемой, типобезопасной и легко расширяемой.
 
 ## API Reference <a name="api-reference"></a>
 
@@ -692,13 +842,14 @@ _Пояснение примера выше. В данном примере со
 - `id: string` - уникальный идентификатор
 - `action: string` - действие, к которому применяется политика
 
-| Метод | Аргументы | Возвращаемое значение | Описание |
-|-------|-----------|----------------------|----------|
-| `addRuleSet()` | `ruleSet: AbilityRuleSet` | `this` | Добавляет группу правил в политику |
-| `check()` | `resources: Resources` | `AbilityMatch` | Проверяет все группы правил и возвращает результат |
-| `explain()` | — | `AbilityExplain` | Возвращает объяснение результата проверки (должен быть вызван после `check()`) |
-| `export()` | — | `AbilityPolicyConfig` | Экспортирует политику в конфигурационный объект |
-| `parse()` | `config: AbilityPolicyConfig` | `AbilityPolicy` | Статический метод. Создает экземпляр политики из конфигурации |
+| Метод | Аргументы                        | Возвращаемое значение | Описание |
+|-------|----------------------------------|-----------------------|----------|
+| `addRuleSet()` | `ruleSet: AbilityRuleSet`        | `this`                | Добавляет группу правил в политику |
+| `check()` | `resources: Resources`           | `AbilityMatch`        | Проверяет все группы правил и возвращает результат |
+| `explain()` | —                                | `AbilityExplain`      | Возвращает объяснение результата проверки (должен быть вызван после `check()`) |
+| `export()` | —                                | `AbilityPolicyConfig` | Экспортирует политику в конфигурационный объект |
+| `parse()` | `config: AbilityPolicyConfig`    | `AbilityPolicy`       | Статический метод. Создает экземпляр политики из конфигурации |
+| `parseAll()` | `configs: readonly AbilityPolicyConfig[]	` | `AbilityPolicy[]`     | Статический метод. Парсит массив конфигураций политик и возвращает массив экземпляров AbilityPolicy. Удобен для загрузки нескольких политик одновременно. |
 
 ---
 
@@ -764,8 +915,8 @@ import { AbilityParser, AbilityPolicy } from '@via-profit/ability';
 import fs from 'node:fs';
 
 // Массив политик
-const policies: AbilityPolicy[] = [
-  AbilityPolicy.parse({
+const policies: AbilityPolicy[] = AbilityPolicy.parseAll([
+  {
     id: 'policy-1',
     name: 'Example policy',
     action: 'order.status',
@@ -780,18 +931,18 @@ const policies: AbilityPolicy[] = [
           {
             subject: 'user.roles',
             resource: ['admin'],
-            condition: 'in'
+            condition: 'in',
           },
           {
             subject: 'order.amount',
             resource: 1000,
-            condition: '<='
-          }
-        ]
-      }
-    ]
-  })
-];
+            condition: '<=',
+          },
+        ],
+      },
+    ],
+  },
+]);
 
 // Генерация TypeScript типа
 const typeDefinitions = AbilityParser.generateTypeDefs(policies);

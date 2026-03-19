@@ -49,7 +49,8 @@ server.on('request', (_req, res) => {
     },
   ];
 
-  const policies: AbilityPolicy<Resources>[] = config.map(cfg => AbilityPolicy.parse(cfg));
+  const policies: AbilityPolicy<Resources>[] = AbilityPolicy.parseAll(config);
+
 
   res.statusCode = 200;
   res.setHeader('content-type', 'text/plain');

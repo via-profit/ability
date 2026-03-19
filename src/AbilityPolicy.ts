@@ -114,6 +114,17 @@ export class AbilityPolicy<Resources extends object = object> {
   }
 
   /**
+   * Parses an array of policy configurations into an array of AbilityPolicy instances.
+   * @param configs - Array of policy configurations
+   * @returns Array of AbilityPolicy instances
+   */
+  public static parseAll<Resources extends object = object>(
+    configs: readonly AbilityPolicyConfig[],
+  ): AbilityPolicy<Resources>[] {
+    return configs.map(config => this.parse<Resources>(config));
+  }
+
+  /**
    * Parse the config JSON format to Policy class instance
    */
   public static parse<Resources extends object = object>(
