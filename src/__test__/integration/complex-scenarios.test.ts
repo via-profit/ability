@@ -57,19 +57,17 @@ describe('Complex integration scenarios', () => {
     };
 
     const policy = AbilityPolicy.parse<Resources>(config);
-    const resolver = new AbilityResolver(policy);
-
-    resolver.resolve('order.status', {
+    const result = new AbilityResolver(policy).resolve('order.status', {
       user: { roles: ['user', 'manager'] },
       order: { status: 'не обработан' },
       feature: { status: 'завершен' },
     });
 
-    expect(resolver.isDeny()).toBe(true);
-    expect(resolver.isPermit()).toBe(false);
+    expect(result.isDenied()).toBe(true);
+    expect(result.isAllowed()).toBe(false);
   });
 
-  it('should allow status change for admins', () => {
+  it('should deny status change for a non-admins', () => {
     const config: AbilityPolicyConfig = {
       id: 'policy-1',
       name: 'Deny status change for non-admins',
@@ -85,7 +83,7 @@ describe('Complex integration scenarios', () => {
             {
               subject: 'user.roles',
               resource: 'administrator',
-              condition: 'not in' as const,
+              condition: 'not in',
             },
           ],
         },
@@ -97,12 +95,12 @@ describe('Complex integration scenarios', () => {
             {
               subject: 'order.status',
               resource: 'не обработан',
-              condition: '=' as const,
+              condition: '=',
             },
             {
               subject: 'feature.status',
               resource: 'завершен',
-              condition: '=' as const,
+              condition: '=',
             },
           ],
         },
@@ -110,15 +108,13 @@ describe('Complex integration scenarios', () => {
     };
 
     const policy = AbilityPolicy.parse<Resources>(config);
-    const resolver = new AbilityResolver(policy);
-
-    resolver.resolve('order.status', {
+    const result = new AbilityResolver(policy).resolve('order.status', {
       user: { roles: ['administrator'] },
       order: { status: 'не обработан' },
       feature: { status: 'завершен' },
     });
 
-    expect(resolver.isDeny()).toBe(false);
-    expect(resolver.isPermit()).toBe(false); // No matching policies
+    expect(result.isDenied()).toBe(false);
+    expect(result.isAllowed()).toBe(true);
   });
 });

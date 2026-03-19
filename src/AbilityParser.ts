@@ -8,6 +8,12 @@ export type NestedDict<T = Primitive> = {
   [key: string]: NestedDict<T> | T;
 };
 
+
+export type ResourceObject = Record<string, unknown>;
+export type ResourcesMap = Record<string, ResourceObject>;
+
+
+
 export class AbilityParser {
   /**
    * Sets a value in a nested object structure based on a dot/bracket notation path.

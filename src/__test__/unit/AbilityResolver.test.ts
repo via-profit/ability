@@ -110,10 +110,10 @@ describe('AbilityResolver', () => {
       });
 
       const resolver = new AbilityResolver([policy1, policy2]);
-      resolver.resolve('order.create', {});
+      const result = resolver.resolve('order.create', {});
 
-      expect(resolver['policies']).toHaveLength(1);
-      expect(resolver['policies'][0].id).toBe('policy1');
+      expect(result.policies).toHaveLength(1);
+      expect(result.policies[0].id).toBe('policy1');
     });
 
     it('should handle wildcard actions', () => {

@@ -1,6 +1,7 @@
 import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
 import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
 import AbilityMatch from './AbilityMatch';
+import { ResourceObject } from './AbilityParser';
 
 export type AbilityRuleSetConfig = {
   readonly id?: string | null;
@@ -15,7 +16,7 @@ export type AbilityRuleSetConstructorProps = {
   readonly compareMethod: AbilityCompare;
 };
 
-export class AbilityRuleSet<Resources extends object = object> {
+export class AbilityRuleSet<Resources extends ResourceObject =  Record<string, unknown>> {
   public state: AbilityMatch = AbilityMatch.pending;
   /**
    * List of rules
@@ -89,7 +90,7 @@ export class AbilityRuleSet<Resources extends object = object> {
   /**
    * Parse the config JSON format to Group class instance
    */
-  public static parse<Resource extends object = object>(
+  public static parse<Resource extends  ResourceObject = Record<string, unknown>>(
     config: AbilityRuleSetConfig,
   ): AbilityRuleSet<Resource> {
     const { id, name, rules, compareMethod } = config;

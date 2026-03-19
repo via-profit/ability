@@ -1,0 +1,63 @@
+import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
+import AbilityMatch from './AbilityMatch';
+import { ResourceObject } from './AbilityParser';
+import AbilityPolicy from './AbilityPolicy';
+import AbilityPolicyEffect from './AbilityPolicyEffect';
+
+export class AbilityResult<Resource extends ResourceObject = Record<string, unknown>> {
+  /**
+   * Already checked policies (after call the policy.check())
+   */
+  readonly policies: readonly AbilityPolicy<Resource>[];
+
+  public constructor(policies: readonly AbilityPolicy<Resource>[]) {
+    this.policies = policies;
+  }
+
+  /**
+   * Returns a list of explanations for each policy involved in the ability evaluation.
+   * Each item describes how a specific policy contributed to the final permission result.
+   *
+   * Useful for debugging, logging, or building UI tools that visualize permission logic.
+   */
+  public explain(): readonly AbilityExplain[] {
+    return this.policies.map(policy => {
+      return new AbilityExplainPolicy(policy);
+    });
+  }
+
+  /// здесь идея в том, чтобы получить политику, matchState которой match,т.е. здесь мы ищем политику, которая "сработала"
+  public getLastMatchedPolicy(): AbilityPolicy<Resource> | null {
+    for (let i = this.policies.length - 1; i >= 0; i--) {
+      if (this.policies[i].matchState.isEqual(AbilityMatch.match)) {
+        return this.policies[i];
+      }
+    }
+    return null;
+  }
+
+  public isAllowed() {
+    return !this.isDenied();
+  }
+
+  public isDenied() {
+    const effect = this.getLastEffect();
+
+    return effect !== null && effect.isEqual(AbilityPolicyEffect.deny);
+  }
+
+  /**
+   * Get the last effect of the policy
+   *
+   * @returns {AbilityPolicyEffect | null}
+   */
+  public getLastEffect(): AbilityPolicyEffect | null {
+    for (let i = this.policies.length - 1; i >= 0; i--) {
+      const p = this.policies[i];
+      if (p.matchState.isEqual(AbilityMatch.match)) {
+        return p.effect;
+      }
+    }
+    return null;
+  }
+}

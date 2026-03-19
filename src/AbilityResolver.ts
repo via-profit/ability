@@ -1,15 +1,21 @@
 import AbilityPolicy from './AbilityPolicy';
-import AbilityPolicyEffect from './AbilityPolicyEffect';
-import AbilityMatch from './AbilityMatch';
 import { AbilityError } from './AbilityError';
-import { AbilityExplain, AbilityExplainPolicy } from '~/AbilityExplain';
+import { AbilityResult } from './AbilityResult';
+import AbilityMatch from './AbilityMatch';
+import { ResourcesMap } from './AbilityParser';
 
-export class AbilityResolver<Resources extends object = object> {
-  policies: readonly AbilityPolicy<Resources>[];
+
+
+export class AbilityResolver<Resources extends ResourcesMap> {
+  policies: readonly AbilityPolicy[];
+
 
   public constructor(
-    policyOrListOfPolicies: readonly AbilityPolicy<Resources>[] | AbilityPolicy<Resources>,
-  ) {
+    
+    /**
+     * `Important!` The incorrect Resources type was intentionally passed to AbilityPolicy so that Typescript could suggest the name of the action and the structure of its resource in the parse method.
+     */
+    policyOrListOfPolicies: readonly AbilityPolicy<Resources>[] | AbilityPolicy<Resources>) {
     this.policies = Array.isArray(policyOrListOfPolicies)
       ? policyOrListOfPolicies
       : [policyOrListOfPolicies];
@@ -18,86 +24,41 @@ export class AbilityResolver<Resources extends object = object> {
   /**
    * Resolve policy for the resource and action
    *
-   @param action - Action
+   * @param action - Action
    * @param resource - Resource
    */
   public resolve<Action extends keyof Resources>(
     action: Action,
     resource: Resources[Action],
-  ): this {
-    const filteredPolicies: AbilityPolicy[] = this.policies.filter(policy => {
-      return AbilityResolver.isInActionContain(policy.action, String(action));
+  ): AbilityResult<Resources[Action]> {
+
+    const filteredPolicies = this.policies.filter(policy =>
+      AbilityResolver.isInActionContain(policy.action, String(action)),
+    );
+
+    // check the policies
+    filteredPolicies.forEach(policy => {
+      policy.check(resource);
+      if (policy.matchState === AbilityMatch.pending) {
+        throw new AbilityError(
+          `The policy "${policy.name}" is still in a pending state. Make sure to call "check" to evaluate the policy before resolving permissions.`,
+        );
+      }
     });
 
-    filteredPolicies.map(policy => policy.check(resource as object));
-
-    this.policies = filteredPolicies;
-
-    return this;
-  }
-
-  public resolveWithExplain<Action extends keyof Resources>(
-    action: Action,
-    resource: Resources[Action],
-  ): readonly AbilityExplain[] {
-    return this.resolve(action, resource).policies.map(policy => {
-      return new AbilityExplainPolicy(policy);
-    });
+    return new AbilityResult(filteredPolicies);
   }
 
   public enforce<Action extends keyof Resources>(
     action: Action,
     resource: Resources[Action],
   ): void | never {
-    const resolver = this.resolve(action, resource);
+    const result = this.resolve(action, resource);
 
-    if (resolver.isDeny()) {
-      throw new AbilityError(
-        resolver.getMatchedPolicy()?.name?.toString() || 'Unknown permission error',
-      );
+    if (result.isDenied()) {
+      const policyName = result.getLastMatchedPolicy()?.name?.toString() || 'unknown';
+      throw new AbilityError(`Permission denied by policy "${policyName}"`);
     }
-  }
-
-  /**
-   * Get the last effect of the policy
-   *
-   * @returns {AbilityPolicyEffect | null}
-   */
-  public getEffect(): AbilityPolicyEffect | null {
-    const effects = this.policies.reduce<AbilityPolicyEffect[]>((collect, policy, _index) => {
-      if (policy.matchState.isEqual(AbilityMatch.match)) {
-        return collect.concat(policy.effect);
-      }
-      return collect;
-    }, []);
-
-    if (effects.length) {
-      return effects[effects.length - 1];
-    }
-
-    return null;
-  }
-
-  public isPermit() {
-    const effect = this.getEffect();
-
-    return effect !== null && effect.isEqual(AbilityPolicyEffect.permit);
-  }
-
-  public isDeny() {
-    const effect = this.getEffect();
-
-    return effect !== null && effect.isEqual(AbilityPolicyEffect.deny);
-  }
-
-  public getMatchedPolicy(): AbilityPolicy<Resources> | null {
-    const matchedPolicies = this.policies.filter(policy =>
-      policy.matchState.isEqual(AbilityMatch.match),
-    );
-
-    const lastPolicy = matchedPolicies.length ? matchedPolicies[matchedPolicies.length - 1] : null;
-
-    return lastPolicy || null;
   }
 
   /**
@@ -106,19 +67,14 @@ export class AbilityResolver<Resources extends object = object> {
    * @param actionB - The second action to check
    */
   public static isInActionContain(actionA: string, actionB: string) {
-    const actionAArray = String(actionA).split('.');
-    const actionBArray = String(actionB).split('.');
+    const A = actionA.split('.');
+    const B = actionB.split('.');
 
-    const a = actionAArray.length >= actionBArray.length ? actionAArray : actionBArray;
-    const b = actionBArray.length <= actionAArray.length ? actionBArray : actionAArray;
+    const [longer, shorter] = A.length >= B.length ? [A, B] : [B, A];
 
-    const c = a.reduce<boolean[]>((acc, chunk, index) => {
-      const iterationRes = chunk === b[index] || b[index] === '*' || chunk === '*';
-
-      return acc.concat(iterationRes);
-    }, []);
-
-    return c.every(Boolean);
+    return shorter.every((chunk, i) => {
+      return chunk === '*' || longer[i] === '*' || chunk === longer[i];
+    });
   }
 }
 

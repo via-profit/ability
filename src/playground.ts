@@ -1,21 +1,18 @@
 import http from 'node:http';
 import { AbilityPolicy, AbilityPolicyConfig } from './AbilityPolicy';
 import AbilityParser from './AbilityParser';
+import AbilityResolver from './AbilityResolver';
 
 const server = http.createServer();
 
 server.on('request', (_req, res) => {
-  type Resources = {
+  type MyResources = {
     ['order.status']: {
-      // <-- название экшена
-      readonly account: {
-        // <-- данные ресурса
-        readonly roles: readonly string[];
+      readonly order: {
+        readonly amount: number;
       };
-    };
-    ['order.create']: {
       readonly user: {
-        readonly department: string;
+        readonly roles: string[];
       };
     };
   };
@@ -23,14 +20,14 @@ server.on('request', (_req, res) => {
   const config: AbilityPolicyConfig[] = [
     {
       id: 'policy-1',
-      name: 'Example policy',
+      name: 'Deny if is admin and order amount <= 1000',
       action: 'order.status',
       effect: 'deny',
       compareMethod: 'and',
       ruleSet: [
         {
           id: 'rule-set-1',
-          name: 'Example rule set',
+          name: 'user roles contain amin and order amount <= 1000',
           compareMethod: 'and',
           rules: [
             {
@@ -49,15 +46,29 @@ server.on('request', (_req, res) => {
     },
   ];
 
-  const policies: AbilityPolicy<Resources>[] = AbilityPolicy.parseAll(config);
+  const policies: AbilityPolicy<MyResources>[] = AbilityPolicy.parseAll(config);
 
+  const result = new AbilityResolver(policies).resolve('order.status', {
+    order: {
+      amount: 1000,
+    },
+    user: {
+      roles: ['admin'],
+    },
+  });
 
   res.statusCode = 200;
   res.setHeader('content-type', 'text/plain');
 
   const typeDefs = AbilityParser.generateTypeDefs(policies);
 
-  res.write(typeDefs);
+  res.write(
+    `${result.explain().toString()}
+    
+    Current ation - ${result.isAllowed() ? '✔ is allowed' : result.isDenied() ? '🗙 is denied' : 'unknown'}
+    `
+  );
+  // res.write(typeDefs);
   res.end();
 });
 

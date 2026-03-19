@@ -2,8 +2,9 @@ import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
 import AbilityMatch from './AbilityMatch';
 import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
 import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from './AbilityPolicyEffect';
-import { AbilityExplain, AbilityExplainPolicy } from '~/AbilityExplain';
-import { AbilityError } from '~/AbilityError';
+import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
+import { AbilityError } from './AbilityError';
+import { ResourceObject } from './AbilityParser';
 
 export type AbilityPolicyConfig = {
   readonly action: string;
@@ -22,12 +23,12 @@ export type AbilityPolicyConstructorProps = {
   compareMethod?: AbilityCompare;
 };
 
-export class AbilityPolicy<Resources extends object = object> {
+export class AbilityPolicy<Resource extends ResourceObject =  Record<string, unknown>> {
   public matchState: AbilityMatch = AbilityMatch.pending;
   /**
    * List of rules
    */
-  public ruleSet: AbilityRuleSet[] = [];
+  public ruleSet: AbilityRuleSet<Resource>[] = [];
 
   /**
    * Policy effect
@@ -71,7 +72,7 @@ export class AbilityPolicy<Resources extends object = object> {
    * Add rule set to the policy
    * @param ruleSet - The rule set to add
    */
-  public addRuleSet(ruleSet: AbilityRuleSet): this {
+  public addRuleSet(ruleSet: AbilityRuleSet<Resource>): this {
     this.ruleSet.push(ruleSet);
 
     return this;
@@ -79,9 +80,9 @@ export class AbilityPolicy<Resources extends object = object> {
 
   /**
    * Check if the policy is matched
-   * @param resources - The resource to check
+   * @param resource - The resource to check
    */
-  public check(resources: Resources): AbilityMatch {
+  public check(resource: Resource): AbilityMatch {
     this.matchState = AbilityMatch.mismatch;
 
     if (!this.ruleSet.length) {
@@ -89,7 +90,7 @@ export class AbilityPolicy<Resources extends object = object> {
     }
 
     const rulesetCheckStates = this.ruleSet.reduce<AbilityMatch[]>((collect, ruleSet) => {
-      return collect.concat(ruleSet.check(resources));
+      return collect.concat(ruleSet.check(resource));
     }, []);
 
     if (AbilityCompare.and.isEqual(this.compareMethod)) {
@@ -120,22 +121,22 @@ export class AbilityPolicy<Resources extends object = object> {
    * @param configs - Array of policy configurations
    * @returns Array of AbilityPolicy instances
    */
-  public static parseAll<Resources extends object = object>(
+  public static parseAll<Resource extends ResourceObject>(
     configs: readonly AbilityPolicyConfig[],
-  ): AbilityPolicy<Resources>[] {
-    return configs.map(config => this.parse<Resources>(config));
+  ): AbilityPolicy<Resource>[] {
+    return configs.map(config => this.parse<Resource>(config));
   }
 
   /**
    * Parse the config JSON format to Policy class instance
    */
-  public static parse<Resources extends object = object>(
+  public static parse<Resource extends ResourceObject = Record<string, unknown>>(
     config: AbilityPolicyConfig,
-  ): AbilityPolicy<Resources> {
+  ): AbilityPolicy<Resource> {
     const { id, name, ruleSet, compareMethod, action, effect } = config;
 
     // Create the empty policy
-    const policy = new AbilityPolicy<Resources>({
+    const policy = new AbilityPolicy<Resource>({
       name,
       id,
       action,
