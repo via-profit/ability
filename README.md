@@ -7,7 +7,6 @@
 
 ## Содержание
 
-## Оглавление
 - [Обзор](#overview)
     - [Состав пакета](#structure)
     - [Основные принципы](#principles)
@@ -21,6 +20,7 @@
     - [Создание политики](#policy-creattion)
     - [Проверка политики](#policy-check)
 - [Управление политиками](#policy-management)
+- [API Reference](#api-reference)
 
 
 ---
@@ -498,7 +498,7 @@ ___
 
 Для управления политиками реализован специальный класс `AbilityResolver`.
 
-В случае, если вам необходимо запустить лишь разовую проверку данных, то данный раздел можно опустить.
+В случае, если вам необходимо запустить лишь разовую проверку cданных, то данный раздел можно опустить.
 
 **AbilityResolver** необходим для возможности запуска проверки разных политик в разный период времени.
 
@@ -553,3 +553,213 @@ _Пояснение примера выше. В данном примере со
 по указанному экшену, а самое главное, что при помощи типа `Resources`, который необходимо формировать
 вручную, **TypeScript** подскажет какие именно данные следует передать вторым аргументом (ресурс)._
 
+
+## API Reference <a name="api-reference"></a>
+
+### Класс AbilityCode
+
+Базовый абстрактный класс для всех кодовых значений в системе.
+
+| Метод | Аргументы | Возвращаемое значение | Описание |
+|-------|-----------|----------------------|----------|
+| `isEqual()` | `compareWith: AbilityCode<T> \| null` | `boolean` | Сравнивает текущий код с другим экземпляром |
+| `isNotEqual()` | `compareWith: AbilityCode<T> \| null` | `boolean` | Проверяет неравенство с другим экземпляром |
+
+**Геттеры:**
+- `code: T` - возвращает сырое значение кода (строку или число)
+
+---
+
+### Класс AbilityMatch
+
+Представляет возможные состояния результата проверки правил.
+
+**Статические свойства:**
+- `AbilityMatch.pending` - ожидание проверки
+- `AbilityMatch.match` - совпадение найдено
+- `AbilityMatch.mismatch` - совпадение не найдено
+
+Каждое свойство является экземпляром класса `AbilityMatch` и наследует все его методы.
+
+---
+
+### Класс AbilityCondition
+
+Определяет операторы сравнения для правил доступа.
+
+**Статические свойства:**
+- `AbilityCondition.equal` - равно (`=`)
+- `AbilityCondition.not_equal` - не равно (`<>`)
+- `AbilityCondition.more_than` - больше (`>`)
+- `AbilityCondition.less_than` - меньше (`<`)
+- `AbilityCondition.less_or_equal` - меньше или равно (`<=`)
+- `AbilityCondition.more_or_equal` - больше или равно (`>=`)
+- `AbilityCondition.in` - входит в массив (`in`)
+- `AbilityCondition.not_in` - не входит в массив (`not in`)
+
+| Метод | Аргументы | Возвращаемое значение | Описание |
+|-------|-----------|----------------------|----------|
+| `fromLiteral()` | `literal: AbilityConditionLiteralType` | `AbilityCondition` | Создает экземпляр условия из литерального имени (например, 'equal' → '=') |
+
+**Геттеры:**
+- `literal: AbilityConditionLiteralType` - возвращает литеральное имя оператора ('equal', 'not_equal' и т.д.)
+
+---
+
+### Класс AbilityCompare
+
+Определяет методы логического сравнения для групп правил.
+
+**Статические свойства:**
+- `AbilityCompare.and` - логическое И (все правила должны совпасть)
+- `AbilityCompare.or` - логическое ИЛИ (достаточно одного совпадения)
+
+---
+
+### Класс AbilityPolicyEffect
+
+Определяет эффект применения политики.
+
+**Статические свойства:**
+- `AbilityPolicyEffect.deny` - запрет доступа
+- `AbilityPolicyEffect.permit` - разрешение доступа
+
+---
+
+### Класс AbilityRule
+
+Представляет отдельное правило проверки доступа.
+
+**Свойства:**
+- `subject: string` - путь к значению субъекта в dot-нотации
+- `resource: string | number | boolean | (string | number)[]` - значение или путь для сравнения
+- `condition: AbilityCondition` - условие сравнения
+- `name: string` - название правила
+- `id: string` - уникальный идентификатор
+- `state: AbilityMatch` - текущее состояние после вызова `check()`
+
+| Метод | Аргументы | Возвращаемое значение | Описание |
+|-------|-----------|----------------------|----------|
+| `check()` | `resource: Resources \| null` | `AbilityMatch` | Проверяет правило на переданных данных, обновляет `state` и возвращает результат |
+| `extractValues()` | `resourceData: Resources \| null` | `[any, any]` | Извлекает значения для сравнения из субъекта и ресурса по указанным путям |
+| `getDotNotationValue()` | `resource: unknown, desc: string` | `T \| undefined` | Извлекает значение из объекта по dot-нотации (поддерживает массивы: `users[0].name`) |
+| `export()` | — | `AbilityRuleConfig` | Экспортирует правило в конфигурационный объект для сериализации |
+| `parse()` | `config: AbilityRuleConfig` | `AbilityRule` | Статический метод. Создает экземпляр правила из конфигурационного объекта |
+
+**Статические фабричные методы (все возвращают `AbilityRule`):**
+
+| Метод | Аргументы | Описание |
+|-------|-----------|----------|
+| `equal()` | `subject: string, resource: any` | Создает правило с условием "равно" |
+| `notEqual()` | `subject: string, resource: any` | Создает правило с условием "не равно" |
+| `in()` | `subject: string, resource: any` | Создает правило с условием "входит в массив" |
+| `notIn()` | `subject: string, resource: any` | Создает правило с условием "не входит в массив" |
+| `lessThan()` | `subject: string, resource: any` | Создает правило с условием "меньше" |
+| `lessOrEqual()` | `subject: string, resource: any` | Создает правило с условием "меньше или равно" |
+| `moreThan()` | `subject: string, resource: any` | Создает правило с условием "больше" |
+| `moreOrEqual()` | `subject: string, resource: any` | Создает правило с условием "больше или равно" |
+
+---
+
+### Класс AbilityRuleSet
+
+Группирует несколько правил для совместной проверки.
+
+**Свойства:**
+- `state: AbilityMatch` - текущее состояние группы после вызова `check()`
+- `rules: AbilityRule[]` - массив правил в группе
+- `compareMethod: AbilityCompare` - метод сравнения (AND/OR)
+- `name: string` - название группы
+- `id: string` - уникальный идентификатор
+
+| Метод | Аргументы | Возвращаемое значение | Описание |
+|-------|-----------|----------------------|----------|
+| `addRule()` | `rule: AbilityRule` | `this` | Добавляет одно правило в группу (поддерживает цепочку вызовов) |
+| `addRules()` | `rules: AbilityRule[]` | `this` | Добавляет массив правил в группу |
+| `check()` | `resources: Resources \| null` | `AbilityMatch` | Проверяет все правила группы, применяет метод сравнения и возвращает результат |
+| `export()` | — | `AbilityRuleSetConfig` | Экспортирует группу в конфигурационный объект |
+| `parse()` | `config: AbilityRuleSetConfig` | `AbilityRuleSet` | Статический метод. Создает экземпляр группы из конфигурации |
+| `and()` | `rules: AbilityRule[]` | `AbilityRuleSet` | Статический метод. Создает группу с логическим И |
+| `or()` | `rules: AbilityRule[]` | `AbilityRuleSet` | Статический метод. Создает группу с логическим ИЛИ |
+
+---
+
+### Класс AbilityPolicy
+
+Объединяет группы правил в полноценную политику доступа.
+
+**Свойства:**
+- `matchState: AbilityMatch` - состояние политики после проверки
+- `ruleSet: AbilityRuleSet[]` - массив групп правил
+- `effect: AbilityPolicyEffect` - эффект политики (permit/deny)
+- `compareMethod: AbilityCompare` - метод сравнения групп
+- `name: string` - название политики
+- `id: string` - уникальный идентификатор
+- `action: string` - действие, к которому применяется политика
+
+| Метод | Аргументы | Возвращаемое значение | Описание |
+|-------|-----------|----------------------|----------|
+| `addRuleSet()` | `ruleSet: AbilityRuleSet` | `this` | Добавляет группу правил в политику |
+| `check()` | `resources: Resources` | `AbilityMatch` | Проверяет все группы правил и возвращает результат |
+| `explain()` | — | `AbilityExplain` | Возвращает объяснение результата проверки (должен быть вызван после `check()`) |
+| `export()` | — | `AbilityPolicyConfig` | Экспортирует политику в конфигурационный объект |
+| `parse()` | `config: AbilityPolicyConfig` | `AbilityPolicy` | Статический метод. Создает экземпляр политики из конфигурации |
+
+---
+
+### Класс AbilityResolver
+
+Управляет множеством политик и их выполнением.
+
+| Метод | Аргументы | Возвращаемое значение | Описание |
+|-------|-----------|----------------------|----------|
+| `constructor()` | `policies: AbilityPolicy[] \| AbilityPolicy` | `AbilityResolver` | Создает экземпляр с одной или несколькими политиками |
+| `resolve()` | `action: keyof Resources, resource: Resources[Action]` | `this` | Фильтрует политики по действию и проверяет их, возвращает себя для цепочки вызовов |
+| `resolveWithExplain()` | `action: keyof Resources, resource: Resources[Action]` | `readonly AbilityExplain[]` | Выполняет проверку и возвращает массив объяснений для каждой политики |
+| `enforce()` | `action: keyof Resources, resource: Resources[Action]` | `void \| never` | Выполняет проверку и выбрасывает `AbilityError` если результат Deny |
+| `getEffect()` | — | `AbilityPolicyEffect \| null` | Возвращает эффект последней сработавшей политики |
+| `isPermit()` | — | `boolean` | Проверяет, разрешен ли доступ |
+| `isDeny()` | — | `boolean` | Проверяет, запрещен ли доступ |
+| `getMatchedPolicy()` | — | `AbilityPolicy \| null` | Возвращает последнюю сработавшую политику |
+| `isInActionContain()` | `actionA: string, actionB: string` | `boolean` | Статический метод. Проверяет, соответствует ли действие шаблону (поддерживает `*`) |
+
+---
+
+### Класс AbilityExplain
+
+Представляет человекочитаемое объяснение результата проверки.
+
+**Свойства:**
+- `type: AbilityExplainType` - тип элемента ('policy' \| 'rule' \| 'ruleSet')
+- `children: AbilityExplain[]` - дочерние элементы объяснения
+- `name: string` - название элемента
+- `match: AbilityMatch` - результат проверки
+
+| Метод | Аргументы | Возвращаемое значение | Описание |
+|-------|-----------|----------------------|----------|
+| `toString()` | `indent: number = 0` | `string` | Форматирует объяснение в читаемый текст с отступами |
+
+**Наследники:**
+- `AbilityExplainRule` - объяснение для правила
+- `AbilityExplainRuleSet` - объяснение для группы правил
+- `AbilityExplainPolicy` - объяснение для политики
+
+---
+
+### Класс AbilityParser
+
+Предназначен для парсинга и генерации типов из конфигураций.
+
+| Метод | Аргументы | Возвращаемое значение | Описание |
+|-------|-----------|----------------------|----------|
+| `setValueDotValue()` | `object: Record<string, any>, path: string, value: any` | `void` | Статический метод. Устанавливает значение в объект по dot-нотации |
+| `generateTypeDefs()` | `policies: readonly AbilityPolicy[], outPath: string` | `Record<string, any>` | Статический метод. Генерирует TypeScript типы на основе правил в политиках |
+
+---
+
+### Классы ошибок
+
+| Класс | Назначение |
+|-------|------------|
+| `AbilityError` | Общая ошибка доступа, выбрасывается при запрете в `enforce()` |
+| `AbilityParserError` | Ошибка парсинга конфигурации или генерации типов |
