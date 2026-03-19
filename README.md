@@ -59,6 +59,7 @@
 - **`AbilityRuleSet`** — класс группы правил
 - **`AbilityPolicy`** — класс политики
 - **`AbilityResolver`** — управление политиками
+- **`AbilityResult`** - результат работы политик
 - **`AbilityMatch`** — константы состояния правил (`pending`, `match`, `mismatch`)
 - **`AbilityCompare`** — способы сравнения (`or`, `and`)
 - **`AbilityCondition`** — методы вычисления (`equal`, `not_equal`, `more_than`, `less_than`, `in`, `not_in` и др.)
@@ -517,7 +518,7 @@ const is = match.isEqual(AbilityMatch.match);
 
 ---
 
-## Зачем нужен AbilityResolver?
+### Зачем нужен AbilityResolver?
 
 В реальных системах количество политик может быть большим. Каждая политика относится к определённому действию:
 
@@ -537,11 +538,11 @@ const is = match.isEqual(AbilityMatch.match);
 
 ---
 
-## Поддержка wildcard (`*`) в действиях
+### Поддержка wildcard (`*`) в действиях
 
 `AbilityResolver` поддерживает шаблоны действий с `*`, что позволяет описывать группы операций одной политикой.
 
-### Правила сопоставления
+#### Правила сопоставления
 
 | Политика | Проверяемое действие | Совпадает |
 |---------|------------------------|-----------|
@@ -553,7 +554,7 @@ const is = match.isEqual(AbilityMatch.match);
 | `user.profile.*` | `user.profile.update` | ✅ |
 | `user.profile.*` | `user.settings.update` | ❌ |
 
-### Примеры
+#### Примеры
 
 ```ts
 {
@@ -584,7 +585,7 @@ const is = match.isEqual(AbilityMatch.match);
 
 ---
 
-## Приоритет политик и множественные совпадения
+#### Приоритет политик и множественные совпадения
 
 Если под действие подходит несколько политик, **выполняются все**.
 
@@ -617,7 +618,7 @@ resolver.enforce('order.update', resource);
 
 ---
 
-## Комбинирование точных действий и wildcard
+#### Комбинирование точных действий и wildcard
 
 ```ts
 const policies = [
@@ -629,7 +630,7 @@ const policies = [
 
 ---
 
-## Как это работает
+### Как это работает
 
 ```ts
 import { AbilityPolicy, AbilityResolver } from '@via-profit/ability';
@@ -645,7 +646,7 @@ resolver.enforce('order.create', {
 
 ---
 
-## Проверка соответствия действия
+### Проверка соответствия действия
 
 Метод `isInActionContain` используется для сопоставления действий:
 
@@ -657,9 +658,9 @@ AbilityResolver.isInActionContain('order.*', 'user.create'); // false
 
 ---
 
-# Методы AbilityResolver
+### Методы AbilityResolver
 
-## `resolve()`
+#### `resolve()`
 
 | Метод | Аргументы | Возвращаемое значение | Описание |
 |-------|-----------|------------------------|----------|
@@ -677,7 +678,7 @@ if (result.isDenied()) {
 
 ---
 
-## `enforce()`
+#### `enforce()`
 
 | Метод | Аргументы | Возвращаемое значение | Описание |
 |-------|-----------|------------------------|----------|
@@ -692,22 +693,13 @@ resolver.enforce('order.update', resource);
 
 ---
 
-## `isInActionContain()`
+#### `isInActionContain()`
 
 | Метод | Аргументы | Возвращаемое значение | Описание |
 |-------|-----------|------------------------|----------|
 | `isInActionContain()` | `actionA: string`, `actionB: string` | `boolean` | Статический метод. Проверяет, соответствует ли действие `actionB` шаблону `actionA` с поддержкой wildcard (`*`). Используется для фильтрации политик. |
 
 ---
-
-# Хочешь — могу также обновить разделы про:
-
-- `AbilityPolicy`
-- `AbilityRuleSet`
-- `AbilityResult`
-- `AbilityExplain`
-
-и собрать полноценную документацию в едином стиле.
 
 ### Интеграция с TypeScript
 
