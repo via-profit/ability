@@ -489,6 +489,9 @@ const is = match.isEqual(AbilityMatch.match);
 
 ___
 
+Вот обновленный раздел с информацией об использовании звездочки в названиях экшенов:
+
+---
 
 ## Управление политиками <a name="policy-management"></a>
 
@@ -497,7 +500,7 @@ ___
 1. **Фильтрация политик по действию** — выбирает только те политики, которые применимы к выполняемой операции
 2. **Оценка разрешений** — последовательно проверяет отобранные политики и возвращает итоговый результат (разрешено/запрещено)
 
-### Зачем нужен Resolver?
+### Зачем нужен AbilityResolver?
 
 Представим, что в системе есть десятки политик, каждая на своё действие:
 - `order.create` — правила создания заказа
@@ -507,6 +510,117 @@ ___
 - и так далее...
 
 Когда пользователь пытается создать заказ, нам нужно проверить только политики, связанные с действием `order.create`, игнорируя все остальные. Именно это и делает `AbilityResolver`.
+
+### Использование wildcard (*) в действиях
+
+`AbilityResolver` поддерживает использование символа звездочки (`*`) в названиях действий. Это позволяет создавать политики, которые применяются к целым группам операций.
+
+#### Правила сопоставления с wildcard:
+
+| Политика (action) | Проверяемое действие | Результат |
+|-------------------|---------------------|-----------|
+| `order.*` | `order.create` | ✅ Совпадает |
+| `order.*` | `order.update` | ✅ Совпадает |
+| `order.*` | `order.delete` | ✅ Совпадает |
+| `order.*` | `user.create` | ❌ Не совпадает |
+| `*.create` | `order.create` | ✅ Совпадает |
+| `*.create` | `user.create` | ✅ Совпадает |
+| `*.create` | `order.update` | ❌ Не совпадает |
+| `user.profile.*` | `user.profile.update` | ✅ Совпадает |
+| `user.profile.*` | `user.profile.delete` | ✅ Совпадает |
+| `user.profile.*` | `user.settings.update` | ❌ Не совпадает |
+
+#### Примеры использования wildcard:
+
+```ts
+// Политика, применяемая ко всем действиям с заказами
+{
+  id: 'orders-audit',
+  name: 'Audit all order operations',
+  action: 'order.*',  // Применится к order.create, order.update, order.delete и т.д.
+  effect: 'permit',
+  // ... правила
+}
+
+// Политика, применяемая ко всем операциям создания
+{
+  id: 'create-audit',
+  name: 'Audit all create operations',
+  action: '*.create',  // Применится к order.create, user.create, product.create и т.д.
+  effect: 'permit',
+  // ... правила
+}
+
+// Политика для всех операций в модуле пользователей
+{
+  id: 'user-module',
+  name: 'User module base policy',
+  action: 'user.*.*',  // Применится к user.profile.update, user.settings.delete и т.д.
+  effect: 'deny',
+  // ... правила
+}
+```
+
+#### Приоритет и множественное совпадение
+
+Если несколько политик подходят под проверяемое действие, будут применены **все** подходящие политики. Результат определяется последней сработавшей политикой:
+
+```ts
+const policies = [
+  AbilityPolicy.parse({
+    action: 'order.*',
+    effect: 'permit',
+    // ... правила
+  }),
+  AbilityPolicy.parse({
+    action: 'order.update',
+    effect: 'deny',
+    // ... правила
+  })
+];
+
+const resolver = new AbilityResolver(policies);
+
+// При проверке order.update сработают ОБЕ политики
+// Результат будет deny, так как это эффект последней сработавшей политики,
+// таким образом, каждая последующая политика считается важнее предыдущей.
+// Это применительно для ситуаций, когда необходимо, что называется, наложить вето
+// на принятые ранее решения вышестоящих политик
+resolver.enforce('order.update', data);
+```
+
+**Каждая последующая политика считается важнее предыдущей.
+Это применительно для ситуаций, когда необходимо, что называется, наложить вето
+на принятые ранее решения вышестоящих политик**
+
+#### Комбинирование точных действий и wildcard
+
+Вы можете комбинировать точные действия и wildcard для создания гибкой системы прав:
+
+```ts
+const policies = [
+  // Общее правило для всех заказов
+  {
+    action: 'order.*',
+    effect: 'deny',  // По умолчанию запрещено
+    // ...
+  },
+  // Исключение для создания заказа
+  {
+    action: 'order.create',
+    effect: 'permit',  // Создавать можно
+    // ...
+  },
+  // Дополнительная проверка для обновления
+  {
+    action: 'order.update',
+    effect: 'deny',  // Обновление требует особых условий
+    ruleSet: [
+      // ... сложные правила для обновления
+    ]
+  }
+];
+```
 
 ### Как это работает
 
@@ -536,7 +650,16 @@ const configs: AbilityPolicyConfig[] = [
       // ... правила для обновления заказа
     ]
   },
-  // ... другие политики
+  {
+    id: 'orders-base-policy',
+    name: 'Базовая политика для всех операций с заказами',
+    action: 'order.*',
+    effect: 'deny',
+    compareMethod: 'and',
+    ruleSet: [
+      // ... общие правила для всех заказов
+    ]
+  }
 ];
 
 // Создаем экземпляры политик
@@ -546,7 +669,7 @@ const policies = AbilityPolicy.parseAll(configs);
 const resolver = new AbilityResolver(policies);
 
 // При выполнении действия указываем только нужный action
-// Resolver автоматически отфильтрует политики и проверит их
+// AbilityResolver автоматически отфильтрует политики и проверит их
 resolver.enforce('order.create', {
   user: {
     department: 'managers',
@@ -558,7 +681,21 @@ resolver.enforce('order.create', {
 });
 ```
 
-### Методы Resolver-а
+### Проверка соответствия действия
+
+Метод `isInActionContain` позволяет проверить, соответствует ли действие шаблону с wildcard:
+
+```ts
+// Статический метод класса AbilityResolver
+AbilityResolver.isInActionContain('order.*', 'order.create'); // true
+AbilityResolver.isInActionContain('order.*', 'user.create');  // false
+AbilityResolver.isInActionContain('*.update', 'order.update'); // true
+AbilityResolver.isInActionContain('*.update', 'order.create'); // false
+```
+
+Этот метод используется внутри `AbilityResolver` для фильтрации политик, но может быть полезен и в пользовательском коде.
+
+### Методы AbilityResolver
 
 #### `enforce()` — строгая проверка
 
