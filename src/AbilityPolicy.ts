@@ -2,7 +2,7 @@ import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
 import AbilityMatch from './AbilityMatch';
 import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
 import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from './AbilityPolicyEffect';
-import { AbilityExplain, AbilityExplainPolicy, AbilityExplainRule } from '~/AbilityExplain';
+import { AbilityExplain, AbilityExplainPolicy } from '~/AbilityExplain';
 import { AbilityError } from '~/AbilityError';
 
 export type AbilityPolicyConfig = {
