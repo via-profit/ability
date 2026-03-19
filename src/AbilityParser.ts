@@ -20,6 +20,10 @@ export class AbilityParser {
     path: string,
     value: T,
   ): void {
+    if (!path || path.trim().length === 0) {
+      throw new AbilityParserError(`Invalid path provided on a [${path}]`);
+    }
+
     const way = path.replace(/\[/g, '.').replace(/]/g, '').split('.');
     const last = way.pop();
 
@@ -27,7 +31,7 @@ export class AbilityParser {
       throw new AbilityParserError(`Invalid path provided on a [${path}]`);
     }
 
-    way.reduce<Record<string, unknown>>((acc, key, index, array) => {
+    const lastObj = way.reduce<Record<string, unknown>>((acc, key, index, array) => {
       const currentValue = acc[key];
       const nextKey = array[index + 1];
       const shouldBeArray = nextKey !== undefined && isFinite(Number(nextKey));
@@ -46,7 +50,21 @@ export class AbilityParser {
       }
 
       return currentValue as Record<string, unknown>;
-    }, object)[last] = value;
+    }, object);
+
+    const existingValue = lastObj[last];
+    if (
+      existingValue !== undefined &&
+      typeof existingValue === 'object' &&
+      existingValue !== null &&
+      !Array.isArray(existingValue)
+    ) {
+      throw new AbilityParserError(
+        `Cannot set primitive value on existing object at path: ${path}`,
+      );
+    }
+
+    lastObj[last] = value;
   }
 
   /**

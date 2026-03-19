@@ -19,6 +19,7 @@ export type AbilityPolicyConstructorProps = {
   name: string;
   action: string;
   effect: AbilityPolicyEffect;
+  compareMethod?: AbilityCompare;
 };
 
 export class AbilityPolicy<Resources extends object = object> {
@@ -58,11 +59,12 @@ export class AbilityPolicy<Resources extends object = object> {
   public action: string;
 
   public constructor(params: AbilityPolicyConstructorProps) {
-    const { name, id, action, effect } = params;
+    const { name, id, action, effect, compareMethod = AbilityCompare.and } = params;
     this.name = name;
     this.id = id;
     this.action = action;
     this.effect = effect;
+    this.compareMethod = compareMethod;
   }
 
   /**

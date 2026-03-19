@@ -23,12 +23,26 @@ export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
   public static not_in = new AbilityCondition('not in');
 
   public static fromLiteral(literal: AbilityConditionLiteralType): AbilityCondition {
-    const code = AbilityCondition[literal]?.code || null;
-    if (code === null) {
-      throw new AbilityParserError(`Literal ${literal} does not found in AbilityCondition class`);
+    switch (literal) {
+      case 'equal':
+        return this.equal;
+      case 'not_equal':
+        return this.not_equal;
+      case 'more_than':
+        return this.more_than;
+      case 'less_than':
+        return this.less_than;
+      case 'less_or_equal':
+        return this.less_or_equal;
+      case 'more_or_equal':
+        return this.more_or_equal;
+      case 'in':
+        return this.in;
+      case 'not_in':
+        return this.not_in;
+      default:
+        throw new AbilityParserError(`Literal ${literal} does not found in AbilityCondition class`);
     }
-
-    return new AbilityCondition(code);
   }
 
   public get literal() {
