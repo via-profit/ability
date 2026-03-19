@@ -13,6 +13,14 @@
     "node": ">= 17.0.0",
     "npm": ">= 8.19.3"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md"
+  ],
   "scripts": {
     "lint": "tsc --noEmit && eslint --fix .",
     "pretty": "prettier --write ./src",
