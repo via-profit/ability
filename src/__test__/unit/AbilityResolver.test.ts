@@ -1,5 +1,5 @@
-import AbilityPolicy from '../../AbilityPolicy';
-import AbilityResolver from '../../AbilityResolver';
+import AbilityPolicy from '../../core/AbilityPolicy';
+import AbilityResolver from '../../core/AbilityResolver';
 
 describe('AbilityResolver', () => {
   describe('isInActionContain', () => {

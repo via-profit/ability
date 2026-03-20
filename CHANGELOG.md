@@ -4,6 +4,9 @@
 
 ### Добавлено
 
+- Реализован кэш
+  - Добавлен кэш-провайдер `AbilityCacheProvider` для реализации кастомного кэша
+  - Реализован и включён по умолчанию `AbilityInMemoryCache` (кэш в памяти)
 - Добавлена полноценная поддержка `environment` как третьего аргумента в:
   - `resolver.resolve(action, resource, environment)`
   - `resolver.enforce(action, resource, environment)`

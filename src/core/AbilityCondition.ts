@@ -1,5 +1,5 @@
 import AbilityCode from './AbilityCode';
-import { AbilityParserError } from '~/AbilityError';
+import { AbilityParserError } from '~/core/AbilityError';
 
 export type AbilityConditionCodeType = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'in' | 'not in';
 export type AbilityConditionLiteralType =

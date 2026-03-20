@@ -1,7 +1,7 @@
 import http from 'node:http';
-import { AbilityPolicy, AbilityPolicyConfig } from './AbilityPolicy';
-import AbilityParser from './AbilityParser';
-import AbilityResolver from './AbilityResolver';
+import { AbilityPolicy, AbilityPolicyConfig } from './core/AbilityPolicy';
+import AbilityParser from './core/AbilityParser';
+import AbilityResolver from './core/AbilityResolver';
 
 const server = http.createServer();
 

@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import AbilityParser, { NestedDict } from '../../AbilityParser';
-import AbilityPolicy from '../../AbilityPolicy';
-import { AbilityParserError } from '../../AbilityError';
+import AbilityParser, { NestedDict } from '../../core/AbilityParser';
+import AbilityPolicy from '../../core/AbilityPolicy';
+import { AbilityParserError } from '../../core/AbilityError';
 
 describe('AbilityParser', () => {
   describe('setValueDotValue', () => {

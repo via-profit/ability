@@ -3,20 +3,22 @@ import { AbilityError } from './AbilityError';
 import { AbilityResult } from './AbilityResult';
 import AbilityMatch from './AbilityMatch';
 import { ResourcesMap } from './AbilityParser';
+import { AbilityCacheAdapter } from '~/cache/AbilityCacheAdapter';
+import { AbilityInMemoryCache } from '~/cache/AbilityInMemoryCache';
 
 
-export class AbilityResolver<
-  Resources extends ResourcesMap,
-  Environment = unknown,
-> {
-  policies: readonly AbilityPolicy[];
+export class AbilityResolver<Resources extends ResourcesMap, Environment = unknown> {
+  private policies: readonly AbilityPolicy[];
+  private readonly cache?: AbilityCacheAdapter | null;
 
   public constructor(
     /**
      * `Important!` The incorrect Resources type was intentionally passed to AbilityPolicy so that TypeScript could suggest the name of the action and the structure of its resource in the parse method.
      */
     policyOrListOfPolicies: readonly AbilityPolicy<Resources>[] | AbilityPolicy<Resources>,
+    cache?: AbilityCacheAdapter | null,
   ) {
+    this.cache = typeof cache === 'undefined' ? new AbilityInMemoryCache() : cache;
     this.policies = Array.isArray(policyOrListOfPolicies)
       ? policyOrListOfPolicies
       : [policyOrListOfPolicies];
@@ -27,6 +29,7 @@ export class AbilityResolver<
    *
    * @param action - Action
    * @param resource - Resource
+   * @param environment
    */
   public async resolve<Action extends keyof Resources>(
     action: Action,
@@ -38,12 +41,27 @@ export class AbilityResolver<
     );
 
     for (const policy of filteredPolicies) {
-      await policy.check(resource);
+      const cacheKey = this.cache ? this.makeCacheKey(policy.id, resource, environment) : '';
+      // cache
+      if (this.cache) {
+        const cached = await this.cache.get<AbilityMatch>(cacheKey);
 
-      if (policy.matchState === AbilityMatch.pending) {
+        if (cached !== undefined) {
+          policy.matchState = cached;
+          continue;
+        }
+      }
+
+      const policyMatchState = await policy.check(resource, environment);
+
+      if (policyMatchState === AbilityMatch.pending) {
         throw new AbilityError(
           `The policy "${policy.name}" is still in a pending state. Make sure to call "check" to evaluate the policy before resolving permissions.`,
         );
+      }
+
+      if (this.cache) {
+        await this.cache.set(cacheKey, policyMatchState);
       }
     }
 
@@ -77,6 +95,26 @@ export class AbilityResolver<
     return shorter.every((chunk, i) => {
       return chunk === '*' || longer[i] === '*' || chunk === longer[i];
     });
+  }
+
+  private makeCacheKey<Action extends keyof Resources>(
+    policyId: string,
+    resource: Resources[Action],
+    environment?: Environment,
+  ): string {
+    if (!this.cache) {
+      return '';
+    }
+
+    return `policy:${policyId}:res:${this.cache.serialize(resource)}:env:${this.cache.serialize(environment)}`;
+  }
+
+  public async invalidatePolicy(policyId: string): Promise<void> {
+    await this.cache?.deleteByPrefix(policyId);
+  }
+
+  public async invalidateCache(): Promise<void> {
+    await this.cache?.clear();
   }
 }
 

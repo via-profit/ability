@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import AbilityCondition from '../../AbilityCondition';
-import { AbilityParserError } from '../../AbilityError';
+import AbilityCondition from '../../core/AbilityCondition';
+import { AbilityParserError } from '../../core/AbilityError';
 
 describe('AbilityCondition', () => {
   describe('static properties', () => {

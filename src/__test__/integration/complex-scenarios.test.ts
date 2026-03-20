@@ -1,5 +1,5 @@
-import AbilityPolicy, { AbilityPolicyConfig } from '../../AbilityPolicy';
-import AbilityResolver from '../../AbilityResolver';
+import AbilityPolicy, { AbilityPolicyConfig } from '../../core/AbilityPolicy';
+import AbilityResolver from '../../core/AbilityResolver';
 
 describe('Complex integration scenarios', () => {
   type Resources = {

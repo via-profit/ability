@@ -1,10 +1,10 @@
-import type { AbilityPolicyConfig } from '../../AbilityPolicy';
-import AbilityPolicy from '../../AbilityPolicy';
-import AbilityRule from '../../AbilityRule';
-import AbilityRuleSet from '../../AbilityRuleSet';
-import AbilityMatch from '../../AbilityMatch';
-import AbilityCompare from '../../AbilityCompare';
-import AbilityPolicyEffect from '../../AbilityPolicyEffect';
+import type { AbilityPolicyConfig } from '../../core/AbilityPolicy';
+import AbilityPolicy from '../../core/AbilityPolicy';
+import AbilityRule from '../../core/AbilityRule';
+import AbilityRuleSet from '../../core/AbilityRuleSet';
+import AbilityMatch from '../../core/AbilityMatch';
+import AbilityCompare from '../../core/AbilityCompare';
+import AbilityPolicyEffect from '../../core/AbilityPolicyEffect';
 
 describe('AbilityPolicy', () => {
   describe('constructor', () => {
