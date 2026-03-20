@@ -662,6 +662,72 @@ explanations.forEach(explain => {
 - Смешивание бизнес-логики и политик доступа.
 - Слишком крупные политики с десятками правил — лучше разбивать.
 
+### Пример использования на фронтенде (React)
+
+**Хук для проверки политик**
+
+```tsx
+// hooks/use-ability.ts
+import { useEffect, useState } from 'react';
+import { AbilityResolver } from '@via-profit/ability';
+
+export function useAbility<Action extends keyof Resources>(
+  resolver: AbilityResolver<Resources>,
+  action: Action,
+  resource: Resources[Action],
+) {
+  const [allowed, setAllowed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function check() {
+      try {
+        const result = await resolver.resolve(action, resource);
+        if (!cancelled) {
+          setAllowed(result.isAllowed());
+        }
+      } catch {
+        if (!cancelled) {
+          setAllowed(false);
+        }
+      }
+    }
+
+    check();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resolver, action, resource]);
+
+  return allowed;
+}
+
+```
+
+**Использование в компоненте**
+
+```tsx
+function OrderUpdateButton({ order, user }) {
+  const allowed = useAbility(resolver, 'order.update', {
+    user,
+    order,
+  });
+
+  if (allowed === null) {
+    return null; // или бейдж запрета доступа
+  }
+
+  if (!allowed) {
+    return null;
+  }
+
+  return <button>Update order</button>;
+}
+
+```
+
 ---
 
 ## API Reference
