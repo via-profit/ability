@@ -487,7 +487,7 @@ describe('AbilityPolicy', () => {
         feature: { status: 'завершен' },
       });
 
-      console.debug(policy.explain().toString());
+      // console.debug(policy.explain().toString());
 
       expect(policy.matchState).toBe(AbilityMatch.match);
     });

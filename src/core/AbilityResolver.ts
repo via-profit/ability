@@ -23,7 +23,7 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
     options?: AbilityResolverOptions,
   ) {
     const { cache } = options || {};
-    this.cache = typeof cache === 'undefined' ? new AbilityInMemoryCache() : cache;
+    this.cache = cache;
     this.policies = Array.isArray(policyOrListOfPolicies)
       ? policyOrListOfPolicies
       : [policyOrListOfPolicies];

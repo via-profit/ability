@@ -101,7 +101,7 @@ pnpm add @via-profit/ability
 #### Кэш (Cache)
 
 - `AbilityCacheAdapter` — интерфейс адаптера кэша
-- `AbilityInMemoryCache` — встроенный кэш в памяти (используется по умолчанию)
+- `AbilityInMemoryCache` — встроенный кэш в памяти (по умолчанию выключен)
 
 ### Основные принципы
 
@@ -755,7 +755,7 @@ await rule.check(resource, undefined);
 
 ## Кэш
 
-`AbilityResolver` имеет встроенный кэш для оптимизации производительности. По умолчанию используется `AbilityInMemoryCache` с TTL 60 секунд.
+`AbilityResolver` имеет встроенный кэш для оптимизации производительности `AbilityInMemoryCache`. **По умолчанию выключен**.
 
 ### Конфигурация кэша
 
@@ -765,8 +765,8 @@ import { AbilityResolver, AbilityInMemoryCache } from '@via-profit/ability';
 // Использовать in-memory кэш (по умолчанию)
 const resolver = new AbilityResolver(policies);
 
-// Отключить кэш
-const resolverNoCache = new AbilityResolver(policies, { cache: null });
+// Кэш выключен
+const resolverNoCache = new AbilityResolver(policies);
 
 // Кастомный TTL
 const resolverCustom = new AbilityResolver(policies, {
