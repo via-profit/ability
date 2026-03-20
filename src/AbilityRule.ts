@@ -177,7 +177,7 @@ export class AbilityRule<Resources extends object = object> {
 
     while (arr.length && resource) {
       const comp = arr.shift() || '';
-      const match = new RegExp('(.+)\\[([0-9]*)\\]').exec(comp);
+      const match = new RegExp('(.+)\\[([0-9]*)]').exec(comp);
 
       if (match !== null && match.length == 3) {
         const arrayData = {
