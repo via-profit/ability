@@ -9,13 +9,12 @@ import { ResourcesMap } from './AbilityParser';
 export class AbilityResolver<Resources extends ResourcesMap> {
   policies: readonly AbilityPolicy[];
 
-
   public constructor(
-    
     /**
      * `Important!` The incorrect Resources type was intentionally passed to AbilityPolicy so that Typescript could suggest the name of the action and the structure of its resource in the parse method.
      */
-    policyOrListOfPolicies: readonly AbilityPolicy<Resources>[] | AbilityPolicy<Resources>) {
+    policyOrListOfPolicies: readonly AbilityPolicy<Resources>[] | AbilityPolicy<Resources>,
+  ) {
     this.policies = Array.isArray(policyOrListOfPolicies)
       ? policyOrListOfPolicies
       : [policyOrListOfPolicies];
@@ -27,11 +26,10 @@ export class AbilityResolver<Resources extends ResourcesMap> {
    * @param action - Action
    * @param resource - Resource
    */
-  public resolve<Action extends keyof Resources>(
+  public async resolve<Action extends keyof Resources>(
     action: Action,
     resource: Resources[Action],
-  ): AbilityResult<Resources[Action]> {
-
+  ): Promise<AbilityResult<Resources[Action]>> {
     const filteredPolicies = this.policies.filter(policy =>
       AbilityResolver.isInActionContain(policy.action, String(action)),
     );
@@ -49,11 +47,11 @@ export class AbilityResolver<Resources extends ResourcesMap> {
     return new AbilityResult(filteredPolicies);
   }
 
-  public enforce<Action extends keyof Resources>(
+  public async enforce<Action extends keyof Resources>(
     action: Action,
     resource: Resources[Action],
-  ): void | never {
-    const result = this.resolve(action, resource);
+  ): Promise<void | never> {
+    const result = await this.resolve(action, resource);
 
     if (result.isDenied()) {
       const policyName = result.getLastMatchedPolicy()?.name?.toString() || 'unknown';

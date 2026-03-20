@@ -90,7 +90,7 @@ describe('AbilityResolver', () => {
       [key: string]: Record<string, unknown>;
     };
 
-    it('should filter policies by action', () => {
+    it('should filter policies by action', async () => {
       const policy1 = AbilityPolicy.parse<TestResources>({
         id: 'policy1',
         name: 'Policy 1',
@@ -109,8 +109,7 @@ describe('AbilityResolver', () => {
         ruleSet: [],
       });
 
-      const resolver = new AbilityResolver([policy1, policy2]);
-      const result = resolver.resolve('order.create', {});
+      const result = await new AbilityResolver([policy1, policy2]).resolve('order.create', {});
 
       expect(result.policies).toHaveLength(1);
       expect(result.policies[0].id).toBe('policy1');

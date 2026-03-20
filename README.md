@@ -401,10 +401,8 @@ const policies = [
   }),
 ];
 
-const resolver = new AbilityResolver(policies);
+await new AbilityResolver(policies).enforce('order.update', resource);
 
-resolver.enforce('order.update', resource);
-// Итог: deny — последняя совпавшая политика имеет effect = deny
 ```
 
 Это позволяет:
@@ -473,7 +471,7 @@ type Resources = {
 const policies = AbilityPolicy.parseAll<Resources>(configs);
 const resolver = new AbilityResolver<Resources>(policies);
 
-resolver.enforce('order.create', {
+await resolver.enforce('order.create', {
   user: {
     department: 'managers',
     roles: ['manager'],
@@ -484,7 +482,7 @@ resolver.enforce('order.create', {
 });
 
 // Ошибка компиляции — не хватает полей
-resolver.enforce('order.create', {
+await resolver.enforce('order.create', {
   user: {
     department: 'managers',
   },
@@ -577,7 +575,7 @@ const resolver = new AbilityResolver<Resources>(
   AbilityPolicy.parseAll(policies),
 );
 
-resolver.enforce('order.update', {
+await resolver.enforce('order.update', {
   user: { id: 'u1' },
   order: { ownerId: 'u1' },
 });
@@ -607,7 +605,7 @@ resolver.enforce('order.update', {
 Пример:
 
 ```ts
-const result = resolver.resolve('order.update', resource);
+const result = await resolver.resolve('order.update', resource);
 
 if (result.isDenied()) {
   console.log('Access denied');
@@ -628,7 +626,7 @@ const explanations = result.explain();
 Пример использования через `resolveWithExplain` (если есть):
 
 ```ts
-const explanations = resolver.resolve('order.update', resource).explain();
+const explanations = await resolver.resolve('order.update', resource).explain();
 
 explanations.forEach(explain => {
   console.log(explain.toString());
@@ -773,11 +771,11 @@ explanations.forEach(explain => {
 
 #### Методы
 
-| Метод | Аргументы | Возвращает | Описание |
-|-------|-----------|-----------|----------|
-| `resolve(action, resource)` | `string, any` | `AbilityResult` | Мягкая проверка |
-| `enforce(action, resource)` | `string, any` | `void` | Строгая проверка, выбрасывает `AbilityError` при deny |
-| `static isInActionContain(a, b)` | `string, string` | `boolean` | Проверка соответствия действия шаблону |
+| Метод | Аргументы | Возвращает               | Описание |
+|-------|-----------|--------------------------|----------|
+| `resolve(action, resource)` | `string, any` | `Promise<AbilityResult>` | Мягкая проверка |
+| `enforce(action, resource)` | `string, any` | `Promise<void>`              | Строгая проверка, выбрасывает `AbilityError` при deny |
+| `static isInActionContain(a, b)` | `string, string` | `boolean`                | Проверка соответствия действия шаблону |
 
 ---
 
@@ -897,7 +895,7 @@ explanations.forEach(explain => {
 
 ```ts
 try {
-  resolver.enforce('order.update', resource);
+  await resolver.enforce('order.update', resource);
 } catch (error) {
   if (error instanceof AbilityError) {
     console.error('Доступ запрещён политикой:', error.message);

@@ -16,7 +16,7 @@ describe('Complex integration scenarios', () => {
     };
   };
 
-  it('should deny status change for non-admins', () => {
+  it('should deny status change for non-admins', async () => {
     const config: AbilityPolicyConfig = {
       id: 'policy-1',
       name: 'Deny status change for non-admins',
@@ -57,7 +57,7 @@ describe('Complex integration scenarios', () => {
     };
 
     const policy = AbilityPolicy.parse<Resources>(config);
-    const result = new AbilityResolver(policy).resolve('order.status', {
+    const result = await new AbilityResolver(policy).resolve('order.status', {
       user: { roles: ['user', 'manager'] },
       order: { status: 'не обработан' },
       feature: { status: 'завершен' },
@@ -67,7 +67,7 @@ describe('Complex integration scenarios', () => {
     expect(result.isAllowed()).toBe(false);
   });
 
-  it('should deny status change for a non-admins', () => {
+  it('should deny status change for a non-admins', async () => {
     const config: AbilityPolicyConfig = {
       id: 'policy-1',
       name: 'Deny status change for non-admins',
@@ -108,7 +108,7 @@ describe('Complex integration scenarios', () => {
     };
 
     const policy = AbilityPolicy.parse<Resources>(config);
-    const result = new AbilityResolver(policy).resolve('order.status', {
+    const result = await new AbilityResolver(policy).resolve('order.status', {
       user: { roles: ['administrator'] },
       order: { status: 'не обработан' },
       feature: { status: 'завершен' },
