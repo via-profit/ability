@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.1.0] - 2026-03-20
+
+## Breaking changes
+
+- Методы проверки стали асинхронными:
+  - `AbilityRule.check(resource): Promise<AbilityMatch>`
+  - `AbilityRuleSet.check(resources): Promise<AbilityMatch>`
+  - `AbilityPolicy.check(resource: Resource): Promise<AbilityMatch>`
+  - `AbilityResolver.enforce(action, resource): Promise<void | never>`
+  - `AbilityResolver.resolve(action, resource):  Promise<AbilityResult> `
+
 ## [3.0.1] - 2026-03-19
 
 ## Добавлено
