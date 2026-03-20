@@ -11,7 +11,7 @@ export class AbilityResolver<Resources extends ResourcesMap> {
 
   public constructor(
     /**
-     * `Important!` The incorrect Resources type was intentionally passed to AbilityPolicy so that Typescript could suggest the name of the action and the structure of its resource in the parse method.
+     * `Important!` The incorrect Resources type was intentionally passed to AbilityPolicy so that TypeScript could suggest the name of the action and the structure of its resource in the parse method.
      */
     policyOrListOfPolicies: readonly AbilityPolicy<Resources>[] | AbilityPolicy<Resources>,
   ) {
