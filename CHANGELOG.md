@@ -2,14 +2,44 @@
 
 ## [3.1.0] - 2026-03-20
 
-## Breaking changes
+### Breaking changes
 
-- Методы проверки стали асинхронными:
-  - `AbilityRule.check(resource): Promise<AbilityMatch>`
-  - `AbilityRuleSet.check(resources): Promise<AbilityMatch>`
-  - `AbilityPolicy.check(resource: Resource): Promise<AbilityMatch>`
-  - `AbilityResolver.enforce(action, resource): Promise<void | never>`
-  - `AbilityResolver.resolve(action, resource):  Promise<AbilityResult> `
+Асинхронизация механизма проверки политик.
+Все методы, участвующие в цепочке вычисления разрешений, теперь возвращают `Promise`.
+
+#### Изменённые методы
+
+- `AbilityRule.check(resource): Promise<AbilityMatch>`  
+  Ранее возвращал `AbilityMatch` синхронно.
+
+- `AbilityRuleSet.check(resource): Promise<AbilityMatch>`  
+  Теперь выполняет правила последовательно и асинхронно.
+
+- `AbilityPolicy.check(resource): Promise<AbilityMatch>`  
+  Асинхронно проверяет ruleSet в строгом порядке.
+
+- `AbilityResolver.resolve(action, resource): Promise<AbilityResult>`  
+  Теперь асинхронный метод, который дожидается выполнения всех политик.
+
+- `AbilityResolver.enforce(action, resource): Promise<void | never>`  
+  Теперь работает асинхронно.
+
+### Миграция
+
+1. Все вызовы `check()` должны быть обновлены:
+
+```ts
+await rule.check(resource);
+await ruleSet.check(resource);
+await policy.check(resource);
+```
+
+2. Все вызовы `resolver.resolve()` и `resolver.enforce()` теперь требуют `await`:
+
+```ts
+await resolver.resolve('order.update', resource);
+await resolver.enforce('order.update', resource);
+```
 
 ## [3.0.1] - 2026-03-19
 
