@@ -41,11 +41,11 @@ export class AbilityRule<Resources extends object = object> {
 
   /**
    * Creates an instance of AbilityRule.
-   * @param {string} options.id - The unique identifier of the rule.
-   * @param {string} options.name - The name of the rule.
-   * @param {AbilityCondition} options.condition - The condition to evaluate.
-   * @param {string} options.subject - The subject of the rule.
-   * @param {string} options.resource - The resource to compare against.
+   * @param {string} params.id - The unique identifier of the rule.
+   * @param {string} params.name - The name of the rule.
+   * @param {AbilityCondition} params.condition - The condition to evaluate.
+   * @param {string} params.subject - The subject of the rule.
+   * @param {string} params.resource - The resource to compare against.
    * @param params
    */
   public constructor(params: AbilityRuleConstructorProps) {
