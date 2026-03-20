@@ -34,26 +34,26 @@ describe('AbilityRule', () => {
 
   describe('check method', () => {
     describe('equality operations', () => {
-      it('should return match when values are equal', () => {
+      it('should return match when values are equal',async () => {
         const rule = AbilityRule.equal('user.name', 'John');
 
-        const result = rule.check({ user: { name: 'John' } });
+        const result = await rule.check({ user: { name: 'John' } });
 
         expect(result).toBe(AbilityMatch.match);
       });
 
-      it('should return mismatch when values are not equal', () => {
+      it('should return mismatch when values are not equal',async () => {
         const rule = AbilityRule.equal('user.name', 'John');
 
-        const result = rule.check({ user: { name: 'Jane' } });
+        const result = await rule.check({ user: { name: 'Jane' } });
 
         expect(result).toBe(AbilityMatch.mismatch);
       });
 
-      it('should compare with dot notation resource', () => {
+      it('should compare with dot notation resource',async () => {
         const rule = AbilityRule.equal('user.name', 'opponent.name');
 
-        const result = rule.check({
+        const result = await rule.check({
           user: { name: 'John' },
           opponent: { name: 'John' },
         });
@@ -63,51 +63,51 @@ describe('AbilityRule', () => {
     });
 
     describe('numeric comparisons', () => {
-      it('should handle more_than condition', () => {
+      it('should handle more_than condition',async () => {
         const rule = AbilityRule.moreThan('user.age', 18);
 
-        expect(rule.check({ user: { age: 25 } })).toBe(AbilityMatch.match);
-        expect(rule.check({ user: { age: 18 } })).toBe(AbilityMatch.mismatch);
-        expect(rule.check({ user: { age: 15 } })).toBe(AbilityMatch.mismatch);
+        expect(await rule.check({ user: { age: 25 } })).toBe(AbilityMatch.match);
+        expect(await rule.check({ user: { age: 18 } })).toBe(AbilityMatch.mismatch);
+        expect(await rule.check({ user: { age: 15 } })).toBe(AbilityMatch.mismatch);
       });
 
-      it('should handle less_than condition', () => {
+      it('should handle less_than condition', async () => {
         const rule = AbilityRule.lessThan('user.age', 18);
 
-        expect(rule.check({ user: { age: 15 } })).toBe(AbilityMatch.match);
-        expect(rule.check({ user: { age: 18 } })).toBe(AbilityMatch.mismatch);
-        expect(rule.check({ user: { age: 25 } })).toBe(AbilityMatch.mismatch);
+        expect(await rule.check({ user: { age: 15 } })).toBe(AbilityMatch.match);
+        expect(await rule.check({ user: { age: 18 } })).toBe(AbilityMatch.mismatch);
+        expect(await rule.check({ user: { age: 25 } })).toBe(AbilityMatch.mismatch);
       });
 
-      it('should handle more_or_equal condition', () => {
+      it('should handle more_or_equal condition',async () => {
         const rule = AbilityRule.moreOrEqual('user.age', 18);
 
-        expect(rule.check({ user: { age: 25 } })).toBe(AbilityMatch.match);
-        expect(rule.check({ user: { age: 18 } })).toBe(AbilityMatch.match);
-        expect(rule.check({ user: { age: 15 } })).toBe(AbilityMatch.mismatch);
+        expect(await rule.check({ user: { age: 25 } })).toBe(AbilityMatch.match);
+        expect(await rule.check({ user: { age: 18 } })).toBe(AbilityMatch.match);
+        expect(await rule.check({ user: { age: 15 } })).toBe(AbilityMatch.mismatch);
       });
 
-      it('should handle less_or_equal condition', () => {
+      it('should handle less_or_equal condition', async () => {
         const rule = AbilityRule.lessOrEqual('user.age', 18);
 
-        expect(rule.check({ user: { age: 15 } })).toBe(AbilityMatch.match);
-        expect(rule.check({ user: { age: 18 } })).toBe(AbilityMatch.match);
-        expect(rule.check({ user: { age: 25 } })).toBe(AbilityMatch.mismatch);
+        expect(await rule.check({ user: { age: 15 } })).toBe(AbilityMatch.match);
+        expect(await rule.check({ user: { age: 18 } })).toBe(AbilityMatch.match);
+        expect(await rule.check({ user: { age: 25 } })).toBe(AbilityMatch.mismatch);
       });
     });
 
     describe('array operations', () => {
-      it('should handle in condition with array resource', () => {
+      it('should handle in condition with array resource',async () => {
         const rule = AbilityRule.in('user.role', ['admin', 'manager']);
 
-        expect(rule.check({ user: { role: 'admin' } })).toBe(AbilityMatch.match);
-        expect(rule.check({ user: { role: 'user' } })).toBe(AbilityMatch.mismatch);
+        expect(await rule.check({ user: { role: 'admin' } })).toBe(AbilityMatch.match);
+        expect(await rule.check({ user: { role: 'user' } })).toBe(AbilityMatch.mismatch);
       });
 
-      it('should handle in condition with dot notation array', () => {
+      it('should handle in condition with dot notation array',async () => {
         const rule = AbilityRule.in('user.role', 'allowed.roles');
 
-        const result = rule.check({
+        const result = await rule.check({
           user: { role: 'admin' },
           allowed: { roles: ['admin', 'manager'] },
         });
@@ -115,11 +115,11 @@ describe('AbilityRule', () => {
         expect(result).toBe(AbilityMatch.match);
       });
 
-      it('should handle not_in condition', () => {
+      it('should handle not_in condition', async () => {
         const rule = AbilityRule.notIn('user.role', ['banned', 'blocked']);
 
-        expect(rule.check({ user: { role: 'admin' } })).toBe(AbilityMatch.match);
-        expect(rule.check({ user: { role: 'banned' } })).toBe(AbilityMatch.mismatch);
+        expect(await rule.check({ user: { role: 'admin' } })).toBe(AbilityMatch.match);
+        expect(await rule.check({ user: { role: 'banned' } })).toBe(AbilityMatch.mismatch);
       });
     });
 

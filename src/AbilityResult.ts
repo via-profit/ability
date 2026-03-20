@@ -26,7 +26,6 @@ export class AbilityResult<Resource extends ResourceObject = Record<string, unkn
     });
   }
 
-  /// здесь идея в том, чтобы получить политику, matchState которой match,т.е. здесь мы ищем политику, которая "сработала"
   public getLastMatchedPolicy(): AbilityPolicy<Resource> | null {
     for (let i = this.policies.length - 1; i >= 0; i--) {
       if (this.policies[i].matchState.isEqual(AbilityMatch.match)) {

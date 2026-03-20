@@ -134,7 +134,7 @@ const rule = AbilityRule.parse({
 ```ts
 import { AbilityMatch } from '@via-profit/ability';
 
-const match = rule.check({
+const match = await rule.check({
   user: {
     department: 'managers',
   },
@@ -200,7 +200,7 @@ const ruleSet = AbilityRuleSet.parse({
 ### Проверка группы правил
 
 ```ts
-const match = ruleSet.check({
+const match = await ruleSet.check({
   user: {
     department: 'managers',
     roles: ['manager'],
@@ -324,7 +324,7 @@ const policy = AbilityPolicy.parse({
 ```ts
 import { AbilityMatch } from '@via-profit/ability';
 
-const match = policy.check({
+const match = await policy.check({
   user: {
     department: 'managers',
     roles: ['manager', 'coach'],
@@ -686,14 +686,14 @@ explanations.forEach(explain => {
 
 #### Методы
 
-| Метод | Аргументы | Возвращает | Описание |
-|-------|-----------|-----------|----------|
-| `check(resource)` | `object` | `AbilityMatch` | Проверяет правило |
+| Метод | Аргументы | Возвращает           | Описание |
+|-------|-----------|----------------------|----------|
+| `check(resource)` | `object` | `Promise<AbilityMatch>`          | Проверяет правило |
 | `explain()` | — | `AbilityExplainRule` | Объяснение проверки |
-| `export()` | — | `AbilityRuleConfig` | Экспорт в JSON |
-| `static parse(config)` | `AbilityRuleConfig` | `AbilityRule` | Создание из JSON |
-| `static equal(subject, resource)` | `string, any` | `AbilityRule` | Упрощённый конструктор |
-| `static notEqual(...)` и др. | | | Аналогично |
+| `export()` | — | `AbilityRuleConfig`  | Экспорт в JSON |
+| `static parse(config)` | `AbilityRuleConfig` | `AbilityRule`        | Создание из JSON |
+| `static equal(subject, resource)` | `string, any` | `AbilityRule`        | Упрощённый конструктор |
+| `static notEqual(...)` и др. | |                      | Аналогично |
 
 ---
 
@@ -714,16 +714,16 @@ explanations.forEach(explain => {
 
 #### Методы
 
-| Метод | Аргументы | Возвращает | Описание |
-|-------|-----------|-----------|----------|
-| `addRule(rule)` | `AbilityRule` | `this` | Добавляет правило |
-| `addRules(list)` | `AbilityRule[]` | `this` | Добавляет несколько |
-| `check(resource)` | `object` | `AbilityMatch` | Проверяет группу |
+| Метод | Аргументы | Возвращает              | Описание |
+|-------|-----------|-------------------------|----------|
+| `addRule(rule)` | `AbilityRule` | `this`                  | Добавляет правило |
+| `addRules(list)` | `AbilityRule[]` | `this`                  | Добавляет несколько |
+| `check(resource)` | `object` | `Promise<AbilityMatch>`             | Проверяет группу |
 | `explain()` | — | `AbilityExplainRuleSet` | Объяснение |
-| `export()` | — | `AbilityRuleSetConfig` | Экспорт |
-| `static parse(config)` | `AbilityRuleSetConfig` | `AbilityRuleSet` | Из JSON |
-| `static and(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Группа с `and` |
-| `static or(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Группа с `or` |
+| `export()` | — | `AbilityRuleSetConfig`  | Экспорт |
+| `static parse(config)` | `AbilityRuleSetConfig` | `AbilityRuleSet`        | Из JSON |
+| `static and(rules)` | `AbilityRule[]` | `AbilityRuleSet`        | Группа с `and` |
+| `static or(rules)` | `AbilityRule[]` | `AbilityRuleSet`        | Группа с `or` |
 
 ---
 
@@ -747,13 +747,13 @@ explanations.forEach(explain => {
 
 #### Методы
 
-| Метод | Аргументы | Возвращает | Описание |
-|-------|-----------|-----------|----------|
-| `check(resource)` | `object` | `AbilityMatch` | Проверяет политику |
+| Метод | Аргументы | Возвращает             | Описание |
+|-------|-----------|------------------------|----------|
+| `check(resource)` | `object` | `Promise<AbilityMatch>`            | Проверяет политику |
 | `explain()` | — | `AbilityExplainPolicy` | Объяснение |
-| `export()` | — | `AbilityPolicyConfig` | Экспорт |
-| `static parse(config)` | `AbilityPolicyConfig` | `AbilityPolicy` | Из JSON |
-| `static parseAll(configs)` | `AbilityPolicyConfig[]` | `AbilityPolicy[]` | Массовый парсинг |
+| `export()` | — | `AbilityPolicyConfig`  | Экспорт |
+| `static parse(config)` | `AbilityPolicyConfig` | `AbilityPolicy`        | Из JSON |
+| `static parseAll(configs)` | `AbilityPolicyConfig[]` | `AbilityPolicy[]`      | Массовый парсинг |
 
 ---
 

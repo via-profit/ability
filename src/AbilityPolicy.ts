@@ -23,7 +23,7 @@ export type AbilityPolicyConstructorProps = {
   compareMethod?: AbilityCompare;
 };
 
-export class AbilityPolicy<Resource extends ResourceObject =  Record<string, unknown>> {
+export class AbilityPolicy<Resource extends ResourceObject = Record<string, unknown>> {
   public matchState: AbilityMatch = AbilityMatch.pending;
   /**
    * List of rules
@@ -82,25 +82,37 @@ export class AbilityPolicy<Resource extends ResourceObject =  Record<string, unk
    * Check if the policy is matched
    * @param resource - The resource to check
    */
-  public check(resource: Resource): AbilityMatch {
+  public async check(resource: Resource): Promise<AbilityMatch> {
     this.matchState = AbilityMatch.mismatch;
 
     if (!this.ruleSet.length) {
       return this.matchState;
     }
 
-    const rulesetCheckStates = this.ruleSet.reduce<AbilityMatch[]>((collect, ruleSet) => {
-      return collect.concat(ruleSet.check(resource));
-    }, []);
+    const rulesetCheckStates: AbilityMatch[] = [];
+
+    for (const ruleSet of this.ruleSet) {
+      const state = await ruleSet.check(resource);
+      rulesetCheckStates.push(state);
+
+      if (AbilityCompare.and.isEqual(this.compareMethod) && AbilityMatch.mismatch.isEqual(state)) {
+        return this.matchState; // mismatch
+      }
+
+      if (AbilityCompare.or.isEqual(this.compareMethod) && AbilityMatch.match.isEqual(state)) {
+        this.matchState = AbilityMatch.match;
+        return this.matchState;
+      }
+    }
 
     if (AbilityCompare.and.isEqual(this.compareMethod)) {
-      if (rulesetCheckStates.every(ruleState => AbilityMatch.match.isEqual(ruleState))) {
+      if (rulesetCheckStates.every(s => AbilityMatch.match.isEqual(s))) {
         this.matchState = AbilityMatch.match;
       }
     }
 
     if (AbilityCompare.or.isEqual(this.compareMethod)) {
-      if (rulesetCheckStates.some(ruleState => AbilityMatch.match.isEqual(ruleState))) {
+      if (rulesetCheckStates.some(s => AbilityMatch.match.isEqual(s))) {
         this.matchState = AbilityMatch.match;
       }
     }

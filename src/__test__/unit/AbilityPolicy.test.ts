@@ -1,10 +1,10 @@
+import type { AbilityPolicyConfig } from '../../AbilityPolicy';
 import AbilityPolicy from '../../AbilityPolicy';
 import AbilityRule from '../../AbilityRule';
 import AbilityRuleSet from '../../AbilityRuleSet';
 import AbilityMatch from '../../AbilityMatch';
 import AbilityCompare from '../../AbilityCompare';
 import AbilityPolicyEffect from '../../AbilityPolicyEffect';
-import type { AbilityPolicyConfig } from '../../AbilityPolicy';
 
 describe('AbilityPolicy', () => {
   describe('constructor', () => {
@@ -63,7 +63,7 @@ describe('AbilityPolicy', () => {
 
   describe('check method', () => {
     describe('with AND comparison', () => {
-      it('should return match when all rule sets match', () => {
+      it('should return match when all rule sets match', async () => {
         const policy = new AbilityPolicy({
           id: 'test',
           name: 'Test',
@@ -76,7 +76,7 @@ describe('AbilityPolicy', () => {
           .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]))
           .addRuleSet(AbilityRuleSet.and([AbilityRule.moreThan('user.age', 18)]));
 
-        const result = policy.check({
+        const result = await policy.check({
           user: {
             name: 'John',
             age: 25,
@@ -87,7 +87,7 @@ describe('AbilityPolicy', () => {
         expect(policy.matchState).toBe(AbilityMatch.match);
       });
 
-      it('should return mismatch when any rule set mismatches', () => {
+      it('should return mismatch when any rule set mismatches', async () => {
         const policy = new AbilityPolicy({
           id: 'test',
           name: 'Test',
@@ -100,7 +100,7 @@ describe('AbilityPolicy', () => {
           .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]))
           .addRuleSet(AbilityRuleSet.and([AbilityRule.moreThan('user.age', 18)]));
 
-        const result = policy.check({
+        const result = await policy.check({
           user: {
             name: 'John',
             age: 16, // mismatches
@@ -111,7 +111,7 @@ describe('AbilityPolicy', () => {
         expect(policy.matchState).toBe(AbilityMatch.mismatch);
       });
 
-      it('should return mismatch when multiple rule sets mismatch', () => {
+      it('should return mismatch when multiple rule sets mismatch', async () => {
         const policy = new AbilityPolicy({
           id: 'test',
           name: 'Test',
@@ -124,7 +124,7 @@ describe('AbilityPolicy', () => {
           .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]))
           .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.city', 'Moscow')]));
 
-        const result = policy.check({
+        const result = await policy.check({
           user: {
             name: 'Jane', // mismatches
             city: 'SPB', // mismatches
@@ -136,7 +136,7 @@ describe('AbilityPolicy', () => {
     });
 
     describe('with OR comparison', () => {
-      it('should return match when at least one rule set matches', () => {
+      it('should return match when at least one rule set matches', async () => {
         const policy = new AbilityPolicy({
           id: 'test',
           name: 'Test',
@@ -149,7 +149,7 @@ describe('AbilityPolicy', () => {
           .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]))
           .addRuleSet(AbilityRuleSet.and([AbilityRule.moreThan('user.age', 18)]));
 
-        const result = policy.check({
+        const result = await policy.check({
           user: {
             name: 'Jane', // mismatches
             age: 25, // matches
@@ -160,7 +160,7 @@ describe('AbilityPolicy', () => {
         expect(policy.matchState).toBe(AbilityMatch.match);
       });
 
-      it('should return mismatch when no rule sets match', () => {
+      it('should return mismatch when no rule sets match', async () => {
         const policy = new AbilityPolicy({
           id: 'test',
           name: 'Test',
@@ -173,7 +173,7 @@ describe('AbilityPolicy', () => {
           .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]))
           .addRuleSet(AbilityRuleSet.and([AbilityRule.moreThan('user.age', 18)]));
 
-        const result = policy.check({
+        const result = await policy.check({
           user: {
             name: 'Jane', // mismatches
             age: 16, // mismatches
@@ -184,7 +184,7 @@ describe('AbilityPolicy', () => {
       });
     });
 
-    it('should return mismatch when no rule sets exist', () => {
+    it('should return mismatch when no rule sets exist', async () => {
       const policy = new AbilityPolicy({
         id: 'test',
         name: 'Test',
@@ -192,12 +192,12 @@ describe('AbilityPolicy', () => {
         effect: AbilityPolicyEffect.permit,
       });
 
-      const result = policy.check({ any: 'data' });
+      const result = await policy.check({ any: 'data' });
 
       expect(result).toBe(AbilityMatch.mismatch);
     });
 
-    it('should handle complex nested rule sets', () => {
+    it('should handle complex nested rule sets', async () => {
       const policy = new AbilityPolicy({
         id: 'test',
         name: 'Test',
@@ -217,7 +217,7 @@ describe('AbilityPolicy', () => {
         .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.city', 'Moscow')]));
 
       // Case 1: First rule set matches
-      let result = policy.check({
+      let result = await policy.check({
         user: {
           name: 'John',
           age: 25,
@@ -227,7 +227,7 @@ describe('AbilityPolicy', () => {
       expect(result).toBe(AbilityMatch.match);
 
       // Case 2: Second rule set matches
-      result = policy.check({
+      result = await policy.check({
         user: {
           name: 'Jane',
           age: 16,
@@ -237,7 +237,7 @@ describe('AbilityPolicy', () => {
       expect(result).toBe(AbilityMatch.match);
 
       // Case 3: No rule sets match
-      result = policy.check({
+      result = await policy.check({
         user: {
           name: 'Jane',
           age: 16,
@@ -260,7 +260,7 @@ describe('AbilityPolicy', () => {
       expect(() => policy.explain()).toThrow('First, run the check method, then explain');
     });
 
-    it('should return explain object after check', () => {
+    it('should return explain object after check', async () => {
       const policy = new AbilityPolicy({
         id: 'test',
         name: 'Test Policy',
@@ -270,7 +270,7 @@ describe('AbilityPolicy', () => {
 
       policy.addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]));
 
-      policy.check({ user: { name: 'John' } });
+      await policy.check({ user: { name: 'John' } });
       const explain = policy.explain();
 
       expect(explain).toBeDefined();
@@ -439,7 +439,7 @@ describe('AbilityPolicy', () => {
       };
     };
 
-    it('should deny status change for non-admins', () => {
+    it('should deny status change for non-admins', async () => {
       const config: AbilityPolicyConfig = {
         id: 'policy-1',
         name: 'Deny status change for non-admins',
@@ -481,7 +481,7 @@ describe('AbilityPolicy', () => {
 
       const policy = AbilityPolicy.parse<Resources['order.status']>(config);
 
-      policy.check({
+      await policy.check({
         user: { roles: ['user', 'manager'] },
         order: { status: 'не обработан' },
         feature: { status: 'завершен' },

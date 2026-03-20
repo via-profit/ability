@@ -5,7 +5,7 @@ import AbilityResolver from './AbilityResolver';
 
 const server = http.createServer();
 
-server.on('request', (_req, res) => {
+server.on('request', async  (_req, res) => {
   type MyResources = {
     ['order.status']: {
       readonly order: {
@@ -48,7 +48,7 @@ server.on('request', (_req, res) => {
 
   const policies: AbilityPolicy<MyResources>[] = AbilityPolicy.parseAll(config);
 
-  const result = new AbilityResolver(policies).resolve('order.status', {
+  const result = await new AbilityResolver(policies).resolve('order.status', {
     order: {
       amount: 1000,
     },

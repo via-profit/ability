@@ -16,7 +16,7 @@ export type AbilityRuleSetConstructorProps = {
   readonly compareMethod: AbilityCompare;
 };
 
-export class AbilityRuleSet<Resources extends ResourceObject =  Record<string, unknown>> {
+export class AbilityRuleSet<Resources extends ResourceObject = Record<string, unknown>> {
   public state: AbilityMatch = AbilityMatch.pending;
   /**
    * List of rules
@@ -61,25 +61,37 @@ export class AbilityRuleSet<Resources extends ResourceObject =  Record<string, u
     return this;
   }
 
-  public check(resources: Resources | null): AbilityMatch {
+  public async check(resources: Resources | null): Promise<AbilityMatch> {
     this.state = AbilityMatch.mismatch;
 
     if (!this.rules.length) {
       return this.state;
     }
 
-    const ruleCheckStates = this.rules.reduce<AbilityMatch[]>((collect, rule) => {
-      return collect.concat(rule.check(resources));
-    }, []);
+    const ruleCheckStates: AbilityMatch[] = [];
 
-    if (AbilityCompare.and.isEqual(this.compareMethod)) {
-      if (ruleCheckStates.every(ruleState => AbilityMatch.match.isEqual(ruleState))) {
+    for (const rule of this.rules) {
+      const state = await rule.check(resources);
+      ruleCheckStates.push(state);
+
+      if (AbilityCompare.and.isEqual(this.compareMethod) && AbilityMatch.mismatch.isEqual(state)) {
+        return this.state; // mismatch
+      }
+
+      if (AbilityCompare.or.isEqual(this.compareMethod) && AbilityMatch.match.isEqual(state)) {
+        this.state = AbilityMatch.match;
+        return this.state;
+      }
+    }
+
+      if (AbilityCompare.and.isEqual(this.compareMethod)) {
+      if (ruleCheckStates.every(s => AbilityMatch.match.isEqual(s))) {
         this.state = AbilityMatch.match;
       }
     }
 
     if (AbilityCompare.or.isEqual(this.compareMethod)) {
-      if (ruleCheckStates.some(ruleState => AbilityMatch.match.isEqual(ruleState))) {
+      if (ruleCheckStates.some(s => AbilityMatch.match.isEqual(s))) {
         this.state = AbilityMatch.match;
       }
     }
@@ -90,7 +102,7 @@ export class AbilityRuleSet<Resources extends ResourceObject =  Record<string, u
   /**
    * Parse the config JSON format to Group class instance
    */
-  public static parse<Resource extends  ResourceObject = Record<string, unknown>>(
+  public static parse<Resource extends ResourceObject = Record<string, unknown>>(
     config: AbilityRuleSetConfig,
   ): AbilityRuleSet<Resource> {
     const { id, name, rules, compareMethod } = config;

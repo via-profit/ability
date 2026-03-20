@@ -62,7 +62,7 @@ export class AbilityRule<Resources extends object = object> {
    * Check if the rule is matched
    * @param resource - The resource to check
    */
-  public check(resource: Resources | null): AbilityMatch {
+  public async check(resource: Resources | null): Promise<AbilityMatch> {
     let is: boolean = false;
 
     const [valueS, valueO] = this.extractValues(resource);

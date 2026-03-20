@@ -5,7 +5,6 @@ import AbilityMatch from './AbilityMatch';
 import { ResourcesMap } from './AbilityParser';
 
 
-
 export class AbilityResolver<Resources extends ResourcesMap> {
   policies: readonly AbilityPolicy[];
 
@@ -34,15 +33,15 @@ export class AbilityResolver<Resources extends ResourcesMap> {
       AbilityResolver.isInActionContain(policy.action, String(action)),
     );
 
-    // check the policies
-    filteredPolicies.forEach(policy => {
-      policy.check(resource);
+    for (const policy of filteredPolicies) {
+      await policy.check(resource);
+
       if (policy.matchState === AbilityMatch.pending) {
         throw new AbilityError(
           `The policy "${policy.name}" is still in a pending state. Make sure to call "check" to evaluate the policy before resolving permissions.`,
         );
       }
-    });
+    }
 
     return new AbilityResult(filteredPolicies);
   }
