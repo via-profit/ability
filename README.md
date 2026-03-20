@@ -467,13 +467,7 @@ const resolver = new AbilityResolver(AbilityPolicy.parseAll(policies));
 | `invalidatePolicy(policyId)` | Удаляет каэ конкретной политики | при изменении политики |
 | `invalidateCache()` | Полностью очищает кэш                  | при деплое, сбросе состояния |
 
----
 
-Если хочешь, я могу:
-
-- добавить примеры для Redis/InMemory,
-- расширить раздел про адаптеры кэша,
-- собрать полный обновлённый README целиком.
 
 ### Интеграция с TypeScript
 
