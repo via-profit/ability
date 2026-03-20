@@ -24,7 +24,7 @@ export type AbilityRuleConstructorProps = Omit<AbilityRuleConfig, 'condition'> &
 /**
  * Represents a rule that defines a condition to be checked against a subject and resource.
  */
-export class AbilityRule<Resources extends object = object> {
+export class AbilityRule<Resources extends object = object, Environment = unknown> {
   /**
    * Subject key path like a 'user.name'
    */
@@ -61,63 +61,64 @@ export class AbilityRule<Resources extends object = object> {
   /**
    * Check if the rule is matched
    * @param resource - The resource to check
+   * @param environment
    */
-  public async check(resource: Resources | null): Promise<AbilityMatch> {
+  public async check(resource: Resources | null, environment?: Environment): Promise<AbilityMatch> {
     let is: boolean = false;
 
-    const [valueS, valueO] = this.extractValues(resource);
+    const [subjectValue, resourceValue] = this.extractValues(resource, environment);
 
     if (AbilityCondition.less_than.isEqual(this.condition)) {
-      is = Number(valueS) < Number(valueO);
+      is = Number(subjectValue) < Number(resourceValue);
     }
 
     if (AbilityCondition.less_or_equal.isEqual(this.condition)) {
-      is = Number(valueS) <= Number(valueO);
+      is = Number(subjectValue) <= Number(resourceValue);
     }
 
     if (AbilityCondition.more_than.isEqual(this.condition)) {
-      is = Number(valueS) > Number(valueO);
+      is = Number(subjectValue) > Number(resourceValue);
     }
 
     if (AbilityCondition.more_or_equal.isEqual(this.condition)) {
-      is = Number(valueS) >= Number(valueO);
+      is = Number(subjectValue) >= Number(resourceValue);
     }
 
     if (AbilityCondition.equal.isEqual(this.condition)) {
-      is = valueS === valueO;
+      is = subjectValue === resourceValue;
     }
 
     if (AbilityCondition.not_equal.isEqual(this.condition)) {
-      is = valueS !== valueO;
+      is = subjectValue !== resourceValue;
     }
 
     if (AbilityCondition.in.isEqual(this.condition)) {
       // [<some>] and [<some>]
-      if (Array.isArray(valueS) && Array.isArray(valueO)) {
-        is = valueS.some(v => valueO.find(v1 => v1 === v));
+      if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
+        is = subjectValue.some(v => resourceValue.find(v1 => v1 === v));
       }
       // <some> and [<some>]
-      if ((typeof valueS === 'string' || typeof valueS === 'number') && Array.isArray(valueO)) {
-        is = valueO.includes(valueS);
+      if ((typeof subjectValue === 'string' || typeof subjectValue === 'number') && Array.isArray(resourceValue)) {
+        is = resourceValue.includes(subjectValue);
       }
       // [<some>] and <some>
-      if ((typeof valueO === 'string' || typeof valueO === 'number') && Array.isArray(valueS)) {
-        is = valueS.includes(valueO);
+      if ((typeof resourceValue === 'string' || typeof resourceValue === 'number') && Array.isArray(subjectValue)) {
+        is = subjectValue.includes(resourceValue);
       }
     }
 
     if (AbilityCondition.not_in.isEqual(this.condition)) {
       // [<some>] and [<some>]
-      if (Array.isArray(valueS) && Array.isArray(valueO)) {
-        is = !valueS.some(v => valueO.find(v1 => v1 === v));
+      if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
+        is = !subjectValue.some(v => resourceValue.find(v1 => v1 === v));
       }
       // <some> and [<some>]
-      if ((typeof valueS === 'string' || typeof valueS === 'number') && Array.isArray(valueO)) {
-        is = !valueO.includes(valueS);
+      if ((typeof subjectValue === 'string' || typeof subjectValue === 'number') && Array.isArray(resourceValue)) {
+        is = !resourceValue.includes(subjectValue);
       }
       // [<some>] and <some>
-      if ((typeof valueO === 'string' || typeof valueO === 'number') && Array.isArray(valueS)) {
-        is = !valueS.includes(valueO);
+      if ((typeof resourceValue === 'string' || typeof resourceValue === 'number') && Array.isArray(subjectValue)) {
+        is = !subjectValue.includes(resourceValue);
       }
     }
 
@@ -129,42 +130,64 @@ export class AbilityRule<Resources extends object = object> {
   /**
    * Extract values from the resourceData
    * @param resourceData - The resourceData to extract values from
+   * @param environment - Environment data
    */
   public extractValues(
     resourceData: Resources | null,
+    environment?: Environment | null,
   ): [
     string | number | boolean | (string | number)[] | null | undefined,
     string | number | boolean | (string | number)[] | null | undefined,
   ] {
-    let leftSideValue;
-    let rightSideValue;
+    let subjectValue;
+    let resourceValue;
 
-    if (resourceData === null || typeof resourceData === 'undefined') {
+    if (
+      (resourceData === null || typeof resourceData === 'undefined') &&
+      (environment === null || typeof environment === 'undefined')
+    ) {
       return [NaN, NaN];
     }
 
-    const isPath = (str: unknown): str is string => {
-      return typeof str === 'string' && str.match(/\./g) !== null;
-    };
-
-    if (isPath(this.subject)) {
-      leftSideValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
-        resourceData,
-        this.subject,
-      );
+    // left side resolve
+    if (this.subject.includes('.')) {
+      // if is environment
+      if (this.subject.startsWith('env.') && typeof environment !== 'undefined') {
+        subjectValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
+          environment,
+          this.subject.replace(/^env\./, ''),
+        );
+        // if is resource
+      } else {
+        subjectValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
+          resourceData,
+          this.subject,
+        );
+      }
     } else {
-      leftSideValue = this.subject;
-    }
-    if (isPath(this.resource)) {
-      rightSideValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
-        resourceData,
-        this.resource,
-      );
-    } else {
-      rightSideValue = this.resource as number | boolean | string | (string | number)[];
+      subjectValue = this.subject;
     }
 
-    return [leftSideValue, rightSideValue];
+    // right side resolve
+    if (typeof this.resource === 'string' && this.resource.includes('.')) {
+      // if is environment
+      if (this.resource.startsWith('env.') && typeof environment !== 'undefined') {
+        resourceValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
+          environment,
+          this.resource.replace(/^env\./, ''),
+        );
+      } else {
+        // if is resource
+        resourceValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
+          resourceData,
+          this.resource,
+        );
+      }
+    } else {
+      resourceValue = this.resource;
+    }
+
+    return [subjectValue, resourceValue];
   }
 
   /**
@@ -198,10 +221,12 @@ export class AbilityRule<Resources extends object = object> {
     return resource as T;
   }
 
-  public static parse<Resources extends object>(config: AbilityRuleConfig): AbilityRule<Resources> {
+  public static parse<Resources extends object, Environment = unknown>(
+    config: AbilityRuleConfig,
+  ): AbilityRule<Resources, Environment> {
     const { id, name, subject, resource, condition } = config;
 
-    return new AbilityRule<Resources>({
+    return new AbilityRule<Resources, Environment>({
       id,
       name,
       subject,
@@ -223,87 +248,87 @@ export class AbilityRule<Resources extends object = object> {
     };
   }
 
-  static equal<Resources extends object = object>(
+  static equal<Resources extends object = object, Environment = unknown>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
-  ): AbilityRule<Resources> {
-    return new AbilityRule<Resources>({
+  ): AbilityRule<Resources, Environment> {
+    return new AbilityRule<Resources, Environment>({
       condition: AbilityCondition.equal,
       subject,
       resource,
     });
   }
 
-  static notIn<Resources extends object = object>(
+  static notIn<Resources extends object = object, Environment = unknown>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
-  ): AbilityRule<Resources> {
-    return new AbilityRule<Resources>({
+  ): AbilityRule<Resources, Environment> {
+    return new AbilityRule<Resources, Environment>({
       condition: AbilityCondition.not_in,
       subject,
       resource,
     });
   }
 
-  static in<Resources extends object = object>(
+  static in<Resources extends object = object, Environment = unknown>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
-  ): AbilityRule<Resources> {
-    return new AbilityRule<Resources>({
+  ): AbilityRule<Resources, Environment> {
+    return new AbilityRule<Resources, Environment>({
       condition: AbilityCondition.in,
       subject,
       resource,
     });
   }
 
-  static notEqual<Resources extends object = object>(
+  static notEqual<Resources extends object = object, Environment = unknown>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
-  ): AbilityRule<Resources> {
-    return new AbilityRule<Resources>({
+  ): AbilityRule<Resources, Environment> {
+    return new AbilityRule<Resources, Environment>({
       condition: AbilityCondition.not_equal,
       subject,
       resource,
     });
   }
 
-  static lessThan<Resources extends object = object>(
+  static lessThan<Resources extends object = object, Environment = unknown>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
-  ): AbilityRule<Resources> {
-    return new AbilityRule<Resources>({
+  ): AbilityRule<Resources, Environment> {
+    return new AbilityRule<Resources, Environment>({
       condition: AbilityCondition.less_than,
       subject,
       resource,
     });
   }
 
-  static lessOrEqual<Resources extends object = object>(
+  static lessOrEqual<Resources extends object = object, Environment = unknown>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
-  ): AbilityRule<Resources> {
-    return new AbilityRule<Resources>({
+  ): AbilityRule<Resources, Environment> {
+    return new AbilityRule<Resources, Environment>({
       condition: AbilityCondition.less_or_equal,
       subject,
       resource,
     });
   }
-  static moreThan<Resources extends object = object>(
+  static moreThan<Resources extends object = object, Environment = unknown>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
-  ): AbilityRule<Resources> {
-    return new AbilityRule<Resources>({
+  ): AbilityRule<Resources, Environment> {
+    return new AbilityRule<Resources, Environment>({
       condition: AbilityCondition.more_than,
       subject,
       resource,
     });
   }
 
-  static moreOrEqual<Resources extends object = object>(
+  static moreOrEqual<Resources extends object = object, Environment = unknown>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
-  ): AbilityRule<Resources> {
-    return new AbilityRule<Resources>({
+  ): AbilityRule<Resources, Environment> {
+    return new AbilityRule<Resources, Environment>({
       condition: AbilityCondition.more_or_equal,
       subject,
       resource,

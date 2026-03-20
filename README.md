@@ -29,7 +29,8 @@
   - [Приоритет и множественные совпадения](#приоритет-и-множественные-совпадения)
   - [Комбинирование точных действий и wildcard](#комбинирование-точных-действий-и-wildcard)
   - [Интеграция с TypeScript](#интеграция-с-typescript)
-- [AbilityResult и объяснения](#abilityresult-и-объяснения)
+- [Environment (контекст выполнения)](#environment-контекст-выполнения)
+- [AbilityResult и Explain](#abilityresult-и-explain)
   - [AbilityResult](#abilityresult)
   - [AbilityExplain](#abilityexplain)
 - [Рекомендации по проектированию](#рекомендации-по-проектированию)
@@ -103,8 +104,8 @@ import { AbilityRule, AbilityCondition } from '@via-profit/ability';
 const rule = new AbilityRule({
   id: 'rule-department-managers',
   name: 'Пользователь из отдела managers',
-  subject: 'user.department',
-  resource: 'managers',
+  subject: 'user.department', // <-- subject - это всегда строка dot.notation
+  resource: 'managers',  // <-- resource может быть dot.notation строкой, либо значением примитива
   condition: AbilityCondition.equal,
 });
 
@@ -347,7 +348,7 @@ const isMatch = match.isEqual(AbilityMatch.match);
 `AbilityResolver` — центральный компонент, который:
 
 1. Отбирает политики по `action` (с учётом wildcard).
-2. Вызывает `policy.check(resource)` для каждой.
+2. Вызывает `policy.check(resource, environemnt?)` для каждой.
 3. Формирует итоговый результат в виде `AbilityResult`.
 4. При необходимости выбрасывает `AbilityError` (метод `enforce`).
 
@@ -590,6 +591,140 @@ await resolver.enforce('order.update', {
 
 ---
 
+## Environment (контекст выполнения)
+
+Пакет имеет поддержку полноценных **environment‑атрибутов**, что позволяет использовать в политиках данные окружения, например:
+
+- время запроса,
+- IP‑адрес,
+- геолокацию,
+- параметры устройства,
+- заголовки запроса,
+- контекст сессии,
+- любые другие внешние условия.
+
+
+
+### Что такое Environment
+
+**Environment** — это объект, содержащий данные окружения, которые не принадлежат ни пользователю, ни ресурсу.
+
+Примеры:
+
+```ts
+type Environment = {
+  time: {
+    hour: number;
+  };
+  ip: string;
+  geo?: {
+    country: string;
+  };
+};
+```
+
+Environment передаётся в `resolve()` и `enforce()` как третий аргумент:
+
+```ts
+await resolver.resolve('order.update', resource, environment);
+await resolver.enforce('order.update', resource, environment);
+```
+
+### Использование environment в правилах
+
+В политике можно ссылаться на environment через путь `env.*`.
+
+Пример:
+
+```json
+{
+  "subject": "env.time.hour",
+  "resource": 9,
+  "condition": "more_or_equal"
+}
+```
+
+Это правило означает:
+
+> Разрешить действие, если текущий час ≥ 9.
+
+### Пример политики с environment
+
+```json
+{
+  "id": "deny-night-updates",
+  "name": "Deny updates at night",
+  "action": "order.update",
+  "effect": "deny",
+  "compareMethod": "and",
+  "ruleSet": [
+    {
+      "compareMethod": "and",
+      "rules": [
+        {
+          "subject": "env.time.hour",
+          "resource": 22,
+          "condition": "more_or_equal"
+        },
+        {
+          "subject": "env.time.hour",
+          "resource": 6,
+          "condition": "less_than"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Эта политика запрещает обновление заказов ночью (22:00–06:00).
+
+### Как работает извлечение значений
+
+Если в правиле указан путь:
+
+- `env.*` → значение берётся из environment
+- `user.*`, `order.*`, `profile.*` → из resource
+- литерал (`18`, `"admin"`, `true`) → используется как есть
+
+Пример:
+
+```ts
+subject: "env.geo.country"
+resource: "user.country"
+condition: "equal"
+```
+
+### Типизация Environment
+
+Тип Environment задаётся на уровне `AbilityResolver`:
+
+```ts
+const resolver = new AbilityResolver<Resources, Environment>(policies);
+```
+
+Это позволяет:
+
+- получать автодополнение в IDE,
+- проверять корректность путей `env.*`,
+- избегать ошибок при передаче environment.
+
+### Поведение при отсутствии environment
+
+Если правило использует `env.*`, но environment не передан:
+
+```ts
+await rule.check(resource, undefined);
+```
+
+то значение `env.*` будет `undefined`, и сравнение будет выполнено так, как если бы environment не было вовсе:
+
+- `undefined >= 10` → `false`
+- `undefined === true` → `false`
+
+
+---
+
 ## AbilityResult и Explain
 
 ### AbilityResult
@@ -752,14 +887,14 @@ function OrderUpdateButton({ order, user }) {
 
 #### Методы
 
-| Метод | Аргументы | Возвращает           | Описание |
-|-------|-----------|----------------------|----------|
-| `check(resource)` | `object` | `Promise<AbilityMatch>`          | Проверяет правило |
-| `explain()` | — | `AbilityExplainRule` | Объяснение проверки |
-| `export()` | — | `AbilityRuleConfig`  | Экспорт в JSON |
-| `static parse(config)` | `AbilityRuleConfig` | `AbilityRule`        | Создание из JSON |
+| Метод                             | Аргументы | Возвращает           | Описание |
+|-----------------------------------|-----------|----------------------|----------|
+| `check(resource, environment?)`   | `object` | `Promise<AbilityMatch>`          | Проверяет правило |
+| `explain()`                       | — | `AbilityExplainRule` | Объяснение проверки |
+| `export()`                        | — | `AbilityRuleConfig`  | Экспорт в JSON |
+| `static parse(config)`            | `AbilityRuleConfig` | `AbilityRule`        | Создание из JSON |
 | `static equal(subject, resource)` | `string, any` | `AbilityRule`        | Упрощённый конструктор |
-| `static notEqual(...)` и др. | |                      | Аналогично |
+| `static notEqual(...)` и др.      | |                      | Аналогично |
 
 ---
 
@@ -780,16 +915,16 @@ function OrderUpdateButton({ order, user }) {
 
 #### Методы
 
-| Метод | Аргументы | Возвращает              | Описание |
-|-------|-----------|-------------------------|----------|
-| `addRule(rule)` | `AbilityRule` | `this`                  | Добавляет правило |
-| `addRules(list)` | `AbilityRule[]` | `this`                  | Добавляет несколько |
-| `check(resource)` | `object` | `Promise<AbilityMatch>`             | Проверяет группу |
-| `explain()` | — | `AbilityExplainRuleSet` | Объяснение |
-| `export()` | — | `AbilityRuleSetConfig`  | Экспорт |
-| `static parse(config)` | `AbilityRuleSetConfig` | `AbilityRuleSet`        | Из JSON |
-| `static and(rules)` | `AbilityRule[]` | `AbilityRuleSet`        | Группа с `and` |
-| `static or(rules)` | `AbilityRule[]` | `AbilityRuleSet`        | Группа с `or` |
+| Метод                           | Аргументы | Возвращает              | Описание |
+|---------------------------------|-----------|-------------------------|----------|
+| `addRule(rule)`                 | `AbilityRule` | `this`                  | Добавляет правило |
+| `addRules(list)`                | `AbilityRule[]` | `this`                  | Добавляет несколько |
+| `check(resource, environment?)` | `object` | `Promise<AbilityMatch>`             | Проверяет группу |
+| `explain()`                     | — | `AbilityExplainRuleSet` | Объяснение |
+| `export()`                      | — | `AbilityRuleSetConfig`  | Экспорт |
+| `static parse(config)`          | `AbilityRuleSetConfig` | `AbilityRuleSet`        | Из JSON |
+| `static and(rules)`             | `AbilityRule[]` | `AbilityRuleSet`        | Группа с `and` |
+| `static or(rules)`              | `AbilityRule[]` | `AbilityRuleSet`        | Группа с `or` |
 
 ---
 
@@ -813,13 +948,13 @@ function OrderUpdateButton({ order, user }) {
 
 #### Методы
 
-| Метод | Аргументы | Возвращает             | Описание |
-|-------|-----------|------------------------|----------|
-| `check(resource)` | `object` | `Promise<AbilityMatch>`            | Проверяет политику |
-| `explain()` | — | `AbilityExplainPolicy` | Объяснение |
-| `export()` | — | `AbilityPolicyConfig`  | Экспорт |
-| `static parse(config)` | `AbilityPolicyConfig` | `AbilityPolicy`        | Из JSON |
-| `static parseAll(configs)` | `AbilityPolicyConfig[]` | `AbilityPolicy[]`      | Массовый парсинг |
+| Метод                           | Аргументы | Возвращает             | Описание |
+|---------------------------------|-----------|------------------------|----------|
+| `check(resource, environment?)` | `object` | `Promise<AbilityMatch>`            | Проверяет политику |
+| `explain()`                     | — | `AbilityExplainPolicy` | Объяснение |
+| `export()`                      | — | `AbilityPolicyConfig`  | Экспорт |
+| `static parse(config)`          | `AbilityPolicyConfig` | `AbilityPolicy`        | Из JSON |
+| `static parseAll(configs)`      | `AbilityPolicyConfig[]` | `AbilityPolicy[]`      | Массовый парсинг |
 
 ---
 

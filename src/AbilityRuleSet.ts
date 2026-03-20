@@ -16,12 +16,15 @@ export type AbilityRuleSetConstructorProps = {
   readonly compareMethod: AbilityCompare;
 };
 
-export class AbilityRuleSet<Resources extends ResourceObject = Record<string, unknown>> {
+export class AbilityRuleSet<
+  Resources extends ResourceObject = Record<string, unknown>,
+  Environment = unknown,
+> {
   public state: AbilityMatch = AbilityMatch.pending;
   /**
    * List of rules
    */
-  public rules: AbilityRule[] = [];
+  public rules: AbilityRule<Resources, Environment>[] = [];
 
   /**
    * Rules compare method.\
@@ -49,19 +52,19 @@ export class AbilityRuleSet<Resources extends ResourceObject = Record<string, un
     this.compareMethod = compareMethod;
   }
 
-  public addRule(rule: AbilityRule): this {
+  public addRule(rule: AbilityRule<Resources, Environment>): this {
     this.rules.push(rule);
 
     return this;
   }
 
-  public addRules(rules: AbilityRule[]): this {
+  public addRules(rules: AbilityRule<Resources, Environment>[]): this {
     rules.forEach(rule => this.addRule(rule));
 
     return this;
   }
 
-  public async check(resources: Resources | null): Promise<AbilityMatch> {
+  public async check(resources: Resources | null, environment?: Environment): Promise<AbilityMatch> {
     this.state = AbilityMatch.mismatch;
 
     if (!this.rules.length) {
@@ -71,7 +74,7 @@ export class AbilityRuleSet<Resources extends ResourceObject = Record<string, un
     const ruleCheckStates: AbilityMatch[] = [];
 
     for (const rule of this.rules) {
-      const state = await rule.check(resources);
+      const state = await rule.check(resources, environment);
       ruleCheckStates.push(state);
 
       if (AbilityCompare.and.isEqual(this.compareMethod) && AbilityMatch.mismatch.isEqual(state)) {
@@ -84,7 +87,7 @@ export class AbilityRuleSet<Resources extends ResourceObject = Record<string, un
       }
     }
 
-      if (AbilityCompare.and.isEqual(this.compareMethod)) {
+    if (AbilityCompare.and.isEqual(this.compareMethod)) {
       if (ruleCheckStates.every(s => AbilityMatch.match.isEqual(s))) {
         this.state = AbilityMatch.match;
       }
@@ -102,12 +105,12 @@ export class AbilityRuleSet<Resources extends ResourceObject = Record<string, un
   /**
    * Parse the config JSON format to Group class instance
    */
-  public static parse<Resource extends ResourceObject = Record<string, unknown>>(
+  public static parse<Resource extends ResourceObject = Record<string, unknown>, Environment = unknown,>(
     config: AbilityRuleSetConfig,
-  ): AbilityRuleSet<Resource> {
+  ): AbilityRuleSet<Resource, Environment> {
     const { id, name, rules, compareMethod } = config;
 
-    const ruleSet = new AbilityRuleSet<Resource>({
+    const ruleSet = new AbilityRuleSet<Resource, Environment>({
       compareMethod: new AbilityCompare(compareMethod),
       name,
       id,
@@ -115,7 +118,7 @@ export class AbilityRuleSet<Resources extends ResourceObject = Record<string, un
 
     // Adding rules if exists
     if (rules && rules.length > 0) {
-      const abilityRules = rules.map(ruleConfig => AbilityRule.parse(ruleConfig));
+      const abilityRules = rules.map(ruleConfig => AbilityRule.parse<Resource, Environment>(ruleConfig));
 
       ruleSet.addRules(abilityRules);
     }

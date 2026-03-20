@@ -23,12 +23,15 @@ export type AbilityPolicyConstructorProps = {
   compareMethod?: AbilityCompare;
 };
 
-export class AbilityPolicy<Resource extends ResourceObject = Record<string, unknown>> {
+export class AbilityPolicy<
+  Resource extends  ResourceObject = Record<string, unknown>,
+  Environment = unknown,
+> {
   public matchState: AbilityMatch = AbilityMatch.pending;
   /**
    * List of rules
    */
-  public ruleSet: AbilityRuleSet<Resource>[] = [];
+  public ruleSet: AbilityRuleSet<Resource, Environment>[] = [];
 
   /**
    * Policy effect
@@ -72,7 +75,7 @@ export class AbilityPolicy<Resource extends ResourceObject = Record<string, unkn
    * Add rule set to the policy
    * @param ruleSet - The rule set to add
    */
-  public addRuleSet(ruleSet: AbilityRuleSet<Resource>): this {
+  public addRuleSet(ruleSet: AbilityRuleSet<Resource, Environment>): this {
     this.ruleSet.push(ruleSet);
 
     return this;
@@ -81,8 +84,9 @@ export class AbilityPolicy<Resource extends ResourceObject = Record<string, unkn
   /**
    * Check if the policy is matched
    * @param resource - The resource to check
+   * @param environment - The user environment object
    */
-  public async check(resource: Resource): Promise<AbilityMatch> {
+  public async check(resource: Resource, environment?: Environment): Promise<AbilityMatch> {
     this.matchState = AbilityMatch.mismatch;
 
     if (!this.ruleSet.length) {
@@ -92,7 +96,7 @@ export class AbilityPolicy<Resource extends ResourceObject = Record<string, unkn
     const rulesetCheckStates: AbilityMatch[] = [];
 
     for (const ruleSet of this.ruleSet) {
-      const state = await ruleSet.check(resource);
+      const state = await ruleSet.check(resource, environment);
       rulesetCheckStates.push(state);
 
       if (AbilityCompare.and.isEqual(this.compareMethod) && AbilityMatch.mismatch.isEqual(state)) {
@@ -133,22 +137,24 @@ export class AbilityPolicy<Resource extends ResourceObject = Record<string, unkn
    * @param configs - Array of policy configurations
    * @returns Array of AbilityPolicy instances
    */
-  public static parseAll<Resource extends ResourceObject>(
-    configs: readonly AbilityPolicyConfig[],
-  ): AbilityPolicy<Resource>[] {
-    return configs.map(config => this.parse<Resource>(config));
+  public static parseAll<
+    Resource extends ResourceObject,
+    Environment = unknown,
+  >(configs: readonly AbilityPolicyConfig[]): AbilityPolicy<Resource, Environment>[] {
+    return configs.map(config => this.parse<Resource, Environment>(config));
   }
 
   /**
    * Parse the config JSON format to Policy class instance
    */
-  public static parse<Resource extends ResourceObject = Record<string, unknown>>(
-    config: AbilityPolicyConfig,
-  ): AbilityPolicy<Resource> {
+  public static parse<
+    Resource extends ResourceObject = Record<string, unknown>,
+    Environment = unknown,
+  >(config: AbilityPolicyConfig): AbilityPolicy<Resource, Environment> {
     const { id, name, ruleSet, compareMethod, action, effect } = config;
 
     // Create the empty policy
-    const policy = new AbilityPolicy<Resource>({
+    const policy = new AbilityPolicy<Resource, Environment>({
       name,
       id,
       action,
@@ -158,7 +164,7 @@ export class AbilityPolicy<Resource extends ResourceObject = Record<string, unkn
     policy.compareMethod = new AbilityCompare(compareMethod);
 
     ruleSet.forEach(ruleSetConfig => {
-      policy.addRuleSet(AbilityRuleSet.parse(ruleSetConfig));
+      policy.addRuleSet(AbilityRuleSet.parse<Resource, Environment>(ruleSetConfig));
     });
 
     return policy;

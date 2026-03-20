@@ -5,7 +5,10 @@ import AbilityMatch from './AbilityMatch';
 import { ResourcesMap } from './AbilityParser';
 
 
-export class AbilityResolver<Resources extends ResourcesMap> {
+export class AbilityResolver<
+  Resources extends ResourcesMap,
+  Environment = unknown,
+> {
   policies: readonly AbilityPolicy[];
 
   public constructor(
@@ -28,6 +31,7 @@ export class AbilityResolver<Resources extends ResourcesMap> {
   public async resolve<Action extends keyof Resources>(
     action: Action,
     resource: Resources[Action],
+    environment?: Environment,
   ): Promise<AbilityResult<Resources[Action]>> {
     const filteredPolicies = this.policies.filter(policy =>
       AbilityResolver.isInActionContain(policy.action, String(action)),
@@ -49,8 +53,9 @@ export class AbilityResolver<Resources extends ResourcesMap> {
   public async enforce<Action extends keyof Resources>(
     action: Action,
     resource: Resources[Action],
+    environment?: Environment,
   ): Promise<void | never> {
-    const result = await this.resolve(action, resource);
+    const result = await this.resolve(action, resource, environment);
 
     if (result.isDenied()) {
       const policyName = result.getLastMatchedPolicy()?.name?.toString() || 'unknown';
