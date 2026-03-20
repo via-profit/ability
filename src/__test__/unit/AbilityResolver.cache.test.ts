@@ -27,7 +27,9 @@ describe('AbilityResolver — cache integration', () => {
   test('should use cache on second resolve call', async () => {
     const policy = makePolicy('p1', AbilityMatch.match);
 
-    const resolver = new AbilityResolver([policy], new AbilityInMemoryCache());
+    const resolver = new AbilityResolver([policy], {
+      cache: new AbilityInMemoryCache(),
+    });
 
     await resolver.resolve('test.action', resource, environment);
     await resolver.resolve('test.action', resource, environment);
@@ -39,7 +41,7 @@ describe('AbilityResolver — cache integration', () => {
   test('should not use cache when cache = null', async () => {
     const policy = makePolicy('p2', AbilityMatch.match);
 
-    const resolver = new AbilityResolver([policy], null);
+    const resolver = new AbilityResolver([policy], {cache: null});
 
     await resolver.resolve('test.action', resource, environment);
     await resolver.resolve('test.action', resource, environment);
@@ -66,7 +68,7 @@ describe('AbilityResolver — cache integration', () => {
     const cache = new AbilityInMemoryCache();
     const policy = makePolicy('p4', AbilityMatch.match);
 
-    const resolver = new AbilityResolver([policy], cache);
+    const resolver = new AbilityResolver([policy], { cache });
 
     await resolver.resolve('test.action', resource, environment);
     expect(policy.check).toHaveBeenCalledTimes(1);
@@ -86,7 +88,7 @@ describe('AbilityResolver — cache integration', () => {
     const p1 = makePolicy('p1', AbilityMatch.match);
     const p2 = makePolicy('p2', AbilityMatch.match);
 
-    const resolver = new AbilityResolver([p1, p2], new AbilityInMemoryCache());
+    const resolver = new AbilityResolver([p1, p2], { cache: new AbilityInMemoryCache() });
 
     await resolver.resolve('test.action', resource, environment);
     await resolver.resolve('test.action', resource, environment);
@@ -99,7 +101,7 @@ describe('AbilityResolver — cache integration', () => {
   test('should generate different cache entries for different resource/env', async () => {
     const policy = makePolicy('p6', AbilityMatch.match);
 
-    const resolver = new AbilityResolver([policy], new AbilityInMemoryCache());
+    const resolver = new AbilityResolver([policy], { cache: new AbilityInMemoryCache() });
 
     await resolver.resolve('test.action', { user: { id: 1 } }, { time: { hour: 10 } });
     await resolver.resolve('test.action', { user: { id: 2 } }, { time: { hour: 10 } });

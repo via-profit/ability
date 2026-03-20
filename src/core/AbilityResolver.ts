@@ -7,6 +7,10 @@ import { AbilityCacheAdapter } from '~/cache/AbilityCacheAdapter';
 import { AbilityInMemoryCache } from '~/cache/AbilityInMemoryCache';
 
 
+export type AbilityResolverOptions = {
+  readonly cache?: AbilityCacheAdapter | null;
+};
+
 export class AbilityResolver<Resources extends ResourcesMap, Environment = unknown> {
   private policies: readonly AbilityPolicy[];
   private readonly cache?: AbilityCacheAdapter | null;
@@ -16,8 +20,9 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
      * `Important!` The incorrect Resources type was intentionally passed to AbilityPolicy so that TypeScript could suggest the name of the action and the structure of its resource in the parse method.
      */
     policyOrListOfPolicies: readonly AbilityPolicy<Resources>[] | AbilityPolicy<Resources>,
-    cache?: AbilityCacheAdapter | null,
+    options?: AbilityResolverOptions,
   ) {
+    const { cache } = options || {};
     this.cache = typeof cache === 'undefined' ? new AbilityInMemoryCache() : cache;
     this.policies = Array.isArray(policyOrListOfPolicies)
       ? policyOrListOfPolicies
