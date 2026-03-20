@@ -2,12 +2,24 @@
 
 ## [3.1.0] - 2026-03-20
 
+### Добавлено
+
+- Добавлена полноценная поддержка `environment` как третьего аргумента в:
+  - `resolver.resolve(action, resource, environment)`
+  - `resolver.enforce(action, resource, environment)`
+- Введена возможность использовать пути вида `env.*` в правилах политик.
+  - Пример: `"subject": "env.time.hour"`
+- Добавлена поддержка смешанных сравнений:
+  - `resource.*` ↔ `env.*`
+  - литерал ↔ `env.*`
+  - `env.*` ↔ литерал
+
 ### Breaking changes
 
 Асинхронизация механизма проверки политик.
 Все методы, участвующие в цепочке вычисления разрешений, теперь возвращают `Promise`.
 
-#### Изменённые методы
+#### Изменено
 
 - `AbilityRule.check(resource): Promise<AbilityMatch>`  
   Ранее возвращал `AbilityMatch` синхронно.
