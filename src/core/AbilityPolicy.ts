@@ -164,7 +164,7 @@ export class AbilityPolicy<
     policy.compareMethod = new AbilityCompare(compareMethod);
 
     ruleSet.forEach(ruleSetConfig => {
-      policy.addRuleSet(AbilityRuleSet.parse<Resource, Environment>(ruleSetConfig));
+      policy.addRuleSet(AbilityRuleSet.fromJSON<Resource, Environment>(ruleSetConfig));
     });
 
     return policy;

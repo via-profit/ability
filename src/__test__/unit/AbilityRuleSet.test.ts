@@ -212,7 +212,7 @@ describe('AbilityRuleSet', () => {
         ],
       };
 
-      const ruleSet = AbilityRuleSet.parse(config);
+      const ruleSet = AbilityRuleSet.fromJSON(config);
 
       expect(ruleSet.id).toBe('test-id');
       expect(ruleSet.name).toBe('Test RuleSet');
