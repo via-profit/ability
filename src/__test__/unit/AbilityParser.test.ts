@@ -148,7 +148,7 @@ describe('AbilityParser', () => {
 
     it('should generate type for simple equality rule', () => {
       const policies = [
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
           action: 'test.action',
@@ -180,7 +180,7 @@ describe('AbilityParser', () => {
 
     it('should generate number type for numeric comparisons', () => {
       const policies = [
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
           action: 'test.action',
@@ -210,7 +210,7 @@ describe('AbilityParser', () => {
 
     it('should generate array type for in/not in conditions', () => {
       const policies = [
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
           action: 'test.action',
@@ -240,7 +240,7 @@ describe('AbilityParser', () => {
 
     it('should generate union types for conflicting types', () => {
       const policies = [
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy 1',
           action: 'test.action',
@@ -261,7 +261,7 @@ describe('AbilityParser', () => {
             },
           ],
         }),
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'policy-2',
           name: 'Test Policy 2',
           action: 'test.action',
@@ -291,7 +291,7 @@ describe('AbilityParser', () => {
 
     it('should handle multiple actions', () => {
       const policies = [
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Policy 1',
           action: 'order.create',
@@ -312,7 +312,7 @@ describe('AbilityParser', () => {
             },
           ],
         }),
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'policy-2',
           name: 'Policy 2',
           action: 'user.update',
@@ -345,7 +345,7 @@ describe('AbilityParser', () => {
 
     it('should handle nested paths correctly', () => {
       const policies = [
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
           action: 'test.action',
@@ -384,7 +384,7 @@ describe('AbilityParser', () => {
 
     it('should handle boolean values', () => {
       const policies = [
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
           action: 'test.action',
@@ -416,7 +416,7 @@ describe('AbilityParser', () => {
 
     it('should handle empty arrays', () => {
       const policies = [
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
           action: 'test.action',
@@ -446,7 +446,7 @@ describe('AbilityParser', () => {
 
     it('should handle arrays with mixed types', () => {
       const policies = [
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
           action: 'test.action',
@@ -476,7 +476,7 @@ describe('AbilityParser', () => {
 
     it('should sort keys alphabetically', () => {
       const policies = [
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
           action: 'test.action',
@@ -516,7 +516,7 @@ describe('AbilityParser', () => {
   describe('integration with real policies', () => {
     it('should generate types for auth policy', () => {
       const policies = [
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'auth-policy',
           name: 'Authorization Required',
           action: '*.authorized',
@@ -549,7 +549,7 @@ describe('AbilityParser', () => {
 
     it('should generate types for status change policy', () => {
       const policies = [
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'status-policy',
           name: 'Prevent Status Change',
           action: 'order.status.update',
@@ -601,7 +601,7 @@ describe('AbilityParser', () => {
 
     it('should generate types for password access policy', () => {
       const policies = [
-        AbilityPolicy.parse({
+        AbilityPolicy.fromJSON({
           id: 'password-policy',
           name: 'Password Access Restriction',
           action: 'user.account.password.read',

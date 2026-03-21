@@ -3,8 +3,7 @@ import { AbilityError } from './AbilityError';
 import { AbilityResult } from './AbilityResult';
 import AbilityMatch from './AbilityMatch';
 import { ResourcesMap } from './AbilityParser';
-import { AbilityCacheAdapter } from '~/cache/AbilityCacheAdapter';
-import { AbilityInMemoryCache } from '~/cache/AbilityInMemoryCache';
+import { AbilityCacheAdapter } from '../cache/AbilityCacheAdapter';
 
 
 export type AbilityResolverOptions = {

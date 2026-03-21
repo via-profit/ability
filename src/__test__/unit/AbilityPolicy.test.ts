@@ -310,7 +310,7 @@ describe('AbilityPolicy', () => {
         ],
       };
 
-      const policy = AbilityPolicy.parse(config);
+      const policy = AbilityPolicy.fromJSON(config);
 
       expect(policy.id).toBe('test-id');
       expect(policy.name).toBe('Test Policy');
@@ -331,7 +331,7 @@ describe('AbilityPolicy', () => {
         ruleSet: [],
       };
 
-      const policy = AbilityPolicy.parse(config);
+      const policy = AbilityPolicy.fromJSON(config);
 
       expect(policy.ruleSet).toHaveLength(0);
     });
@@ -358,7 +358,7 @@ describe('AbilityPolicy', () => {
         },
       ];
 
-      const policies = AbilityPolicy.parseAll(configs);
+      const policies = AbilityPolicy.fromJSONAll(configs);
 
       expect(policies).toHaveLength(2);
       expect(policies[0].id).toBe('policy-1');
@@ -368,7 +368,7 @@ describe('AbilityPolicy', () => {
     });
 
     it('should return empty array for empty configs', () => {
-      const policies = AbilityPolicy.parseAll([]);
+      const policies = AbilityPolicy.fromJSONAll([]);
       expect(policies).toHaveLength(0);
     });
   });
@@ -479,7 +479,7 @@ describe('AbilityPolicy', () => {
         ],
       };
 
-      const policy = AbilityPolicy.parse<Resources['order.status']>(config);
+      const policy = AbilityPolicy.fromJSON<Resources['order.status']>(config);
 
       await policy.check({
         user: { roles: ['user', 'manager'] },
@@ -532,7 +532,7 @@ describe('AbilityPolicy', () => {
         ],
       };
 
-      const policy = AbilityPolicy.parse<Resources['order.status']>(config);
+      const policy = AbilityPolicy.fromJSON<Resources['order.status']>(config);
 
       policy.check({
         user: { roles: ['administrator'] },

@@ -44,7 +44,7 @@ describe('AbilityResolver', () => {
 
   describe('constructor', () => {
     it('should accept single policy', () => {
-      const policy = AbilityPolicy.parse({
+      const policy = AbilityPolicy.fromJSON({
         id: 'test',
         name: 'test',
         action: 'test.action',
@@ -59,7 +59,7 @@ describe('AbilityResolver', () => {
     });
 
     it('should accept array of policies', () => {
-      const policy1 = AbilityPolicy.parse({
+      const policy1 = AbilityPolicy.fromJSON({
         id: 'test1',
         name: 'test1',
         action: 'test.action1',
@@ -68,7 +68,7 @@ describe('AbilityResolver', () => {
         ruleSet: [],
       });
 
-      const policy2 = AbilityPolicy.parse({
+      const policy2 = AbilityPolicy.fromJSON({
         id: 'test2',
         name: 'test2',
         action: 'test.action2',
@@ -91,7 +91,7 @@ describe('AbilityResolver', () => {
     };
 
     it('should filter policies by action', async () => {
-      const policy1 = AbilityPolicy.parse<TestResources>({
+      const policy1 = AbilityPolicy.fromJSON<TestResources>({
         id: 'policy1',
         name: 'Policy 1',
         action: 'order.create',
@@ -100,7 +100,7 @@ describe('AbilityResolver', () => {
         ruleSet: [],
       });
 
-      const policy2 = AbilityPolicy.parse<TestResources>({
+      const policy2 = AbilityPolicy.fromJSON<TestResources>({
         id: 'policy2',
         name: 'Policy 2',
         action: 'order.update',
@@ -116,7 +116,7 @@ describe('AbilityResolver', () => {
     });
 
     it('should handle wildcard actions', () => {
-      const policy = AbilityPolicy.parse<TestResources>({
+      const policy = AbilityPolicy.fromJSON<TestResources>({
         id: 'policy',
         name: 'Policy',
         action: 'order.*',

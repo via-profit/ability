@@ -56,7 +56,7 @@ describe('Complex integration scenarios', () => {
       ],
     };
 
-    const policy = AbilityPolicy.parse<Resources>(config);
+    const policy = AbilityPolicy.fromJSON<Resources>(config);
     const result = await new AbilityResolver(policy).resolve('order.status', {
       user: { roles: ['user', 'manager'] },
       order: { status: 'не обработан' },
@@ -107,7 +107,7 @@ describe('Complex integration scenarios', () => {
       ],
     };
 
-    const policy = AbilityPolicy.parse<Resources>(config);
+    const policy = AbilityPolicy.fromJSON<Resources>(config);
     const result = await new AbilityResolver(policy).resolve('order.status', {
       user: { roles: ['administrator'] },
       order: { status: 'не обработан' },
