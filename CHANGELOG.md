@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.2.0] - 2026-x3-xx
+
+### Изменено
+
+- Метод `AbilityPolicy.parseAll()` переименован в `AbilityPolicy.fromJSONAll()`
+- Метод `AbilityPolicy.parse()` переименован в `AbilityPolicy.toJSON()`
+- Метод `AbilityRule.parse()` переименован в `AbilityRule.toJSON()`
+- Метод `AbilityRuleSet.parse()` переименован в `.toJSON()`
+
 ## [3.1.0] - 2026-03-20
 
 ### Добавлено

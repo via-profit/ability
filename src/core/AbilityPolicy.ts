@@ -137,17 +137,17 @@ export class AbilityPolicy<
    * @param configs - Array of policy configurations
    * @returns Array of AbilityPolicy instances
    */
-  public static parseAll<
+  public static fromJSONAll<
     Resource extends ResourceObject,
     Environment = unknown,
   >(configs: readonly AbilityPolicyConfig[]): AbilityPolicy<Resource, Environment>[] {
-    return configs.map(config => this.parse<Resource, Environment>(config));
+    return configs.map(config => this.fromJSON<Resource, Environment>(config));
   }
 
   /**
    * Parse the config JSON format to Policy class instance
    */
-  public static parse<
+  public static fromJSON<
     Resource extends ResourceObject = Record<string, unknown>,
     Environment = unknown,
   >(config: AbilityPolicyConfig): AbilityPolicy<Resource, Environment> {
@@ -170,12 +170,12 @@ export class AbilityPolicy<
     return policy;
   }
 
-  public export(): AbilityPolicyConfig {
+  public toJSON(): AbilityPolicyConfig {
     return {
       id: this.id.toString(),
       name: this.name.toString(),
       compareMethod: this.compareMethod.code.toString() as AbilityPolicyConfig['compareMethod'],
-      ruleSet: this.ruleSet.map(rule => rule.export()),
+      ruleSet: this.ruleSet.map(rule => rule.toJSON()),
       action: this.action,
       effect: this.effect.code,
     };

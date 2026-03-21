@@ -1016,8 +1016,8 @@ function OrderUpdateButton({ order, user }) {
 |-------|-----------|------------|----------|
 | `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Проверяет правило |
 | `explain()` | — | `AbilityExplainRule` | Объяснение проверки |
-| `export()` | — | `AbilityRuleConfig` | Экспорт в JSON |
-| `static parse(config)` | `AbilityRuleConfig` | `AbilityRule` | Создание из JSON |
+| `toJSON()` | — | `AbilityRuleConfig` | Экспорт в JSON |
+| `static fromJSON(config)` | `AbilityRuleConfig` | `AbilityRule` | Создание из JSON |
 | `static equal(subject, resource)` | `string, any` | `AbilityRule` | Упрощённый конструктор |
 | `static notEqual(...)` и др. | | | Аналогично |
 
@@ -1046,8 +1046,8 @@ function OrderUpdateButton({ order, user }) {
 | `addRules(list)` | `AbilityRule[]` | `this` | Добавляет несколько |
 | `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Проверяет группу |
 | `explain()` | — | `AbilityExplainRuleSet` | Объяснение |
-| `export()` | — | `AbilityRuleSetConfig` | Экспорт |
-| `static parse(config)` | `AbilityRuleSetConfig` | `AbilityRuleSet` | Из JSON |
+| `toJSON()` | — | `AbilityRuleSetConfig` | Экспорт |
+| `static fromJSON(config)` | `AbilityRuleSetConfig` | `AbilityRuleSet` | Из JSON |
 | `static and(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Группа с `and` |
 | `static or(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Группа с `or` |
 
@@ -1077,9 +1077,9 @@ function OrderUpdateButton({ order, user }) {
 |-------|-----------|------------|----------|
 | `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Проверяет политику |
 | `explain()` | — | `AbilityExplainPolicy` | Объяснение |
-| `export()` | — | `AbilityPolicyConfig` | Экспорт |
-| `static parse(config)` | `AbilityPolicyConfig` | `AbilityPolicy` | Из JSON |
-| `static parseAll(configs)` | `AbilityPolicyConfig[]` | `AbilityPolicy[]` | Массовый парсинг |
+| `toJSON()` | — | `AbilityPolicyConfig` | Экспорт |
+| `static fromJSON(config)` | `AbilityPolicyConfig` | `AbilityPolicy` | Из JSON |
+| `static fromJSONAll(configs)` | `AbilityPolicyConfig[]` | `AbilityPolicy[]` | Массовый парсинг |
 
 ---
 

@@ -226,7 +226,7 @@ describe('AbilityRuleSet', () => {
         AbilityRule.moreThan('user.age', 18),
       ]);
 
-      const config = ruleSet.export();
+      const config = ruleSet.toJSON();
 
       expect(config.compareMethod).toBe('and');
       expect(config.rules).toHaveLength(2);

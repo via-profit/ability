@@ -221,7 +221,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     return resource as T;
   }
 
-  public static parse<Resources extends object, Environment = unknown>(
+  public static fromJSON<Resources extends object, Environment = unknown>(
     config: AbilityRuleConfig,
   ): AbilityRule<Resources, Environment> {
     const { id, name, subject, resource, condition } = config;
@@ -238,7 +238,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
   /**
    * Export the rule to config object
    */
-  public export(): AbilityRuleConfig {
+  public toJSON(): AbilityRuleConfig {
     return {
       id: this.id,
       name: this.name,

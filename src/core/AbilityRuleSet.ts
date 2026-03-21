@@ -105,7 +105,7 @@ export class AbilityRuleSet<
   /**
    * Parse the config JSON format to Group class instance
    */
-  public static parse<Resource extends ResourceObject = Record<string, unknown>, Environment = unknown,>(
+  public static fromJSON<Resource extends ResourceObject = Record<string, unknown>, Environment = unknown,>(
     config: AbilityRuleSetConfig,
   ): AbilityRuleSet<Resource, Environment> {
     const { id, name, rules, compareMethod } = config;
@@ -118,7 +118,7 @@ export class AbilityRuleSet<
 
     // Adding rules if exists
     if (rules && rules.length > 0) {
-      const abilityRules = rules.map(ruleConfig => AbilityRule.parse<Resource, Environment>(ruleConfig));
+      const abilityRules = rules.map(ruleConfig => AbilityRule.fromJSON<Resource, Environment>(ruleConfig));
 
       ruleSet.addRules(abilityRules);
     }
@@ -126,12 +126,12 @@ export class AbilityRuleSet<
     return ruleSet;
   }
 
-  public export(): AbilityRuleSetConfig {
+  public toJSON(): AbilityRuleSetConfig {
     return {
       id: this.id.toString(),
       name: this.name.toString(),
       compareMethod: this.compareMethod.code.toString() as AbilityRuleSetConfig['compareMethod'],
-      rules: this.rules.map(rule => rule.export()),
+      rules: this.rules.map(rule => rule.toJSON()),
     };
   }
 

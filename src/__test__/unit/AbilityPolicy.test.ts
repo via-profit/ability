@@ -399,8 +399,8 @@ describe('AbilityPolicy', () => {
         ],
       };
 
-      const policy = AbilityPolicy.parse(originalConfig);
-      const exportedConfig = policy.export();
+      const policy = AbilityPolicy.fromJSON(originalConfig);
+      const exportedConfig = policy.toJSON();
 
       expect(exportedConfig).toEqual(originalConfig);
     });
@@ -413,7 +413,7 @@ describe('AbilityPolicy', () => {
         effect: AbilityPolicyEffect.permit,
       });
 
-      const config = policy.export();
+      const config = policy.toJSON();
 
       expect(config.id).toBe('test');
       expect(config.name).toBe('Test');

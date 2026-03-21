@@ -281,7 +281,7 @@ describe('AbilityRule', () => {
         condition: '>' as const,
       };
 
-      const rule = AbilityRule.parse(config);
+      const rule = AbilityRule.fromJSON(config);
 
       expect(rule.id).toBe('test-id');
       expect(rule.name).toBe('Test Rule');
@@ -292,7 +292,7 @@ describe('AbilityRule', () => {
 
     it('should export rule to config', () => {
       const rule = AbilityRule.equal('user.name', 'John');
-      const config = rule.export();
+      const config = rule.toJSON();
 
       expect(config.subject).toBe('user.name');
       expect(config.resource).toBe('John');
