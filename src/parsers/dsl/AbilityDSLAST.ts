@@ -1,6 +1,6 @@
-import AbilityCompare, { AbilityCompareCodeType } from '../core/AbilityCompare';
-import { AbilityConditionCodeType } from '../core/AbilityCondition';
-import { AbilityPolicyEffectCodeType } from '../core/AbilityPolicyEffect';
+import AbilityCompare, { AbilityCompareCodeType } from '~/core/AbilityCompare';
+import { AbilityConditionCodeType } from '~/core/AbilityCondition';
+import { AbilityPolicyEffectCodeType } from '~/core/AbilityPolicyEffect';
 import { AbilityDSLToken } from './AbilityDSLToken';
 import { AbilityDSLTokenType } from './AbilityDSLTokenType';
 
@@ -75,11 +75,10 @@ export class AbilityDSLAST {
     // get lines
     const lines = dsl.split('\n');
 
-    let parentToken : AbilityDSLToken | null = null;
+    let parentToken: AbilityDSLToken | null = null;
     const tokens: AbilityDSLToken[] = [];
     // read lines
-    for(let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
-      
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
       const line = lines[lineIndex].trim();
 
       // skip the comments
@@ -92,29 +91,31 @@ export class AbilityDSLAST {
       // read words
       for (let wordIndex = 0; wordIndex < words.length; wordIndex += 1) {
         // resolve token type
-        
+
         const tokenType = AbilityDSLTokenType.resolve(words[wordIndex]);
 
         // check if resolve successfully
         if (tokenType.isEqual(AbilityDSLTokenType.unknown)) {
-          
-          const token: AbilityDSLToken = new AbilityDSLToken(tokenType, parentToken, words[wordIndex], lineIndex + 1);
-          
+          const token: AbilityDSLToken = new AbilityDSLToken(
+            tokenType,
+            parentToken,
+            words[wordIndex],
+            lineIndex + 1,
+          );
+
           tokens.push(token);
 
           parentToken = token;
+
           continue;
         }
 
         // token type is unknown
         // ...
-
       }
     }
 
     console.debug(tokens);
     return new AbilityDSLAST([]);
   }
-
-  
 }

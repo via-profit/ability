@@ -1,4 +1,4 @@
-import AbilityCode from '../core/AbilityCode';
+import AbilityCode from '../../core/AbilityCode';
 
 export type TokenType =
   | 'if' // start rule set
@@ -15,9 +15,15 @@ export type TokenType =
   | 'dedent' // возврат отступа
   // | 'newline' // \n
   // | 'eof' // конец файла
+  | 'symbol'
+  | 'word'
+  | 'compareMethod' // or, and
   | 'unknown'; // otherwise token
 
 export class AbilityDSLTokenType extends AbilityCode<TokenType> {
+  public static compare = new AbilityDSLTokenType('compareMethod');
+  public static word = new AbilityDSLTokenType('word');
+  public static symbol = new AbilityDSLTokenType('symbol');
   public static if = new AbilityDSLTokenType('if');
   public static effect = new AbilityDSLTokenType('effect');
   public static action = new AbilityDSLTokenType('action');
