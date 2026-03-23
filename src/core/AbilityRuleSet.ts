@@ -106,6 +106,10 @@ export class AbilityRuleSet<
     return this.state;
   }
 
+  public toString(): string {
+    return `AbilityRuleSet: ${this.name} compareMethod: ${this.compareMethod.code}, rules: ${this.rules.map(rule => rule.toString()).join('\n')}`;
+  }
+
   /**
    * Parse the config JSON format to Group class instance
    */

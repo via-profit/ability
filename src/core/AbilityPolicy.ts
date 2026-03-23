@@ -169,6 +169,10 @@ export class AbilityPolicy<
   public toJSON() {
     return AbilityJSONParser.toJSON([this])[0];
   }
+
+  public toString(): string {
+    return JSON.stringify(this.toJSON());
+  }
 }
 
 export default AbilityPolicy;

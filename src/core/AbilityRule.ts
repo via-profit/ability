@@ -13,7 +13,7 @@ export type AbilityRuleConfig = {
   /**
    * Resource key path like a 'user.name' or value
    */
-  readonly resource: string | number | boolean | (string | number)[];
+  readonly resource: string | number | boolean | null | (string | number | boolean)[];
 
   readonly condition: AbilityConditionCodeType;
 };
@@ -33,7 +33,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
   /**
    * Resource key path like a 'user.name' or value
    */
-  public resource: string | number | boolean | (string | number)[];
+  public resource: AbilityRuleConfig['resource'];
 
   public condition: AbilityCondition;
   public name: string;
@@ -149,8 +149,8 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     resourceData: Resources | null,
     environment?: Environment | null,
   ): [
-    string | number | boolean | (string | number)[] | null | undefined,
-    string | number | boolean | (string | number)[] | null | undefined,
+   AbilityRuleConfig['resource'] | undefined,
+    AbilityRuleConfig['resource'] | undefined,
   ] {
     let subjectValue;
     let resourceValue;
@@ -166,13 +166,13 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     if (this.subject.includes('.')) {
       // if is environment
       if (this.subject.startsWith('env.') && typeof environment !== 'undefined') {
-        subjectValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
+        subjectValue = this.getDotNotationValue<AbilityRuleConfig['resource']>(
           environment,
           this.subject.replace(/^env\./, ''),
         );
         // if is resource
       } else {
-        subjectValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
+        subjectValue = this.getDotNotationValue<AbilityRuleConfig['resource']>(
           resourceData,
           this.subject,
         );
@@ -185,13 +185,13 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     if (typeof this.resource === 'string' && this.resource.includes('.')) {
       // if is environment
       if (this.resource.startsWith('env.') && typeof environment !== 'undefined') {
-        resourceValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
+        resourceValue = this.getDotNotationValue<AbilityRuleConfig['resource']>(
           environment,
           this.resource.replace(/^env\./, ''),
         );
       } else {
         // if is resource
-        resourceValue = this.getDotNotationValue<number | boolean | string | (string | number)[]>(
+        resourceValue = this.getDotNotationValue<AbilityRuleConfig['resource']>(
           resourceData,
           this.resource,
         );
@@ -232,6 +232,10 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     }
 
     return resource as T;
+  }
+
+  public toString(): string {
+    return `AbilityRule: ${this.name} condition: ${this.condition.code} subject: "${this.subject?.toString()}" resource: "${this.resource?.toString()}"`;
   }
 
   public static fromJSON<Resources extends object, Environment = unknown>(
