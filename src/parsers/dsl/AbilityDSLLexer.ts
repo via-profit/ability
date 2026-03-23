@@ -96,7 +96,6 @@ export class AbilityDSLLexer {
               AbilityDSLTokenType.condition,
               this.normalizeComparator(phrase),
               token.position,
-              token.parent,
             ),
           );
           i = j; // пропускаем все объединённые токены
@@ -139,23 +138,23 @@ export class AbilityDSLLexer {
       'not in': 'not in',
 
       // Russian
-      равен: '=',
-      равно: '=',
-      является: '=',
-      есть: '=',
+      'равен': '=',
+      'равно': '=',
+      'является': '=',
+      'есть': '=',
       'не равен': '<>',
       'не равно': '<>',
-      больше: '>',
+      'больше': '>',
       'больше чем': '>',
-      меньше: '<',
+      'меньше': '<',
       'меньше чем': '<',
       'больше или равно': '>=',
       'больше или равняется': '>=',
       'меньше или равно': '<=',
       'меньше или равняется': '<=',
-      содержит: 'in',
-      имеет: 'in',
-      входит: 'in',
+      'содержит': 'in',
+      'имеет': 'in',
+      'входит': 'in',
       'не содержит': 'not in',
       'не имеет': 'not in',
       'не входит': 'not in',
@@ -182,7 +181,7 @@ export class AbilityDSLLexer {
     // Символы
     if (char === '(' || char === ')') {
       this.advance();
-      return new AbilityDSLToken(AbilityDSLTokenType.symbol, char, startPos, this.lastToken);
+      return new AbilityDSLToken(AbilityDSLTokenType.symbol, char, startPos);
     }
 
     // Слова, числа, пути
@@ -218,7 +217,7 @@ export class AbilityDSLLexer {
       }
 
       if (char === quote) {
-        return new AbilityDSLToken(AbilityDSLTokenType.string, value, startPos, this.lastToken);
+        return new AbilityDSLToken(AbilityDSLTokenType.string, value, startPos);
       }
 
       value += char;
@@ -251,11 +250,11 @@ export class AbilityDSLLexer {
             AbilityDSLTokenType.condition,
             value,
             startPos,
-            this.lastToken,
+
           );
         }
       }
-      return new AbilityDSLToken(AbilityDSLTokenType.condition, value, startPos, this.lastToken);
+      return new AbilityDSLToken(AbilityDSLTokenType.condition, value, startPos);
     }
 
     // Логические операторы (and, or)
@@ -264,7 +263,7 @@ export class AbilityDSLLexer {
         AbilityDSLTokenType.compare,
         this.compareMap[value],
         startPos,
-        this.lastToken,
+
       );
     }
 
@@ -274,20 +273,19 @@ export class AbilityDSLLexer {
         AbilityDSLTokenType.effect,
         this.effectsMap[value],
         startPos,
-        this.lastToken,
       );
     }
 
     // Путь или действие
     if (value.includes('.')) {
       if (this.lastToken?.type === AbilityDSLTokenType.effect) {
-        return new AbilityDSLToken(AbilityDSLTokenType.action, value, startPos, this.lastToken);
+        return new AbilityDSLToken(AbilityDSLTokenType.action, value, startPos);
       }
-      return new AbilityDSLToken(AbilityDSLTokenType.path, value, startPos, this.lastToken);
+      return new AbilityDSLToken(AbilityDSLTokenType.path, value, startPos);
     }
 
     // Обычное слово
-    return new AbilityDSLToken(AbilityDSLTokenType.word, value, startPos, this.lastToken);
+    return new AbilityDSLToken(AbilityDSLTokenType.word, value, startPos);
   }
 
   private readNumber(startPos: number): AbilityDSLToken {
@@ -304,7 +302,7 @@ export class AbilityDSLLexer {
 
     const value = this.input.slice(start, this.pos);
 
-    return new AbilityDSLToken(AbilityDSLTokenType.number, value, startPos, this.lastToken);
+    return new AbilityDSLToken(AbilityDSLTokenType.number, value, startPos);
   }
 
   private skipWhitespace(): void {

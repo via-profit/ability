@@ -16,6 +16,8 @@ export class AbilityDSLParser {
     const str = this.tokens.map(token => token.toString());
 
     console.log(str);
-    return [];
+    return [
+
+    ];
   }
 }

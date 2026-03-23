@@ -14,12 +14,9 @@ describe('AbilityDSLParser', () => {
       const dsl = `
 allow order.update if
   user.name is not equals 'Oleg'
-or 
   user.role contains managers and user.id is order.owner
-or 
-    user.department not contains administrators
-or 
- user.roles contains administrator
+  user.department not contains administrators
+  user.roles contains administrator
       `;
 
       const parser = new AbilityDSLParser(dsl);
