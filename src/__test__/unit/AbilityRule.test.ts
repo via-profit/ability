@@ -1,6 +1,7 @@
 import AbilityRule from '../../core/AbilityRule';
 import AbilityCondition from '../../core/AbilityCondition';
 import AbilityMatch from '../../core/AbilityMatch';
+import { AbilityJSONParser } from '../../parsers/AbilityJSONParser';
 
 describe('AbilityRule', () => {
   describe('constructor', () => {
@@ -292,7 +293,7 @@ describe('AbilityRule', () => {
 
     it('should export rule to config', () => {
       const rule = AbilityRule.equal('user.name', 'John');
-      const config = rule.toJSON();
+      const config = AbilityJSONParser.ruleToJSON(rule);
 
       expect(config.subject).toBe('user.name');
       expect(config.resource).toBe('John');

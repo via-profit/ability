@@ -2,6 +2,7 @@ import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
 import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
 import AbilityMatch from './AbilityMatch';
 import { ResourceObject } from './AbilityParser';
+import { AbilityJSONParser } from '~/parsers/AbilityJSONParser';
 
 export type AbilityRuleSetConfig = {
   readonly id?: string | null;
@@ -64,7 +65,10 @@ export class AbilityRuleSet<
     return this;
   }
 
-  public async check(resources: Resources | null, environment?: Environment): Promise<AbilityMatch> {
+  public async check(
+    resources: Resources | null,
+    environment?: Environment,
+  ): Promise<AbilityMatch> {
     this.state = AbilityMatch.mismatch;
 
     if (!this.rules.length) {
@@ -105,34 +109,11 @@ export class AbilityRuleSet<
   /**
    * Parse the config JSON format to Group class instance
    */
-  public static fromJSON<Resource extends ResourceObject = Record<string, unknown>, Environment = unknown,>(
-    config: AbilityRuleSetConfig,
-  ): AbilityRuleSet<Resource, Environment> {
-    const { id, name, rules, compareMethod } = config;
-
-    const ruleSet = new AbilityRuleSet<Resource, Environment>({
-      compareMethod: new AbilityCompare(compareMethod),
-      name,
-      id,
-    });
-
-    // Adding rules if exists
-    if (rules && rules.length > 0) {
-      const abilityRules = rules.map(ruleConfig => AbilityRule.fromJSON<Resource, Environment>(ruleConfig));
-
-      ruleSet.addRules(abilityRules);
-    }
-
-    return ruleSet;
-  }
-
-  public toJSON(): AbilityRuleSetConfig {
-    return {
-      id: this.id.toString(),
-      name: this.name.toString(),
-      compareMethod: this.compareMethod.code.toString() as AbilityRuleSetConfig['compareMethod'],
-      rules: this.rules.map(rule => rule.toJSON()),
-    };
+  public static fromJSON<
+    Resource extends ResourceObject = Record<string, unknown>,
+    Environment = unknown,
+  >(config: AbilityRuleSetConfig): AbilityRuleSet<Resource, Environment> {
+    return AbilityJSONParser.parseRuleSet(config);
   }
 
   static and(rules: AbilityRule[]) {

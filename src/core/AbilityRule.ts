@@ -1,5 +1,6 @@
 import AbilityMatch from './AbilityMatch';
 import AbilityCondition, { AbilityConditionCodeType } from './AbilityCondition';
+import { AbilityJSONParser } from '~/parsers/AbilityJSONParser';
 
 export type AbilityRuleConfig = {
   readonly id?: string | null;
@@ -98,11 +99,17 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
         is = subjectValue.some(v => resourceValue.find(v1 => v1 === v));
       }
       // <some> and [<some>]
-      if ((typeof subjectValue === 'string' || typeof subjectValue === 'number') && Array.isArray(resourceValue)) {
+      if (
+        (typeof subjectValue === 'string' || typeof subjectValue === 'number') &&
+        Array.isArray(resourceValue)
+      ) {
         is = resourceValue.includes(subjectValue);
       }
       // [<some>] and <some>
-      if ((typeof resourceValue === 'string' || typeof resourceValue === 'number') && Array.isArray(subjectValue)) {
+      if (
+        (typeof resourceValue === 'string' || typeof resourceValue === 'number') &&
+        Array.isArray(subjectValue)
+      ) {
         is = subjectValue.includes(resourceValue);
       }
     }
@@ -113,11 +120,17 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
         is = !subjectValue.some(v => resourceValue.find(v1 => v1 === v));
       }
       // <some> and [<some>]
-      if ((typeof subjectValue === 'string' || typeof subjectValue === 'number') && Array.isArray(resourceValue)) {
+      if (
+        (typeof subjectValue === 'string' || typeof subjectValue === 'number') &&
+        Array.isArray(resourceValue)
+      ) {
         is = !resourceValue.includes(subjectValue);
       }
       // [<some>] and <some>
-      if ((typeof resourceValue === 'string' || typeof resourceValue === 'number') && Array.isArray(subjectValue)) {
+      if (
+        (typeof resourceValue === 'string' || typeof resourceValue === 'number') &&
+        Array.isArray(subjectValue)
+      ) {
         is = !subjectValue.includes(resourceValue);
       }
     }
@@ -224,29 +237,9 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
   public static fromJSON<Resources extends object, Environment = unknown>(
     config: AbilityRuleConfig,
   ): AbilityRule<Resources, Environment> {
-    const { id, name, subject, resource, condition } = config;
-
-    return new AbilityRule<Resources, Environment>({
-      id,
-      name,
-      subject,
-      resource,
-      condition: new AbilityCondition(condition),
-    });
+    return AbilityJSONParser.parseRule(config);
   }
 
-  /**
-   * Export the rule to config object
-   */
-  public toJSON(): AbilityRuleConfig {
-    return {
-      id: this.id,
-      name: this.name,
-      subject: this.subject,
-      resource: this.resource,
-      condition: this.condition.code,
-    };
-  }
 
   static equal<Resources extends object = object, Environment = unknown>(
     subject: string,

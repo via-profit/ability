@@ -5,6 +5,7 @@ import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from './AbilityPolic
 import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
 import { AbilityError } from './AbilityError';
 import { ResourceObject } from './AbilityParser';
+import { AbilityJSONParser } from '~/parsers/AbilityJSONParser';
 
 export type AbilityPolicyConfig = {
   readonly action: string;
@@ -24,7 +25,7 @@ export type AbilityPolicyConstructorProps = {
 };
 
 export class AbilityPolicy<
-  Resource extends  ResourceObject = Record<string, unknown>,
+  Resource extends ResourceObject = Record<string, unknown>,
   Environment = unknown,
 > {
   public matchState: AbilityMatch = AbilityMatch.pending;
@@ -137,11 +138,10 @@ export class AbilityPolicy<
    * @param configs - Array of policy configurations
    * @returns Array of AbilityPolicy instances
    */
-  public static fromJSONAll<
-    Resource extends ResourceObject,
-    Environment = unknown,
-  >(configs: readonly AbilityPolicyConfig[]): AbilityPolicy<Resource, Environment>[] {
-    return configs.map(config => this.fromJSON<Resource, Environment>(config));
+  public static fromJSONAll<Resource extends ResourceObject, Environment = unknown>(
+    configs: readonly AbilityPolicyConfig[],
+  ): AbilityPolicy<Resource, Environment>[] {
+    return AbilityJSONParser.parse(configs);
   }
 
   /**
@@ -151,34 +151,11 @@ export class AbilityPolicy<
     Resource extends ResourceObject = Record<string, unknown>,
     Environment = unknown,
   >(config: AbilityPolicyConfig): AbilityPolicy<Resource, Environment> {
-    const { id, name, ruleSet, compareMethod, action, effect } = config;
-
-    // Create the empty policy
-    const policy = new AbilityPolicy<Resource, Environment>({
-      name,
-      id,
-      action,
-      effect: new AbilityPolicyEffect(effect),
-    });
-
-    policy.compareMethod = new AbilityCompare(compareMethod);
-
-    ruleSet.forEach(ruleSetConfig => {
-      policy.addRuleSet(AbilityRuleSet.fromJSON<Resource, Environment>(ruleSetConfig));
-    });
-
-    return policy;
+    return AbilityJSONParser.parsePolicy(config);
   }
 
-  public toJSON(): AbilityPolicyConfig {
-    return {
-      id: this.id.toString(),
-      name: this.name.toString(),
-      compareMethod: this.compareMethod.code.toString() as AbilityPolicyConfig['compareMethod'],
-      ruleSet: this.ruleSet.map(rule => rule.toJSON()),
-      action: this.action,
-      effect: this.effect.code,
-    };
+  public toJSON() {
+    return AbilityJSONParser.toJSON([this])[0];
   }
 }
 

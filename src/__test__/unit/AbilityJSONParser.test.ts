@@ -4,7 +4,7 @@ import AbilityParser, { NestedDict } from '../../core/AbilityParser';
 import AbilityPolicy from '../../core/AbilityPolicy';
 import { AbilityParserError } from '../../core/AbilityError';
 
-describe('AbilityParser', () => {
+describe('AbilityJSONParser', () => {
   describe('setValueDotValue', () => {
     it('should set value on simple path', () => {
       const obj: NestedDict = {};
@@ -411,8 +411,6 @@ describe('AbilityParser', () => {
 
       expect(result).toContain('readonly isActive: boolean;');
     });
-
-
 
     it('should handle empty arrays', () => {
       const policies = [

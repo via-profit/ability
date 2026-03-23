@@ -55,6 +55,7 @@
   - [AbilityPolicyEffect](#abilitypolicyeffect)
   - [AbilityError](#abilityerror)
   - [AbilityCache](#abilitycache)
+  - [AbilityJSONParser](abilityjsonparser)
 
 ---
 
@@ -1272,6 +1273,25 @@ const cache = new AbilityRedisCache(redis, {
   ttl: 60000, // время жизни в миллисекундах
   prefix: 'ability:', // префикс для ключей
 });
+```
+
+#### AbilityJSONParser
+
+JSON парсер, который позволяет создавать правила, группы и политики из JSON и наоборот, преобразовывать из в JSON
+
+```ts
+import { AbilityJSONParser } from '@via-profit/ability';
+
+const rule = AbilityRule.fromJSON({
+  id: 'test-id',
+  name: 'Test Rule',
+  subject: 'user.age',
+  resource: 18,
+  condition: '>' as const,
+});
+
+const json = AbilityJSONParser.ruleToJSON(rule); // {"id": "test-id", "name": "Test Rule", "subject": "user.age", "resource": 18, "condition": ">"}
+
 ```
 
 ---
