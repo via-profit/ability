@@ -3,219 +3,70 @@ import { AbilityDSLTokenType } from '~/parsers/dsl/AbilityDSLTokenType';
 
 export class AbilityDSLLexer {
   private readonly input: string;
-  private pos: number = 0;
+  private pos = 0;
   private tokens: AbilityDSLToken[] = [];
-  private lastToken: AbilityDSLToken | null = null;
-
-  // Логические операторы (and, or)
-  private compareMap: Record<string, string> = {
-    and: 'and',
-    or: 'or',
-  };
-
-  // Эффекты (allow, deny, ...)
-  private effectsMap: Record<string, string> = {
-    permit: 'permit',
-    allow: 'permit',
-    deny: 'deny',
-    forbidden: 'deny',
-  };
-
-  // Одиночные ключевые слова
-  private keywordsMap: Record<string, string> = {
-    when: 'when',
-    whenever: 'when',
-    if: 'when',
-    all: 'all',
-    any: 'any',
-    of: 'of',
-  };
-
-  // Составные ключевые фразы, которые должны склеиваться в один токен
-  private multiWordPhrases: string[] = ['all of', 'any of', 'все из', 'любое из'];
-
-  // Полный список возможных компараторов (включая составные)
-  private comparators: string[] = [
-    '=',
-    '>',
-    '<',
-    '>=',
-    '<=',
-    '<>',
-    'in',
-    'is',
-    'not',
-    'not in',
-    'equals',
-    'is not',
-    'is equals',
-    'is not equals',
-    'not equals',
-    'greater',
-    'greater than',
-    'greater or equal',
-    'greater or equals',
-    'less',
-    'less than',
-    'less or equal',
-    'less or equals',
-    'contains',
-    'not contains',
-    'содержит',
-    'не содержит',
-    'равен',
-    'не равен',
-    'больше',
-    'меньше',
-    'больше или равно',
-    'меньше или равно',
-  ];
 
   public constructor(input: string) {
     this.input = input;
   }
 
   tokenize(): AbilityDSLToken[] {
-    // Первичная токенизация
     while (!this.isAtEnd()) {
       this.skipWhitespace();
-      if (this.isAtEnd()) break;
 
-      const token = this.nextToken();
-      if (token) {
-        this.tokens.push(token);
-        this.lastToken = token;
-      }
-    }
-
-    // Склейка составных компараторов и ключевых фраз
-    const rawTokens = [...this.tokens];
-    this.tokens = [];
-
-    let i = 0;
-    while (i < rawTokens.length) {
-      const token = rawTokens[i];
-      // Склейка составных компараторов (последовательность condition-токенов)
-      if (token.type === AbilityDSLTokenType.condition) {
-        let phrase = token.value;
-        let j = i + 1;
-        while (j < rawTokens.length && rawTokens[j].type === AbilityDSLTokenType.condition) {
-          phrase += ' ' + rawTokens[j].value;
-          j++;
-        }
-        if (this.comparators.includes(phrase)) {
-          this.tokens.push(
-            new AbilityDSLToken(
-              AbilityDSLTokenType.condition,
-              this.normalizeComparator(phrase),
-              token.position,
-            ),
-          );
-          i = j;
-          continue;
-        }
+      if (this.isAtEnd()) {
+        break;
       }
 
-      // Склейка составных ключевых фраз (последовательность word/word)
-      if (token.type === AbilityDSLTokenType.word || token.type === AbilityDSLTokenType.keyword) {
-        let phrase = token.value;
-        let j = i + 1;
-        // Собираем последовательность слов (word или keyword)
-        while (
-          j < rawTokens.length &&
-          (rawTokens[j].type === AbilityDSLTokenType.word ||
-            rawTokens[j].type === AbilityDSLTokenType.keyword)
-        ) {
-          phrase += ' ' + rawTokens[j].value;
-          j++;
-        }
-        if (this.multiWordPhrases.includes(phrase)) {
-          this.tokens.push(
-            new AbilityDSLToken(
-              AbilityDSLTokenType.keyword,
-              phrase, // оставляем фразу, парсер сам поймёт
-              token.position,
-            ),
-          );
-          i = j;
-          continue;
-        }
+      const char = this.peek();
+
+      // Comments
+      if (char === '#') {
+        this.skipComment();
+        continue;
       }
 
-      // Если не склеили, оставляем токен как есть
-      this.tokens.push(token);
-      i++;
+      // String between quotes
+      if (char === '"' || char === "'") {
+        this.tokens.push(this.readString());
+        continue;
+      }
+
+      // Symbols
+      if (this.isSymbol(char)) {
+        this.tokens.push(this.readSymbol());
+        continue;
+      }
+
+      // Comparators
+      if (this.isOperatorStart(char)) {
+        this.tokens.push(this.readSymbolicOperator());
+        continue;
+      }
+
+      // Digits
+      if (this.isDigit(char)) {
+        this.tokens.push(this.readNumber());
+        continue;
+      }
+
+      // Other
+      if (this.isAlpha(char)) {
+        this.tokens.push(this.readIdentifierOrKeyword());
+        continue;
+      }
+
+      throw new Error(`Unexpected character '${char}' at position ${this.pos}`);
     }
 
     return this.tokens;
   }
 
-  private normalizeComparator(phrase: string): string {
-    const map: Record<string, string> = {
-      equals: '=',
-      is: '=',
-      'is not equals': '<>',
-      'is not': '<>',
-      'not equals': '<>',
-      'greater than': '>',
-      greater: '>',
-      'more than': '>',
-      more: '>',
-      'less than': '<',
-      less: '<',
-      'greater or equal': '>=',
-      'greater or equals': '>=',
-      'more or equal': '>=',
-      'more or equals': '>=',
-      'less or equal': '<=',
-      'less or equals': '<=',
-      contains: 'in',
-      has: 'in',
-      in: 'in',
-      'not contains': 'not in',
-      'not has': 'not in',
-      'not in': 'not in',
-    };
+  // ───────────────────────────────────────────────
+  // ЧТЕНИЕ СТРОК
+  // ───────────────────────────────────────────────
 
-    const normalized = phrase.trim().toLowerCase();
-    return map[normalized] ?? phrase;
-  }
-
-  private nextToken(): AbilityDSLToken | null {
-    const char = this.peek();
-    const startPos = this.pos;
-
-    // Пропуск комментариев
-    if (char === '#') {
-      this.skipComment();
-      return null;
-    }
-
-    // Строки в кавычках
-    if (char === '"' || char === "'") {
-      return this.readString(startPos);
-    }
-
-    // Символы
-    if (char === '(' || char === ')' || char === ':') {
-      this.advance();
-      return new AbilityDSLToken(AbilityDSLTokenType.symbol, char, startPos);
-    }
-
-    // Слова, числа, пути
-    if (this.isAlpha(char)) {
-      return this.readWord(startPos);
-    }
-
-    // Цифры
-    if (this.isDigit(char)) {
-      return this.readNumber(startPos);
-    }
-
-    throw new Error(`Unexpected character: ${char} at position ${startPos}`);
-  }
-
-  private readString(startPos: number): AbilityDSLToken {
+  private readString(): AbilityDSLToken {
     const quote = this.advance();
     let value = '';
     let escaped = false;
@@ -235,83 +86,202 @@ export class AbilityDSLLexer {
       }
 
       if (char === quote) {
-        return new AbilityDSLToken(AbilityDSLTokenType.string, value, startPos);
+        return new AbilityDSLToken(AbilityDSLTokenType.STRING, value);
       }
 
       value += char;
     }
 
-    throw new Error(`Unterminated string at position ${startPos}`);
+    throw new Error(`Unterminated string`);
   }
 
-  private readWord(startPos: number): AbilityDSLToken {
+  // ───────────────────────────────────────────────
+  // ЧТЕНИЕ СИМВОЛОВ
+  // ───────────────────────────────────────────────
+
+  private isSymbol(char: string): boolean {
+    return ['(', ')', '[', ']', ',', '.', ':'].includes(char);
+  }
+
+  private readSymbol(): AbilityDSLToken {
+    const char = this.advance();
+
+    switch (char) {
+      case '(':
+        return new AbilityDSLToken(AbilityDSLTokenType.LPAREN, char);
+      case ')':
+        return new AbilityDSLToken(AbilityDSLTokenType.RPAREN, char);
+      case '[':
+        return new AbilityDSLToken(AbilityDSLTokenType.LBRACKET, char);
+      case ']':
+        return new AbilityDSLToken(AbilityDSLTokenType.RBRACKET, char);
+      case ',':
+        return new AbilityDSLToken(AbilityDSLTokenType.COMMA, char);
+      case '.':
+        return new AbilityDSLToken(AbilityDSLTokenType.DOT, char);
+      case ':':
+        return new AbilityDSLToken(AbilityDSLTokenType.COLON, char);
+    }
+
+    throw new Error(`Unknown symbol '${char}'`);
+  }
+
+  // ───────────────────────────────────────────────
+  // СИМВОЛИЧЕСКИЕ ОПЕРАТОРЫ (==, !=, >=, <=)
+  // ───────────────────────────────────────────────
+
+  private isOperatorStart(char: string): boolean {
+    return ['=', '!', '>', '<', '<>'].includes(char);
+  }
+
+  private readSymbolicOperator(): AbilityDSLToken {
+    const char = this.advance();
+    const next = this.peek();
+
+    if (char === '=' && next === '=') {
+      this.advance();
+      return new AbilityDSLToken(AbilityDSLTokenType.EQ, '==');
+    }
+    if (char === '!' && next === '=') {
+      this.advance();
+      return new AbilityDSLToken(AbilityDSLTokenType.NEQ, '!=');
+    }
+    if (char === '<' && next === '>') {
+      this.advance();
+      return new AbilityDSLToken(AbilityDSLTokenType.NEQ, '<>');
+    }
+    if (char === '>' && next === '=') {
+      this.advance();
+      return new AbilityDSLToken(AbilityDSLTokenType.GTE, '>=');
+    }
+    if (char === '<' && next === '=') {
+      this.advance();
+      return new AbilityDSLToken(AbilityDSLTokenType.LTE, '<=');
+    }
+
+    if (char === '>') {
+      return new AbilityDSLToken(AbilityDSLTokenType.GT, '>');
+    }
+    if (char === '<') {
+      return new AbilityDSLToken(AbilityDSLTokenType.LT, '<');
+    }
+
+    throw new Error(`Invalid operator '${char}${next}'`);
+  }
+
+  // ───────────────────────────────────────────────
+  // ЧТЕНИЕ ЧИСЕЛ
+  // ───────────────────────────────────────────────
+
+  private readNumber(): AbilityDSLToken {
     const start = this.pos;
 
-    while (!this.isAtEnd()) {
-      const char = this.peek();
-      if (this.isAlpha(char) || this.isDigit(char) || char === '.') {
-        this.advance();
-      } else {
-        break;
-      }
+    while (!this.isAtEnd() && this.isDigit(this.peek())) {
+      this.advance();
     }
 
     const value = this.input.slice(start, this.pos);
-
-    // Проверяем, является ли слово частью составного компаратора
-    if (this.comparators.includes(value)) {
-      // Если это "or" и предыдущий токен — "greater" или "less", то это часть компаратора
-      if (value === 'or') {
-        const prev = this.lastToken;
-        if (prev?.value === 'greater' || prev?.value === 'less') {
-          return new AbilityDSLToken(AbilityDSLTokenType.condition, value, startPos);
-        }
-      }
-      return new AbilityDSLToken(AbilityDSLTokenType.condition, value, startPos);
-    }
-
-    // Логические операторы (and, or)
-    if (this.compareMap[value]) {
-      return new AbilityDSLToken(AbilityDSLTokenType.compare, this.compareMap[value], startPos);
-    }
-
-    // Эффекты (allow, deny, ...)
-    if (this.effectsMap[value]) {
-      return new AbilityDSLToken(AbilityDSLTokenType.effect, this.effectsMap[value], startPos);
-    }
-
-    // Ключевые слова (одиночные)
-    if (this.keywordsMap[value]) {
-      return new AbilityDSLToken(AbilityDSLTokenType.keyword, this.keywordsMap[value], startPos);
-    }
-
-    // Путь или действие
-    if (value.includes('.')) {
-      if (this.lastToken?.type === AbilityDSLTokenType.effect) {
-        return new AbilityDSLToken(AbilityDSLTokenType.action, value, startPos);
-      }
-      return new AbilityDSLToken(AbilityDSLTokenType.path, value, startPos);
-    }
-
-    // Обычное слово
-    return new AbilityDSLToken(AbilityDSLTokenType.word, value, startPos);
+    return new AbilityDSLToken(AbilityDSLTokenType.NUMBER, value);
   }
 
-  private readNumber(startPos: number): AbilityDSLToken {
+  // ───────────────────────────────────────────────
+  // ЧТЕНИЕ ИДЕНТИФИКАТОРОВ / КЛЮЧЕВЫХ СЛОВ / ОПЕРАТОРОВ
+  // ───────────────────────────────────────────────
+
+  private readIdentifierOrKeyword(): AbilityDSLToken {
     const start = this.pos;
 
-    while (!this.isAtEnd()) {
-      const char = this.peek();
-      if (this.isDigit(char) || char === '.') {
-        this.advance();
-      } else {
-        break;
-      }
+    while (!this.isAtEnd() && this.isAlphaNumeric(this.peek())) {
+      this.advance();
     }
 
-    const value = this.input.slice(start, this.pos);
+    let word = this.input.slice(start, this.pos);
 
-    return new AbilityDSLToken(AbilityDSLTokenType.number, value, startPos);
+    // Эффекты
+    if (['allow', 'permit'].includes(word)) {
+      return new AbilityDSLToken(AbilityDSLTokenType.EFFECT, 'permit');
+    }
+
+    if (['deny', 'forbidden'].includes(word)) {
+      return new AbilityDSLToken(AbilityDSLTokenType.EFFECT, 'deny');
+    }
+
+    // Если предыдущий токен — EFFECT → собираем ACTION
+    const last = this.tokens[this.tokens.length - 1];
+    if (last?.type === AbilityDSLTokenType.EFFECT) {
+      // Собираем order.bulkUpdate
+      while (this.peek() === '.') {
+        this.advance(); // consume dot
+        const part = this.readIdentifierPart();
+        word += '.' + part;
+      }
+      return new AbilityDSLToken(AbilityDSLTokenType.ACTION, word);
+    }
+
+    // IF
+    if (['if', 'when', 'whenever'].includes(word)) {
+      return new AbilityDSLToken(AbilityDSLTokenType.IF, word);
+    }
+
+    // Логические операторы
+    if (word === 'and') return new AbilityDSLToken(AbilityDSLTokenType.AND, word);
+    if (word === 'or') return new AbilityDSLToken(AbilityDSLTokenType.OR, word);
+    if (word === 'not') return new AbilityDSLToken(AbilityDSLTokenType.NOT, word);
+
+    // Блоковые ключевые слова
+    if (word === 'all') return new AbilityDSLToken(AbilityDSLTokenType.ALL, word);
+    if (word === 'any') return new AbilityDSLToken(AbilityDSLTokenType.ANY, word);
+    if (word === 'of') return new AbilityDSLToken(AbilityDSLTokenType.OF, word);
+
+    // Многословные операторы
+    const nextWord = this.peekWord();
+    if (word === 'not' && nextWord === 'contains') {
+      this.consumeWord();
+      return new AbilityDSLToken(AbilityDSLTokenType.NOT_CONTAINS, 'not contains');
+    }
+    if (word === 'not' && nextWord === 'in') {
+      this.consumeWord();
+      return new AbilityDSLToken(AbilityDSLTokenType.NOT_IN, 'not in');
+    }
+    if (word === 'contains') return new AbilityDSLToken(AbilityDSLTokenType.CONTAINS, word);
+    if (word === 'in') return new AbilityDSLToken(AbilityDSLTokenType.IN, word);
+
+    // Идентификатор
+    return new AbilityDSLToken(AbilityDSLTokenType.IDENTIFIER, word);
+  }
+
+  private readIdentifierPart(): string {
+    const start = this.pos;
+    while (!this.isAtEnd() && this.isAlphaNumeric(this.peek())) {
+      this.advance();
+    }
+    return this.input.slice(start, this.pos);
+  }
+
+  // ───────────────────────────────────────────────
+  // ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+  // ───────────────────────────────────────────────
+
+  private peekWord(): string {
+    let i = this.pos;
+    while (i < this.input.length && this.isWhitespace(this.input[i])) {
+      i++;
+    }
+
+    const start = i;
+    while (i < this.input.length && this.isAlphaNumeric(this.input[i])) {
+      i++;
+    }
+
+    return this.input.slice(start, i);
+  }
+
+  private consumeWord(): void {
+    this.skipWhitespace();
+
+    while (!this.isAtEnd() && this.isAlphaNumeric(this.peek())) {
+      this.advance();
+    }
   }
 
   private skipWhitespace(): void {
@@ -321,27 +291,21 @@ export class AbilityDSLLexer {
   }
 
   private skipComment(): void {
-    while (!this.isAtEnd() && !this.isNewline()) {
+    while (!this.isAtEnd() && this.peek() !== '\n') {
       this.advance();
     }
   }
 
-  private isNewline(): boolean {
-    return this.peek() === '\n';
-  }
-
   private isWhitespace(char: string): boolean {
-    return char === ' ' || char === '\t' || char === '\n' || char === '\r';
+    return [' ', '\t', '\n', '\r'].includes(char);
   }
 
   private isAlpha(char: string): boolean {
-    return (
-      (char >= 'a' && char <= 'z') ||
-      (char >= 'A' && char <= 'Z') ||
-      char === '_' ||
-      (char >= 'а' && char <= 'я') ||
-      (char >= 'А' && char <= 'Я')
-    );
+    return /[a-zA-Z_]/.test(char);
+  }
+
+  private isAlphaNumeric(char: string): boolean {
+    return /[a-zA-Z0-9_]/.test(char);
   }
 
   private isDigit(char: string): boolean {

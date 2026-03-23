@@ -83,6 +83,18 @@ export class AbilityPolicy<
   }
 
   /**
+   * Add rule set to the policy
+   * @param ruleSets - The array of rule set to add
+   */
+  public addRuleSets(ruleSets: readonly AbilityRuleSet<Resource, Environment>[]): this {
+    for (const ruleSet of ruleSets) {
+      this.ruleSet.push(ruleSet);
+    }
+
+    return this;
+  }
+
+  /**
    * Check if the policy is matched
    * @param resource - The resource to check
    * @param environment - The user environment object

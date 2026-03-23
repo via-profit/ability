@@ -114,17 +114,25 @@ describe('AbilityDSLParser', () => {
     it('unknown', () => {
 
       const dsl = `
-permit user.profile.update when:
+# Политика с большим количеством условий
+permit order.bulkUpdate if:
   all of:
-    user.id equals profile.userId
-    any of:
-      user.roles contains 'admin'
-      user.roles contains 'manager'
+    user.roles contains 'admin'
+    user.department equals 'it'
+    user.location equals 'office'
+    user.security_clearance greater or equal 3
+    order.type in ['standard', 'express']
+    order.amount less than 50000
+  any of:
+    user.roles contains 'auditor'
+    user.supervisor_approval equals true
+    user.two_factor_enabled equals true
       `;
 
-      const parser = new AbilityDSLParser(dsl);
-     parser.parse();
+    const parser = new AbilityDSLParser(dsl);
+    const policies = parser.parse();
 
+     console.log(policies.toString());
       expect({foo: 'bar'}).toEqual({
         foo: 'bar',
       });
