@@ -7,17 +7,32 @@ export class AbilityDSLLexer {
   private tokens: AbilityDSLToken[] = [];
   private lastToken: AbilityDSLToken | null = null;
 
+  // Логические операторы (and, or)
   private compareMap: Record<string, string> = {
     and: 'and',
     or: 'or',
   };
 
+  // Эффекты (allow, deny, ...)
   private effectsMap: Record<string, string> = {
     permit: 'permit',
     allow: 'permit',
     deny: 'deny',
     forbidden: 'deny',
   };
+
+  // Одиночные ключевые слова
+  private keywordsMap: Record<string, string> = {
+    when: 'when',
+    whenever: 'when',
+    if: 'when',
+    all: 'all',
+    any: 'any',
+    of: 'of',
+  };
+
+  // Составные ключевые фразы, которые должны склеиваться в один токен
+  private multiWordPhrases: string[] = ['all of', 'any of', 'все из', 'любое из'];
 
   // Полный список возможных компараторов (включая составные)
   private comparators: string[] = [
@@ -73,24 +88,22 @@ export class AbilityDSLLexer {
       }
     }
 
-    // Склейка составных компараторов
+    // Склейка составных компараторов и ключевых фраз
     const rawTokens = [...this.tokens];
     this.tokens = [];
 
     let i = 0;
     while (i < rawTokens.length) {
       const token = rawTokens[i];
+      // Склейка составных компараторов (последовательность condition-токенов)
       if (token.type === AbilityDSLTokenType.condition) {
-        // Пытаемся собрать максимально длинную последовательность condition-токенов
         let phrase = token.value;
         let j = i + 1;
         while (j < rawTokens.length && rawTokens[j].type === AbilityDSLTokenType.condition) {
           phrase += ' ' + rawTokens[j].value;
           j++;
         }
-        // Проверяем, является ли фраза допустимым компаратором
         if (this.comparators.includes(phrase)) {
-          // Создаём один токен для всей фразы
           this.tokens.push(
             new AbilityDSLToken(
               AbilityDSLTokenType.condition,
@@ -98,11 +111,38 @@ export class AbilityDSLLexer {
               token.position,
             ),
           );
-          i = j; // пропускаем все объединённые токены
+          i = j;
           continue;
         }
       }
-      // Если не смогли объединить, оставляем как есть
+
+      // Склейка составных ключевых фраз (последовательность word/word)
+      if (token.type === AbilityDSLTokenType.word || token.type === AbilityDSLTokenType.keyword) {
+        let phrase = token.value;
+        let j = i + 1;
+        // Собираем последовательность слов (word или keyword)
+        while (
+          j < rawTokens.length &&
+          (rawTokens[j].type === AbilityDSLTokenType.word ||
+            rawTokens[j].type === AbilityDSLTokenType.keyword)
+        ) {
+          phrase += ' ' + rawTokens[j].value;
+          j++;
+        }
+        if (this.multiWordPhrases.includes(phrase)) {
+          this.tokens.push(
+            new AbilityDSLToken(
+              AbilityDSLTokenType.keyword,
+              phrase, // оставляем фразу, парсер сам поймёт
+              token.position,
+            ),
+          );
+          i = j;
+          continue;
+        }
+      }
+
+      // Если не склеили, оставляем токен как есть
       this.tokens.push(token);
       i++;
     }
@@ -112,7 +152,6 @@ export class AbilityDSLLexer {
 
   private normalizeComparator(phrase: string): string {
     const map: Record<string, string> = {
-      // English
       equals: '=',
       is: '=',
       'is not equals': '<>',
@@ -136,28 +175,6 @@ export class AbilityDSLLexer {
       'not contains': 'not in',
       'not has': 'not in',
       'not in': 'not in',
-
-      // Russian
-      'равен': '=',
-      'равно': '=',
-      'является': '=',
-      'есть': '=',
-      'не равен': '<>',
-      'не равно': '<>',
-      'больше': '>',
-      'больше чем': '>',
-      'меньше': '<',
-      'меньше чем': '<',
-      'больше или равно': '>=',
-      'больше или равняется': '>=',
-      'меньше или равно': '<=',
-      'меньше или равняется': '<=',
-      'содержит': 'in',
-      'имеет': 'in',
-      'входит': 'in',
-      'не содержит': 'not in',
-      'не имеет': 'not in',
-      'не входит': 'not in',
     };
 
     const normalized = phrase.trim().toLowerCase();
@@ -168,6 +185,7 @@ export class AbilityDSLLexer {
     const char = this.peek();
     const startPos = this.pos;
 
+    // Пропуск комментариев
     if (char === '#') {
       this.skipComment();
       return null;
@@ -179,7 +197,7 @@ export class AbilityDSLLexer {
     }
 
     // Символы
-    if (char === '(' || char === ')') {
+    if (char === '(' || char === ')' || char === ':') {
       this.advance();
       return new AbilityDSLToken(AbilityDSLTokenType.symbol, char, startPos);
     }
@@ -246,12 +264,7 @@ export class AbilityDSLLexer {
       if (value === 'or') {
         const prev = this.lastToken;
         if (prev?.value === 'greater' || prev?.value === 'less') {
-          return new AbilityDSLToken(
-            AbilityDSLTokenType.condition,
-            value,
-            startPos,
-
-          );
+          return new AbilityDSLToken(AbilityDSLTokenType.condition, value, startPos);
         }
       }
       return new AbilityDSLToken(AbilityDSLTokenType.condition, value, startPos);
@@ -259,21 +272,17 @@ export class AbilityDSLLexer {
 
     // Логические операторы (and, or)
     if (this.compareMap[value]) {
-      return new AbilityDSLToken(
-        AbilityDSLTokenType.compare,
-        this.compareMap[value],
-        startPos,
-
-      );
+      return new AbilityDSLToken(AbilityDSLTokenType.compare, this.compareMap[value], startPos);
     }
 
     // Эффекты (allow, deny, ...)
     if (this.effectsMap[value]) {
-      return new AbilityDSLToken(
-        AbilityDSLTokenType.effect,
-        this.effectsMap[value],
-        startPos,
-      );
+      return new AbilityDSLToken(AbilityDSLTokenType.effect, this.effectsMap[value], startPos);
+    }
+
+    // Ключевые слова (одиночные)
+    if (this.keywordsMap[value]) {
+      return new AbilityDSLToken(AbilityDSLTokenType.keyword, this.keywordsMap[value], startPos);
     }
 
     // Путь или действие

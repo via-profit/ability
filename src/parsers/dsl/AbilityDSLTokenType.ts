@@ -17,10 +17,12 @@ export type TokenType =
   // | 'eof' // конец файла
   | 'symbol'
   | 'word'
+  | 'keyword' // all of, any of, when
   | 'compareMethod' // or, and
   | 'unknown'; // otherwise token
 
 export class AbilityDSLTokenType extends AbilityCode<TokenType> {
+  public static keyword = new AbilityDSLTokenType('keyword');
   public static compare = new AbilityDSLTokenType('compareMethod');
   public static word = new AbilityDSLTokenType('word');
   public static symbol = new AbilityDSLTokenType('symbol');
