@@ -14,3 +14,4 @@ export * from './core/AbilityResult';
 
 export * from './cache/AbilityCacheAdapter';
 export * from './cache/AbilityInMemoryCache';
+export * from './parsers/AbilityJSONParser';
