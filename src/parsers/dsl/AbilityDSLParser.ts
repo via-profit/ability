@@ -88,7 +88,7 @@ export class AbilityDSLParser {
     this.consume(AbilityDSLTokenType.COLON, 'Expected ":"');
 
     // Parse the list of rule sets (each "all of:" or "any of:" block)
-    const ruleSets = this.parseRuleSets();
+    const ruleSets = this.parseRuleSets(compareMethod);
 
     // Construct the policy instance.
     return new AbilityPolicy({
@@ -107,16 +107,26 @@ export class AbilityDSLParser {
   /**
    * Parses a sequence of rule sets (groups) until a new policy starts or EOF.
    */
-  private parseRuleSets(): AbilityRuleSet[] {
+  private parseRuleSets(policyCompareMethod: AbilityCompare): AbilityRuleSet[] {
     const sets: AbilityRuleSet[] = [];
 
-    // Continue while we haven't reached the end, and we're not at the start of a new policy.
     while (!this.isAtEnd() && !this.isStartOfPolicy()) {
       if (this.isStartOfGroup()) {
+        // Full syntax: explicit group with "all" or "any"
         sets.push(this.parseGroup());
       } else {
-        // If we encounter something that isn't a group start, it's an error.
-        break;
+        // Shorthand: no explicit group – treat as an implicit "all of:" group.
+        const group = new AbilityRuleSet({ compareMethod: policyCompareMethod });
+        // Read rules until the next group or policy start
+        while (!this.isAtEnd() && !this.isStartOfGroup() && !this.isStartOfPolicy()) {
+          if (this.check(AbilityDSLTokenType.IDENTIFIER)) {
+            group.addRule(this.parseRule());
+          } else {
+            // Unexpected token
+            throw new Error(`Unexpected token in implicit group: ${this.peek().type.code}`);
+          }
+        }
+        sets.push(group);
       }
     }
 
@@ -137,7 +147,9 @@ export class AbilityDSLParser {
       compareToken.type === AbilityDSLTokenType.ALL ? AbilityCompare.and : AbilityCompare.or;
 
     // "of" keyword
-    this.consume(AbilityDSLTokenType.OF, 'Expected "of"');
+    if (this.check(AbilityDSLTokenType.OF)) {
+      this.advance();
+    }
 
     // Colon after "of"
     this.consume(AbilityDSLTokenType.COLON, 'Expected ":"');
@@ -234,7 +246,11 @@ export class AbilityDSLParser {
         return { condition: AbilityCondition.in, operator: AbilityDSLTokenType.IN };
 
       case AbilityDSLTokenType.GT_WORD:
-        // "greater" optionally followed by "equal" → "greater or equal"
+        // optional "than"
+        if (this.matchWord('than')) {
+          // consume 'than'
+        }
+        // optional "or equal"
         if (this.matchWord('equal')) {
           return {
             condition: AbilityCondition.more_or_equal,
@@ -242,9 +258,21 @@ export class AbilityDSLParser {
           };
         }
         return { condition: AbilityCondition.more_than, operator: AbilityDSLTokenType.GT_WORD };
+      // case AbilityDSLTokenType.GT_WORD:
+      //   // "greater" optionally followed by "equal" → "greater or equal"
+      //   if (this.matchWord('equal')) {
+      //     return {
+      //       condition: AbilityCondition.more_or_equal,
+      //       operator: AbilityDSLTokenType.GT_WORD,
+      //     };
+      //   }
+      //   return { condition: AbilityCondition.more_than, operator: AbilityDSLTokenType.GT_WORD };
 
       case AbilityDSLTokenType.LT_WORD:
-        // "less" optionally followed by "equal" → "less or equal"
+        // consume optional "than"
+        if (this.matchWord('than')) {
+          // just consume
+        }
         if (this.matchWord('equal')) {
           return {
             condition: AbilityCondition.less_or_equal,
@@ -252,6 +280,15 @@ export class AbilityDSLParser {
           };
         }
         return { condition: AbilityCondition.less_than, operator: AbilityDSLTokenType.LT_WORD };
+      // case AbilityDSLTokenType.LT_WORD:
+      //   // "less" optionally followed by "equal" → "less or equal"
+      //   if (this.matchWord('equal')) {
+      //     return {
+      //       condition: AbilityCondition.less_or_equal,
+      //       operator: AbilityDSLTokenType.LT_WORD,
+      //     };
+      //   }
+      //   return { condition: AbilityCondition.less_than, operator: AbilityDSLTokenType.LT_WORD };
 
       case AbilityDSLTokenType.NULL:
         return { condition: AbilityCondition.equal, operator: AbilityDSLTokenType.NULL };
