@@ -313,4 +313,36 @@ permit order.update if all:
     expect(rule3.condition).toBe(AbilityCondition.more_than);
     expect(rule3.resource).toBe(1000);
   });
+
+  it('should parse environment paths correctly', () => {
+    const dsl = `
+permit order.update if any:
+  env.time.hour greater than 9
+  user.role equals 'admin'
+`;
+
+    const parser = new AbilityDSLParser(dsl);
+    const policies = parser.parse();
+
+    expect(policies).toHaveLength(1);
+    const policy = policies[0];
+
+    expect(policy.action).toBe('order.update');
+    expect(policy.effect).toBe(AbilityPolicyEffect.permit);
+    expect(policy.compareMethod).toBe(AbilityCompare.or);
+    expect(policy.ruleSet).toHaveLength(1);
+
+    const ruleSet = policy.ruleSet[0];
+    expect(ruleSet.rules).toHaveLength(2);
+
+    const rule1 = ruleSet.rules[0];
+    expect(rule1.subject).toBe('env.time.hour');
+    expect(rule1.condition).toBe(AbilityCondition.more_than);
+    expect(rule1.resource).toBe(9);
+
+    const rule2 = ruleSet.rules[1];
+    expect(rule2.subject).toBe('user.role');
+    expect(rule2.condition).toBe(AbilityCondition.equal);
+    expect(rule2.resource).toBe('admin');
+  });
 });
