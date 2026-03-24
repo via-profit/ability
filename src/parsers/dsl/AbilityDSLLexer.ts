@@ -37,9 +37,9 @@ export class AbilityDSLLexer {
 
       const char = this.peek();
 
-      // Comments: everything after '#' until newline is ignored.
+      // Comments: everything after '#' until newline
       if (char === '#') {
-        this.skipComment();
+        this.tokens.push(this.readComment());
         continue;
       }
 
@@ -80,6 +80,25 @@ export class AbilityDSLLexer {
   // -------------------------------------------------------------------------
   // #region String literal parsing
   // -------------------------------------------------------------------------
+
+  private readComment(): AbilityDSLToken {
+    this.advance(); // skip the shark symbol ('#')
+
+    let value = '';
+
+    while (!this.isAtEnd()) {
+      const char = this.advance();
+
+      // if is end of line, then stop
+      if(char === '\n') {
+        break;
+      }
+
+      value += char;
+    }
+
+    return new AbilityDSLToken(AbilityDSLTokenType.COMMENT, value.trim());
+  }
 
   /**
    * Reads a string literal enclosed in single or double quotes.

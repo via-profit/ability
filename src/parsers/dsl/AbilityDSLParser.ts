@@ -27,6 +27,10 @@ import { AbilityDSLTokenType } from '~/parsers/dsl/AbilityDSLTokenType';
 export class AbilityDSLParser {
   private tokens: AbilityDSLToken[] = [];
   private pos = 0;
+  private annotationBuffer: Record<'name' | 'description', string | null> = {
+    name: null,
+    description: null,
+  };
 
   constructor(private readonly dsl: string) {}
 
@@ -43,6 +47,7 @@ export class AbilityDSLParser {
 
     // Keep parsing until we've consumed all tokens.
     while (!this.isAtEnd()) {
+      this.consumeLeadingComments();
       // Every policy must start with an EFFECT token.
       if (!this.isStartOfPolicy()) {
         throw new Error(`Expected policy, got ${this.peek().type.code}`);
@@ -64,6 +69,9 @@ export class AbilityDSLParser {
    *   policy = EFFECT ACTION IF (ALL | ANY) COLON ruleSets
    */
   private parsePolicy(): AbilityPolicy {
+    this.consumeLeadingComments();
+    const meta = this.takeAnnotations();
+
     // Effect: "permit" or "deny"
     const effectToken = this.consume(AbilityDSLTokenType.EFFECT, 'Expected effect');
     const effect = effectToken.value;
@@ -93,7 +101,7 @@ export class AbilityDSLParser {
     // Construct the policy instance.
     return new AbilityPolicy({
       id: `${effect}:${action}:${Math.random()}`,
-      name: `${effect} ${action}`,
+      name: meta.name ?? `${effect} ${action}`,
       action,
       effect: effect === 'permit' ? AbilityPolicyEffect.permit : AbilityPolicyEffect.deny,
       compareMethod,
@@ -111,23 +119,39 @@ export class AbilityDSLParser {
     const sets: AbilityRuleSet[] = [];
 
     while (!this.isAtEnd() && !this.isStartOfPolicy()) {
+      // ВАЖНО: читаем комментарии перед каждой потенциальной группой
+      this.consumeLeadingComments();
+
+      // Если начинается новая группа — парсим её
       if (this.isStartOfGroup()) {
-        // Full syntax: explicit group with "all" or "any"
         sets.push(this.parseGroup());
-      } else {
-        // Shorthand: no explicit group – treat as an implicit "all of:" group.
-        const group = new AbilityRuleSet({ compareMethod: policyCompareMethod });
-        // Read rules until the next group or policy start
-        while (!this.isAtEnd() && !this.isStartOfGroup() && !this.isStartOfPolicy()) {
-          if (this.check(AbilityDSLTokenType.IDENTIFIER)) {
-            group.addRule(this.parseRule());
-          } else {
-            // Unexpected token
-            throw new Error(`Unexpected token in implicit group: ${this.peek().type.code}`);
-          }
-        }
-        sets.push(group);
+        continue;
       }
+
+      // Иначе — implicit group (all-of по умолчанию)
+      const meta = this.takeAnnotations();
+      const group = new AbilityRuleSet({
+        compareMethod: policyCompareMethod,
+        name: meta.name,
+      });
+
+      // Читаем правила implicit-группы
+      while (!this.isAtEnd()) {
+        this.consumeLeadingComments();
+
+        // Если после комментариев началась новая группа или политика — выходим
+        if (this.isStartOfGroup() || this.isStartOfPolicy()) {
+          break;
+        }
+
+        if (this.check(AbilityDSLTokenType.IDENTIFIER)) {
+          group.addRule(this.parseRule());
+        } else {
+          throw new Error(`Unexpected token in implicit group: ${this.peek().type.code}`);
+        }
+      }
+
+      sets.push(group);
     }
 
     return sets;
@@ -137,7 +161,9 @@ export class AbilityDSLParser {
    * Parses a single group, e.g. "all of:" or "any of:", and returns a RuleSet.
    */
   private parseGroup(): AbilityRuleSet {
-    // Read the group keyword (ALL or ANY)
+    this.consumeLeadingComments();
+    const meta = this.takeAnnotations();
+
     const compareToken = this.consumeOneOf(
       [AbilityDSLTokenType.ALL, AbilityDSLTokenType.ANY],
       'Expected "all" or "any"',
@@ -146,26 +172,25 @@ export class AbilityDSLParser {
     const compareMethod =
       compareToken.type === AbilityDSLTokenType.ALL ? AbilityCompare.and : AbilityCompare.or;
 
-    // "of" keyword
     if (this.check(AbilityDSLTokenType.OF)) {
       this.advance();
     }
 
-    // Colon after "of"
     this.consume(AbilityDSLTokenType.COLON, 'Expected ":"');
 
-    // Create the rule set that will hold the rules inside this group.
-    const group = new AbilityRuleSet({ compareMethod });
+    const group = new AbilityRuleSet({ compareMethod, name: meta.name });
 
-    // Read rules until we encounter either:
-    //   - the start of another group (ALL or ANY)
-    //   - the start of a new policy (EFFECT)
-    //   - end of input
-    while (!this.isAtEnd() && !this.isStartOfGroup() && !this.isStartOfPolicy()) {
+    while (!this.isAtEnd()) {
+      this.consumeLeadingComments();
+
+      // после того как съели комментарии, могли оказаться на начале новой группы/политики
+      if (this.isStartOfGroup() || this.isStartOfPolicy()) {
+        break;
+      }
+
       if (this.check(AbilityDSLTokenType.IDENTIFIER)) {
         group.addRule(this.parseRule());
       } else {
-        // Any other token inside a group is unexpected.
         throw new Error(`Unexpected token in group: ${this.peek().type.code}`);
       }
     }
@@ -181,6 +206,8 @@ export class AbilityDSLParser {
    * Parses a single rule: subject operator value
    */
   private parseRule(): AbilityRule {
+    this.consumeLeadingComments();
+    const meta = this.takeAnnotations();
     if (!this.check(AbilityDSLTokenType.IDENTIFIER)) {
       throw new Error(`Expected identifier, got ${this.peek().type.code}`);
     }
@@ -208,6 +235,7 @@ export class AbilityDSLParser {
       subject,
       resource,
       condition,
+      name: meta.name,
     });
   }
 
@@ -297,6 +325,25 @@ export class AbilityDSLParser {
         throw new Error(`Unexpected operator token: ${token.type}`);
     }
   }
+
+  // private consumeCommentsAndCaptureName(): AbilityDSLAnnotationAST | null {
+  //   let name: string | null = null;
+  //   const annotationName = '@name';
+  //   while (!this.isAtEnd() && this.check(AbilityDSLTokenType.COMMENT)) {
+  //     const comment = this.advance();
+  //     const content = comment.value;
+  //
+  //     // find annotation @name
+  //     if (content.startsWith(annotationName)) {
+  //       const namePart = content.slice(annotationName.length).trim(); // after "@name"
+  //       if (namePart) {
+  //         name = namePart;
+  //       }
+  //     }
+  //     // ignoring other comment text
+  //   }
+  //   return name !== null ? new AbilityDSLAnnotationAST(name) : null;
+  // }
 
   /**
    * Helper to match and consume a specific word token.
@@ -393,6 +440,42 @@ export class AbilityDSLParser {
 
     this.consume(AbilityDSLTokenType.RBRACKET, 'Expected "]"');
     return arr;
+  }
+
+  // -------------------------------------------------------------------------
+  // #region Annotations and comments
+  // -------------------------------------------------------------------------
+  private consumeLeadingComments() {
+    while (this.check(AbilityDSLTokenType.COMMENT)) {
+      const token = this.advance();
+      this.processCommentToken(token);
+    }
+  }
+
+  private processCommentToken(token: AbilityDSLToken) {
+    const text = token.value.trim();
+
+    if (text.startsWith('@name ')) {
+      this.annotationBuffer.name = text.slice(6).trim();
+    }
+
+    if (text.startsWith('@description ')) {
+      this.annotationBuffer.description = text.slice(13).trim();
+    }
+
+    // if (text.startsWith('@tags ')) {
+    //   this.annotationBuffer.tags = text.slice(6).trim();
+    // }
+  }
+
+  private takeAnnotations(): typeof this.annotationBuffer {
+    const meta = { ...this.annotationBuffer };
+    this.annotationBuffer = {
+      name: null,
+      description: null,
+    };
+
+    return meta;
   }
 
   // -------------------------------------------------------------------------

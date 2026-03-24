@@ -2,15 +2,20 @@ import { AbilityDSLParser } from '~/parsers/dsl/AbilityDSLParser';
 import AbilityCondition from '~/core/AbilityCondition';
 import AbilityCompare from '~/core/AbilityCompare';
 import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
+import AbilityParser from '../../core/AbilityParser';
 
-describe('Units', () => {
+describe('AbilityDSLParser', () => {
   it('should parse a policy with two rule sets (all of and any of)', () => {
     const dsl = `
-# Policy with 2 rule sets
+# @name can order update
 permit order.update if any:
+  # @name authorized admin
   all of:
+    # @name contains role admin
     user.roles contains 'admin'
     user.token is not null
+
+  # @name if is developer
   any of:
     user.roles contains 'developer'
     user.logit equals 'dev'
@@ -27,6 +32,7 @@ permit order.update if any:
     expect(policy.action).toBe('order.update');
     expect(policy.effect).toBe(AbilityPolicyEffect.permit);
     expect(policy.compareMethod).toBe(AbilityCompare.or);
+    expect(policy.name).toBe('can order update');
 
     // There should be two rule sets
     expect(policy.ruleSet).toHaveLength(2);
@@ -35,12 +41,14 @@ permit order.update if any:
     const ruleSet1 = policy.ruleSet[0];
     expect(ruleSet1.compareMethod).toBe(AbilityCompare.and);
     expect(ruleSet1.rules).toHaveLength(2);
+    expect(ruleSet1.name).toBe('authorized admin');
 
     // Rule 1: user.roles contains 'admin'
     const rule1 = ruleSet1.rules[0];
     expect(rule1.subject).toBe('user.roles');
     expect(rule1.condition).toBe(AbilityCondition.in);
     expect(rule1.resource).toBe('admin');
+    expect(rule1.name).toBe('contains role admin');
 
     // Rule 2: user.token is not null
     const rule2 = ruleSet1.rules[1];
@@ -52,6 +60,7 @@ permit order.update if any:
     const ruleSet2 = policy.ruleSet[1];
     expect(ruleSet2.compareMethod).toBe(AbilityCompare.or);
     expect(ruleSet2.rules).toHaveLength(2);
+    expect(ruleSet2.name).toBe('if is developer');
 
     // Rule 3: user.roles contains 'developer'
     const rule3 = ruleSet2.rules[0];

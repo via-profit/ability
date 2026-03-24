@@ -20,6 +20,7 @@ export type TokenType =
   | 'ANY' // any – group operator (logical OR)
   | 'OF' // of – part of 'all of' / 'any of'
   | 'EOF' // end of file – signals end of input
+  | 'COMMENT' // comments with annotations (@name ..., @description ...)
 
   // -------------------------------------------------------------------------
   // #region Comparison operators (word‑based)
@@ -66,6 +67,7 @@ export class AbilityDSLTokenType extends AbilityCode<TokenType> {
   public static ALL = new AbilityDSLTokenType('ALL');
   public static ANY = new AbilityDSLTokenType('ANY');
   public static OF = new AbilityDSLTokenType('OF');
+  public static COMMENT = new AbilityDSLTokenType('COMMENT');
 
   // =========================================================================
   // #region Comparison operators

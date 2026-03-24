@@ -48,7 +48,7 @@ export class AbilityRuleSet<
   public constructor(params: AbilityRuleSetConstructorProps) {
     const { name, id, compareMethod } = params;
 
-    this.name = name || 'No name';
+    this.name = name || '';
     this.id = id || this.name;
     this.compareMethod = compareMethod;
   }
