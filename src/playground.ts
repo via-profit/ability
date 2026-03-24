@@ -46,7 +46,7 @@ server.on('request', async  (_req, res) => {
     },
   ];
 
-  const policies: AbilityPolicy<MyResources>[] = AbilityPolicy.parseAll(config);
+  const policies: AbilityPolicy<MyResources>[] = AbilityPolicy.fromJSONAll(config);
 
   const result = await new AbilityResolver(policies).resolve('order.status', {
     order: {
@@ -60,7 +60,23 @@ server.on('request', async  (_req, res) => {
   res.statusCode = 200;
   res.setHeader('content-type', 'text/plain');
 
-  const typeDefs = AbilityParser.generateTypeDefs(policies);
+
+  // const typeDefs = AbilityParser.generateTypeDefs(policies);
+
+  const dsl = `
+  # @name Deny if is admin and order amount <= 1000
+deny order.status if all:
+
+  # @name user roles contain admin and order amount <= 1000
+  all of:
+    # @name user.roles contains admin
+    user.roles in ['admin']
+
+    # @name order.amount <= 1000
+    order.amount less equal 1000
+
+  `;
+
 
   res.write(
     `${result.explain().toString()}

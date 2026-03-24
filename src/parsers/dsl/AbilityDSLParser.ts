@@ -7,6 +7,7 @@ import AbilityRuleSet from '~/core/AbilityRuleSet';
 import { AbilityDSLLexer } from '~/parsers/dsl/AbilityDSLLexer';
 import { AbilityDSLToken } from '~/parsers/dsl/AbilityDSLToken';
 import { AbilityDSLTokenType } from '~/parsers/dsl/AbilityDSLTokenType';
+import { ResourceObject } from '~/core/AbilityParser';
 
 /**
  * Parser for the Ability DSL.
@@ -24,7 +25,8 @@ import { AbilityDSLTokenType } from '~/parsers/dsl/AbilityDSLTokenType';
  * Operators can be simple (equals, contains, in, greater, less) or
  * composed (is null, is not null, greater than, less than, etc.).
  */
-export class AbilityDSLParser {
+export class AbilityDSLParser<Resource extends ResourceObject = Record<string, unknown>,
+  Environment = unknown,> {
   private tokens: AbilityDSLToken[] = [];
   private pos = 0;
   private annotationBuffer: Record<'name' | 'description', string | null> = {
@@ -38,7 +40,7 @@ export class AbilityDSLParser {
    * Main entry point: tokenize the input and parse all policies.
    * @returns Array of AbilityPolicy instances.
    */
-  public parse(): AbilityPolicy[] {
+  public parse(): AbilityPolicy<Resource, Environment>[] {
     // Tokenize the entire DSL string.
     this.tokens = new AbilityDSLLexer(this.dsl).tokenize();
     this.pos = 0;

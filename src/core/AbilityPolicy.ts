@@ -6,6 +6,7 @@ import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
 import { AbilityError } from './AbilityError';
 import { ResourceObject } from './AbilityParser';
 import { AbilityJSONParser } from '~/parsers/json/AbilityJSONParser';
+import { AbilityDSLParser } from '~/parsers/dsl/AbilityDSLParser';
 
 export type AbilityPolicyConfig = {
   readonly action: string;
@@ -164,6 +165,13 @@ export class AbilityPolicy<
     Environment = unknown,
   >(config: AbilityPolicyConfig): AbilityPolicy<Resource, Environment> {
     return AbilityJSONParser.parsePolicy(config);
+  }
+
+  public static fromDSL<
+    Resource extends ResourceObject = Record<string, unknown>,
+    Environment = unknown,
+  >(dsl: string): AbilityPolicy<Resource, Environment> {
+    return new AbilityDSLParser(dsl).parse()[0];
   }
 
   public toJSON() {
