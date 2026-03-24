@@ -23,15 +23,16 @@ export type TokenType =
   // -------------------------------------------------------------------------
   // #region Comparison operators (word‑based)
   // -------------------------------------------------------------------------
-  | 'EQ' // equals, is – equality
+  | 'EQ' // equal, is – equality
   | 'CONTAINS' // contains – membership in array / substring
   | 'IN' // in – membership in array
+  | 'NOT_IN' // in – membership in array
   | 'GT_WORD' // greater – greater than
   | 'LT_WORD' // less – less than
   | 'NULL' // null – literal null
   | 'EQ_NULL' // is null – special null equality
   | 'NOT_EQ_NULL' // is not null – special null inequality
-  | 'NOT_EQ' // not equals
+  | 'NOT_EQ' // not equal
 
   // -------------------------------------------------------------------------
   // #region Literal values
@@ -77,6 +78,7 @@ export class AbilityDSLTokenType extends AbilityCode<TokenType> {
   public static EQ = new AbilityDSLTokenType('EQ'); // equals, is
   public static CONTAINS = new AbilityDSLTokenType('CONTAINS');
   public static IN = new AbilityDSLTokenType('IN');
+  public static NOT_IN = new AbilityDSLTokenType('NOT_IN');
   public static GT_WORD = new AbilityDSLTokenType('GT_WORD'); // greater
   public static LT_WORD = new AbilityDSLTokenType('LT_WORD'); // less
   public static NULL = new AbilityDSLTokenType('NULL');
@@ -125,7 +127,7 @@ export class AbilityDSLTokenType extends AbilityCode<TokenType> {
     }
 
     // Comparison operators
-    if (lower === 'equals' || lower === 'is') {
+    if (lower === 'equal' || lower === 'is') {
       return AbilityDSLTokenType.EQ;
     }
     if (lower === 'contains') {

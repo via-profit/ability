@@ -218,12 +218,21 @@ export class AbilityDSLLexer {
     const word = this.input.slice(start, this.pos);
 
     // Handle "not equals"
-    // Handle "not equals"
     if (word === 'not') {
       const next = this.peekWord();
       if (next === 'equals') {
         this.consumeWord();
         return new AbilityDSLToken(AbilityDSLTokenType.NOT_EQ, 'not equals');
+      }
+
+      if (next === 'in') {
+        this.consumeWord();
+        return new AbilityDSLToken(AbilityDSLTokenType.NOT_IN, 'not contains');
+      }
+
+      if (next === 'contains' || next === 'contain') {
+        this.consumeWord();
+        return new AbilityDSLToken(AbilityDSLTokenType.NOT_IN, 'not contains');
       }
     }
 
@@ -231,32 +240,55 @@ export class AbilityDSLLexer {
     if (word === 'is') {
       const next = this.peekWord();
 
+      // "is null"
       if (next === 'null') {
         this.consumeWord();
         return new AbilityDSLToken(AbilityDSLTokenType.EQ_NULL, 'is null');
       }
 
+      // "is not ..."
       if (next === 'not') {
         this.consumeWord();
         const next2 = this.peekWord();
 
+        // "is not null"
         if (next2 === 'null') {
           this.consumeWord();
           return new AbilityDSLToken(AbilityDSLTokenType.NOT_EQ_NULL, 'is not null');
         }
 
+        // "is not equal" -> "is not equals"
+        if (next2 === 'equal') {
+          this.consumeWord();
+          return new AbilityDSLToken(AbilityDSLTokenType.NOT_EQ, 'not equals');
+        }
+
+        // "is not equals"
         if (next2 === 'equals') {
           this.consumeWord();
           return new AbilityDSLToken(AbilityDSLTokenType.NOT_EQ, 'not equals');
         }
 
-        return new AbilityDSLToken(AbilityDSLTokenType.EQ, 'is');
+        // "is"
+        return new AbilityDSLToken(AbilityDSLTokenType.NOT_EQ, 'is');
       }
 
+      // "is equal" -> "is equals"
+      if (next === 'equal') {
+        this.consumeWord(); // consume "equal"
+        return new AbilityDSLToken(AbilityDSLTokenType.EQ, 'equals');
+      }
+
+      if (next === 'equals') {
+        this.consumeWord(); // consume "equal"
+        return new AbilityDSLToken(AbilityDSLTokenType.EQ, 'equals');
+      }
+
+      // "is"
       return new AbilityDSLToken(AbilityDSLTokenType.EQ, 'is');
     }
 
-    // Only now handle plain "equals"
+    // "equals"
     if (word === 'equals') {
       return new AbilityDSLToken(AbilityDSLTokenType.EQ, word);
     }
@@ -270,6 +302,7 @@ export class AbilityDSLLexer {
       }
       return new AbilityDSLToken(AbilityDSLTokenType.IDENTIFIER, word);
     }
+
     // Only now handle plain "equals"
     if (word === 'equals') {
       return new AbilityDSLToken(AbilityDSLTokenType.EQ, word);
@@ -302,13 +335,10 @@ export class AbilityDSLLexer {
     if (word === 'equals') {
       return new AbilityDSLToken(AbilityDSLTokenType.EQ, word);
     }
-    // if (word === 'is') {
-    //   return new AbilityDSLToken(AbilityDSLTokenType.EQ, word);
+    // if (word === 'contains' || word === 'contain') {
+    //   return new AbilityDSLToken(AbilityDSLTokenType.CONTAINS, word);
     // }
-    if (word === 'contains') {
-      return new AbilityDSLToken(AbilityDSLTokenType.CONTAINS, word);
-    }
-    if (word === 'in') {
+    if (word === 'in' || word === 'contains' || word === 'contain') {
       return new AbilityDSLToken(AbilityDSLTokenType.IN, word);
     }
     if (word === 'greater') {

@@ -382,4 +382,78 @@ permit order.update if any:
     expect(rule2.condition).toBe(AbilityCondition.equal);
     expect(rule2.resource).toBe('admin');
   });
+
+  describe('Operators', () => {
+    it('should parse "is equal" correctly', () => {
+      const dsl = `
+permit test.action if all:
+  user.name is equal 'John'
+`;
+      const parser = new AbilityDSLParser(dsl);
+      const policies = parser.parse();
+      const rule = policies[0].ruleSet[0].rules[0];
+      expect(rule.condition).toBe(AbilityCondition.equal);
+      expect(rule.resource).toBe('John');
+    });
+
+    it('should parse "is not equal" correctly', () => {
+      const dsl = `
+permit test.action if all:
+  user.name is not equal 'John'
+`;
+      const parser = new AbilityDSLParser(dsl);
+      const policies = parser.parse();
+      const rule = policies[0].ruleSet[0].rules[0];
+      expect(rule.condition).toBe(AbilityCondition.not_equal);
+      expect(rule.resource).toBe('John');
+    });
+
+    it('should parse "contains" correctly', () => {
+      const dsl = `
+permit test.action if all:
+  user.roles contains 'admin'
+`;
+      const parser = new AbilityDSLParser(dsl);
+      const policies = parser.parse();
+      const rule = policies[0].ruleSet[0].rules[0];
+      expect(rule.condition).toBe(AbilityCondition.in);
+      expect(rule.resource).toBe('admin');
+    });
+
+    it('should parse "not contains" correctly', () => {
+      const dsl = `
+permit test.action if all:
+  user.roles not contains 'admin'
+`;
+      const parser = new AbilityDSLParser(dsl);
+      const policies = parser.parse();
+      const rule = policies[0].ruleSet[0].rules[0];
+      expect(rule.condition).toBe(AbilityCondition.not_in);
+      expect(rule.resource).toBe('admin');
+    });
+
+    it('should parse "in" correctly (with array)', () => {
+      const dsl = `
+permit test.action if all:
+  user.role in ['admin', 'manager']
+`;
+      const parser = new AbilityDSLParser(dsl);
+      const policies = parser.parse();
+      const rule = policies[0].ruleSet[0].rules[0];
+      expect(rule.condition).toBe(AbilityCondition.in);
+      expect(rule.resource).toEqual(['admin', 'manager']);
+    });
+
+    it('should parse "not in" correctly (with array)', () => {
+      const dsl = `
+permit test.action if all:
+  user.role not in ['admin', 'manager']
+`;
+      const parser = new AbilityDSLParser(dsl);
+      const policies = parser.parse();
+      const rule = policies[0].ruleSet[0].rules[0];
+      expect(rule.condition).toBe(AbilityCondition.not_in);
+      expect(rule.resource).toEqual(['admin', 'manager']);
+    });
+  });
 });

@@ -279,6 +279,8 @@ export class AbilityDSLParser<
 
       case AbilityDSLTokenType.IN:
         return { condition: AbilityCondition.in, operator: AbilityDSLTokenType.IN };
+      case AbilityDSLTokenType.NOT_IN:
+        return { condition: AbilityCondition.not_in, operator: AbilityDSLTokenType.NOT_IN };
 
       case AbilityDSLTokenType.GT_WORD:
         // optional "than"
