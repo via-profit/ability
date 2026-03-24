@@ -217,23 +217,48 @@ export class AbilityDSLLexer {
 
     const word = this.input.slice(start, this.pos);
 
-    // Special handling for "is" and "is not null" sequences
-    if (word === 'is') {
-      const next = this.peekWord(); // peek next word (skip whitespace)
-      if (next === 'not') {
-        this.consumeWord(); // consume "not"
-        const next2 = this.peekWord();
-        if (next2 === 'null') {
-          this.consumeWord(); // consume "null"
-          return new AbilityDSLToken(AbilityDSLTokenType.NOT_EQ_NULL, 'is not null');
-        }
+    // Handle "not equals"
+    // Handle "not equals"
+    if (word === 'not') {
+      const next = this.peekWord();
+      if (next === 'equals') {
+        this.consumeWord();
+        return new AbilityDSLToken(AbilityDSLTokenType.NOT_EQ, 'not equals');
       }
+    }
 
-      // "is null" (without "not")
+    // Handle "is null" / "is not null" / "is not equals"
+    if (word === 'is') {
+      const next = this.peekWord();
+
       if (next === 'null') {
-        this.consumeWord(); // consume "null"
+        this.consumeWord();
         return new AbilityDSLToken(AbilityDSLTokenType.EQ_NULL, 'is null');
       }
+
+      if (next === 'not') {
+        this.consumeWord();
+        const next2 = this.peekWord();
+
+        if (next2 === 'null') {
+          this.consumeWord();
+          return new AbilityDSLToken(AbilityDSLTokenType.NOT_EQ_NULL, 'is not null');
+        }
+
+        if (next2 === 'equals') {
+          this.consumeWord();
+          return new AbilityDSLToken(AbilityDSLTokenType.NOT_EQ, 'not equals');
+        }
+
+        return new AbilityDSLToken(AbilityDSLTokenType.EQ, 'is');
+      }
+
+      return new AbilityDSLToken(AbilityDSLTokenType.EQ, 'is');
+    }
+
+    // Only now handle plain "equals"
+    if (word === 'equals') {
+      return new AbilityDSLToken(AbilityDSLTokenType.EQ, word);
     }
 
     // If the token contains a dot, it's either a path (identifier) or an action.
@@ -245,7 +270,10 @@ export class AbilityDSLLexer {
       }
       return new AbilityDSLToken(AbilityDSLTokenType.IDENTIFIER, word);
     }
-
+    // Only now handle plain "equals"
+    if (word === 'equals') {
+      return new AbilityDSLToken(AbilityDSLTokenType.EQ, word);
+    }
     // Group keywords
     if (word === 'all') {
       return new AbilityDSLToken(AbilityDSLTokenType.ALL, word);
@@ -274,9 +302,9 @@ export class AbilityDSLLexer {
     if (word === 'equals') {
       return new AbilityDSLToken(AbilityDSLTokenType.EQ, word);
     }
-    if (word === 'is') {
-      return new AbilityDSLToken(AbilityDSLTokenType.EQ, word);
-    }
+    // if (word === 'is') {
+    //   return new AbilityDSLToken(AbilityDSLTokenType.EQ, word);
+    // }
     if (word === 'contains') {
       return new AbilityDSLToken(AbilityDSLTokenType.CONTAINS, word);
     }

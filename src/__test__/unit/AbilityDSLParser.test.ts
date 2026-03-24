@@ -3,6 +3,7 @@ import AbilityCondition from '~/core/AbilityCondition';
 import AbilityCompare from '~/core/AbilityCompare';
 import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
 import AbilityParser from '../../core/AbilityParser';
+import { AbilityDSLLexer } from '../../parsers/dsl/AbilityDSLLexer';
 
 describe('AbilityDSLParser', () => {
   it('should parse a policy with two rule sets (all of and any of)', () => {
@@ -99,6 +100,33 @@ permit order.view if all:
     const rule = ruleSet.rules[0];
     expect(rule.subject).toBe('user.id');
     expect(rule.condition).toBe(AbilityCondition.equal);
+    expect(rule.resource).toBe('order.owner');
+  });
+
+  it('should parse a simple policy with one rule', () => {
+    const dsl = `
+deny order.view if all:
+  user.id is not equals order.owner
+`;
+
+    const parser = new AbilityDSLParser(dsl);
+    const tokens = new AbilityDSLLexer(dsl).tokenize();
+    const policies = parser.parse();
+
+    expect(policies).toHaveLength(1);
+    const policy = policies[0];
+
+    expect(policy.action).toBe('order.view');
+    expect(policy.effect).toBe(AbilityPolicyEffect.deny);
+    expect(policy.compareMethod).toBe(AbilityCompare.and);
+    expect(policy.ruleSet).toHaveLength(1);
+
+    const ruleSet = policy.ruleSet[0];
+    expect(ruleSet.rules).toHaveLength(1);
+
+    const rule = ruleSet.rules[0];
+    expect(rule.subject).toBe('user.id');
+    expect(rule.condition).toBe(AbilityCondition.not_equal);
     expect(rule.resource).toBe('order.owner');
   });
 

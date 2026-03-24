@@ -84,6 +84,77 @@ pnpm add @via-profit/ability
 
 ## Обзор
 
+Пакет построен на принципе составления политик и из проверки на предмет получения доступа к ресурсу.
+
+**Простой пример:**
+
+_Необходимо запретить читать поле `passwordHash` всем, кроме владельца (кроме самого пользователя)_.
+
+Пусть данные о пользователе имеют следующую структуру:
+
+```ts
+const user = {
+  id: '1',
+  login: 'user-001',
+  passwordHash: '$2y$12$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+}
+```
+тогда мы можем сформулировать необходимое нам ограничение: _если пользователь, который пытается получить значение поля `passwordHash` является его владельцем, то разрешаем, в противном случае - запрещаем._
+
+Из данной формулировки следует, что при проверке нам необходимо знать ID того кто пытается получить доступ к данным и ID пользователя, чьи данные пытаются прочитать. 
+
+```dsl
+deny user.passwordHash if any:
+  viewer.id is not equals owner.id
+```
+
+Пояснение к описанному выше [DSL](#dsl):
+*`deny`* - запрещаем доступ к *`user.passwordHash`* если (*`if`*) любое (*`any`*) из правил будет выполнено
+правило будет выполнено, если данные из *`viewer.id`* не будут равны (*`is not equals`*) значению в *`owner.id`*
+
+Тем самым, если *`viewer.id`* не равен *`owner.id`*, то политика выдаст *`deny`*
+
+*`viewer.id`* - тот кто пытается получить доступ к *`user.passwordHash`*
+*`owner.id`* - владелец поля *`passwordHash`*
+
+
+### Полный пример
+
+```ts
+  const dsl = `
+deny user.passwordHash if any:
+  viewer.id is not equals owner.id
+`;
+
+// Парсинг DSL и получение массива политик (в нашем случае она одна)
+const policies = new AbilityDSLParser(dsl).parse();
+
+// Создание резолвера для управления политиками
+const resolver = new AbilityResolver(policies);
+
+// Данные пользователя, который получает доступ
+const viewer = {
+  id: '123',
+};
+
+// Пользователь, чьи данные пытаются прочитать
+// Он же - владелец поля `passwordHash`, поэтому
+// этот объект будет именован как `owner`
+const user = {
+  id: '987',
+  // passwordHash: '...'
+};
+
+const result = await resolver.resolve('user.passwordHash', {
+  viewer,
+  owner: user
+});
+
+
+console.log(result.isDenied()); // true
+```
+
+
 ### Состав пакета
 
 #### Ядро (Core)

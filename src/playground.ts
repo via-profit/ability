@@ -1,6 +1,6 @@
 import http from 'node:http';
-import { AbilityPolicy, AbilityPolicyConfig } from './core/AbilityPolicy';
-import AbilityParser from './core/AbilityParser';
+import { AbilityPolicyConfig } from './core/AbilityPolicy';
+import { AbilityDSLParser } from './parsers/dsl/AbilityDSLParser';
 import AbilityResolver from './core/AbilityResolver';
 
 const server = http.createServer();
@@ -46,45 +46,49 @@ server.on('request', async  (_req, res) => {
     },
   ];
 
-  const policies: AbilityPolicy<MyResources>[] = AbilityPolicy.fromJSONAll(config);
-
-  const result = await new AbilityResolver(policies).resolve('order.status', {
-    order: {
-      amount: 1000,
-    },
-    user: {
-      roles: ['admin'],
-    },
-  });
+  // const policies: AbilityPolicy<MyResources>[] = AbilityPolicy.fromJSONAll(config);
+  //
+  // const result = await new AbilityResolver(policies).resolve('order.status', {
+  //   order: {
+  //     amount: 1000,
+  //   },
+  //   user: {
+  //     roles: ['admin'],
+  //   },
+  // });
 
   res.statusCode = 200;
   res.setHeader('content-type', 'text/plain');
-
-
-  // const typeDefs = AbilityParser.generateTypeDefs(policies);
-
   const dsl = `
-  # @name Deny if is admin and order amount <= 1000
-deny order.status if all:
+deny user.passwordHash if any:
+  viewer.id is not equals owner.id
+`;
 
-  # @name user roles contain admin and order amount <= 1000
-  all of:
-    # @name user.roles contains admin
-    user.roles in ['admin']
+  // Парсинг DSL и получение массива политик (в нашем случае она одна)
+  const policies = new AbilityDSLParser(dsl).parse();
 
-    # @name order.amount <= 1000
-    order.amount less equal 1000
+  // Создание резолвера для управления политиками
+  const resolver = new AbilityResolver(policies);
 
-  `;
+  // Данные пользователя, который получает доступ
+  const viewer = {
+    id: '123',
+  };
 
+  // Пользователь, чьи данные пытаются прочитать
+  // Он же - владелец поля `passwordHash`, поэтому
+  // этот объект будет именован как `owner`
+  const user = {
+    id: '987',
+    // passwordHash: '...'
+  };
 
-  res.write(
-    `${result.explain().toString()}
-    
-    Current ation - ${result.isAllowed() ? '✔ is allowed' : result.isDenied() ? '🗙 is denied' : 'unknown'}
-    `
-  );
-  // res.write(typeDefs);
+  const result = await resolver.resolve('user.passwordHash', {
+    viewer,
+    owner: user,
+  });
+
+  console.log(result.isDenied()); // true
   res.end();
 });
 

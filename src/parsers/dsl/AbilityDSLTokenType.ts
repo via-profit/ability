@@ -1,12 +1,10 @@
-import AbilityCode from '~/core/AbilityCode';
-
 /**
  * Discriminated union of all token types recognized by the Ability DSL lexer.
  */
 export type TokenType =
-  // -------------------------------------------------------------------------
-  // #region Structural tokens – define the shape of the policy
-  // -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+// #region Structural tokens – define the shape of the policy
+// -------------------------------------------------------------------------
   | 'EFFECT' // permit, deny – overall policy effect
   | 'IF' // if – start of condition block
   | 'ACTION' // order.update – the action being governed
@@ -33,6 +31,7 @@ export type TokenType =
   | 'NULL' // null – literal null
   | 'EQ_NULL' // is null – special null equality
   | 'NOT_EQ_NULL' // is not null – special null inequality
+  | 'NOT_EQ' // not equals
 
   // -------------------------------------------------------------------------
   // #region Literal values
@@ -45,6 +44,8 @@ export type TokenType =
   // #region Fallback
   // -------------------------------------------------------------------------
   | 'UNKNOWN';
+
+import AbilityCode from '~/core/AbilityCode';
 
 /**
  * Strongly‑typed representation of a DSL token type.
@@ -72,6 +73,7 @@ export class AbilityDSLTokenType extends AbilityCode<TokenType> {
   // =========================================================================
   // #region Comparison operators
   // =========================================================================
+  public static NOT_EQ = new AbilityDSLTokenType('NOT_EQ'); // not equals
   public static EQ = new AbilityDSLTokenType('EQ'); // equals, is
   public static CONTAINS = new AbilityDSLTokenType('CONTAINS');
   public static IN = new AbilityDSLTokenType('IN');

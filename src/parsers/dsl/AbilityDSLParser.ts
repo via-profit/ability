@@ -25,8 +25,10 @@ import { ResourceObject } from '~/core/AbilityParser';
  * Operators can be simple (equals, contains, in, greater, less) or
  * composed (is null, is not null, greater than, less than, etc.).
  */
-export class AbilityDSLParser<Resource extends ResourceObject = Record<string, unknown>,
-  Environment = unknown,> {
+export class AbilityDSLParser<
+  Resource extends ResourceObject = Record<string, unknown>,
+  Environment = unknown,
+> {
   private tokens: AbilityDSLToken[] = [];
   private pos = 0;
   private annotationBuffer: Record<'name' | 'description', string | null> = {
@@ -261,6 +263,9 @@ export class AbilityDSLParser<Resource extends ResourceObject = Record<string, u
         }
         return { condition: AbilityCondition.equal, operator: AbilityDSLTokenType.EQ };
 
+      case AbilityDSLTokenType.NOT_EQ:
+        return { condition: AbilityCondition.not_equal, operator: AbilityDSLTokenType.NOT_EQ };
+
       case AbilityDSLTokenType.EQ_NULL:
         // Already handled "is null"
         return { condition: AbilityCondition.equal, operator: AbilityDSLTokenType.EQ_NULL };
@@ -288,16 +293,6 @@ export class AbilityDSLParser<Resource extends ResourceObject = Record<string, u
           };
         }
         return { condition: AbilityCondition.more_than, operator: AbilityDSLTokenType.GT_WORD };
-      // case AbilityDSLTokenType.GT_WORD:
-      //   // "greater" optionally followed by "equal" → "greater or equal"
-      //   if (this.matchWord('equal')) {
-      //     return {
-      //       condition: AbilityCondition.more_or_equal,
-      //       operator: AbilityDSLTokenType.GT_WORD,
-      //     };
-      //   }
-      //   return { condition: AbilityCondition.more_than, operator: AbilityDSLTokenType.GT_WORD };
-
       case AbilityDSLTokenType.LT_WORD:
         // consume optional "than"
         if (this.matchWord('than')) {
@@ -310,16 +305,6 @@ export class AbilityDSLParser<Resource extends ResourceObject = Record<string, u
           };
         }
         return { condition: AbilityCondition.less_than, operator: AbilityDSLTokenType.LT_WORD };
-      // case AbilityDSLTokenType.LT_WORD:
-      //   // "less" optionally followed by "equal" → "less or equal"
-      //   if (this.matchWord('equal')) {
-      //     return {
-      //       condition: AbilityCondition.less_or_equal,
-      //       operator: AbilityDSLTokenType.LT_WORD,
-      //     };
-      //   }
-      //   return { condition: AbilityCondition.less_than, operator: AbilityDSLTokenType.LT_WORD };
-
       case AbilityDSLTokenType.NULL:
         return { condition: AbilityCondition.equal, operator: AbilityDSLTokenType.NULL };
 
