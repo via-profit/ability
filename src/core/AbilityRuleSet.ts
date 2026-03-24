@@ -2,7 +2,7 @@ import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
 import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
 import AbilityMatch from './AbilityMatch';
 import { ResourceObject } from './AbilityParser';
-import { AbilityJSONParser } from '~/parsers/AbilityJSONParser';
+import { AbilityJSONParser } from '~/parsers/json/AbilityJSONParser';
 
 export type AbilityRuleSetConfig = {
   readonly id?: string | null;

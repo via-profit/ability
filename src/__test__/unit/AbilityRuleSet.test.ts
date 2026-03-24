@@ -2,7 +2,7 @@ import AbilityRule from '../../core/AbilityRule';
 import AbilityRuleSet from '../../core/AbilityRuleSet';
 import AbilityMatch from '../../core/AbilityMatch';
 import AbilityCompare from '../../core/AbilityCompare';
-import { AbilityJSONParser } from '../../parsers/AbilityJSONParser';
+import { AbilityJSONParser } from '../../parsers/json/AbilityJSONParser';
 
 describe('AbilityRuleSet', () => {
   describe('constructor', () => {

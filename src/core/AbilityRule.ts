@@ -1,6 +1,6 @@
 import AbilityMatch from './AbilityMatch';
 import AbilityCondition, { AbilityConditionCodeType } from './AbilityCondition';
-import { AbilityJSONParser } from '~/parsers/AbilityJSONParser';
+import { AbilityJSONParser } from '~/parsers/json/AbilityJSONParser';
 
 export type AbilityRuleConfig = {
   readonly id?: string | null;

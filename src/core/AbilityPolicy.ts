@@ -5,7 +5,7 @@ import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from './AbilityPolic
 import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
 import { AbilityError } from './AbilityError';
 import { ResourceObject } from './AbilityParser';
-import { AbilityJSONParser } from '~/parsers/AbilityJSONParser';
+import { AbilityJSONParser } from '~/parsers/json/AbilityJSONParser';
 
 export type AbilityPolicyConfig = {
   readonly action: string;
