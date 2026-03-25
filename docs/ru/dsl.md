@@ -34,9 +34,20 @@ permit order.update if any:
     user.logit equals 'dev'
 ```
 
+Пример политики выше гласит - действие order.update будет разрешено при выполнении одного из двух условий:
+1. user.roles содержит 'admin' **и** user.token не null
+2. user.roles содержит 'developer' **или** user.login равен 'dev'
+
+
+## Комментарии
+
+Строки, начинающиеся с символа ’#’ считаются комментариями и не влияют на результат работы правил и политик.
+
 ---
 
 ## Аннотации
+
+В настоящий момент поддерживается только одна аннотация ’name’, которая будет использована в качестве имени для политики, либо группы правил, либо правила.
 
 Аннотации задаются через комментарии:
 
@@ -80,6 +91,13 @@ any of:
 - `all of:` — логическое AND
 - `any of:` — логическое OR
 
+’all of’ - значит, что группа считается выполненной, если все правила внутри группы сработали.
+
+‘any of’ - значит, что группа считается выполненной, если хотя бы одно правило внутри группы сработало.
+
+Каждая группа внутри политики будет вычисляться независимо от других групп. Итоговая оценка результата будет определена путем сравнения результата вычисления всех групп в политике.
+
+
 Группы могут иметь аннотации:
 
 ```dsl
@@ -92,13 +110,15 @@ any of:
 
 ## Правила
 
+Правило - это ключевая единица политик. Именно правила определяют действие в политике. С помощью правил задаются условия по которым определяется эффективность политики (‘permit’ или ‘deny’)
+
 Правило имеет форму:
 
 ```
 <subject> <operator> <value?>
 ```
 
-### Subject
+### Subject (субъект)
 
 Идентификатор в dot‑нотации:
 
@@ -108,7 +128,7 @@ env.time.hour
 order.total
 ```
 
-### Operators
+### Operators (операторы)
 
 Поддерживаются:
 
@@ -124,7 +144,7 @@ order.total
 | `is null` | `token is null` | `== null` |
 | `is not null` | `token is not null` | `!= null` |
 
-### Значения
+### Value (значение)
 
 Поддерживаются:
 
@@ -136,12 +156,21 @@ order.total
 
 Примеры:
 
-```dsl
+```DSL
+# возраст пользователя больше 18
 user.age greater 18
+
+# массив ролей содержит роль 'admin'
 user.roles contains 'admin'
+
+# тэги заказа либо 'VIP, либо 'priority'
 order.tags in ['vip', 'priority']
+
+# токен пользователя не null
 user.token is not null
 ```
+
+
 
 ---
 
@@ -169,17 +198,15 @@ permit order.update if all:
 ## Полный пример
 
 ```dsl
-# @name can order update
-# @description User may update order if admin or developer
+# @name разрешено обновление заказа
 permit order.update if any:
 
-  # @name authorized admin
+  # @name если это администратор
   all of:
-    # @name contains role admin
     user.roles contains 'admin'
     user.token is not null
 
-  # @name if is developer
+  # @name если это разработчик
   any of:
     user.roles contains 'developer'
     user.logit equals 'dev'
