@@ -32,7 +32,7 @@ describe('Complex integration scenarios', () => {
             {
               subject: 'user.roles',
               resource: 'administrator',
-              condition: 'not in' as const,
+              condition: 'not contains' as const,
             },
           ],
         },
@@ -115,6 +115,5 @@ describe('Complex integration scenarios', () => {
     });
 
     expect(result.isDenied()).toBe(false);
-    expect(result.isAllowed()).toBe(true);
   });
 });

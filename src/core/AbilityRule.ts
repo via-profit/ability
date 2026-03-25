@@ -1,6 +1,6 @@
 import AbilityMatch from './AbilityMatch';
 import AbilityCondition, { AbilityConditionCodeType } from './AbilityCondition';
-import { AbilityJSONParser } from '~/parsers/json/AbilityJSONParser';
+import { AbilityJSONParser } from '../parsers/json/AbilityJSONParser';
 
 export type AbilityRuleConfig = {
   readonly id?: string | null;
@@ -13,7 +13,7 @@ export type AbilityRuleConfig = {
   /**
    * Resource key path like a 'user.name' or value
    */
-  readonly resource: string | number | boolean | null | (string | number | boolean)[];
+  readonly resource: string | number | boolean | null | (string | number | boolean | null)[];
 
   readonly condition: AbilityConditionCodeType;
 };
@@ -68,70 +68,87 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     let is: boolean = false;
 
     const [subjectValue, resourceValue] = this.extractValues(resource, environment);
+    const isArray = Array.isArray;
+    const isValue = (v: unknown) =>
+      typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' || v === null;
 
-    if (AbilityCondition.less_than.isEqual(this.condition)) {
-      is = Number(subjectValue) < Number(resourceValue);
-    }
-
-    if (AbilityCondition.less_or_equal.isEqual(this.condition)) {
-      is = Number(subjectValue) <= Number(resourceValue);
-    }
-
-    if (AbilityCondition.more_than.isEqual(this.condition)) {
-      is = Number(subjectValue) > Number(resourceValue);
-    }
-
-    if (AbilityCondition.more_or_equal.isEqual(this.condition)) {
-      is = Number(subjectValue) >= Number(resourceValue);
-    }
-
-    if (AbilityCondition.equal.isEqual(this.condition)) {
+    // equals
+    if (AbilityCondition.equals.isEqual(this.condition)) {
       is = subjectValue === resourceValue;
     }
 
-    if (AbilityCondition.not_equal.isEqual(this.condition)) {
+    // not equals
+    if (AbilityCondition.not_equals.isEqual(this.condition)) {
       is = subjectValue !== resourceValue;
     }
 
-    if (AbilityCondition.in.isEqual(this.condition)) {
-      // [<some>] and [<some>]
-      if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
-        is = subjectValue.some(v => resourceValue.find(v1 => v1 === v));
-      }
-      // <some> and [<some>]
-      if (
-        (typeof subjectValue === 'string' || typeof subjectValue === 'number') &&
-        Array.isArray(resourceValue)
-      ) {
-        is = resourceValue.includes(subjectValue);
-      }
-      // [<some>] and <some>
-      if (
-        (typeof resourceValue === 'string' || typeof resourceValue === 'number') &&
-        Array.isArray(subjectValue)
-      ) {
-        is = subjectValue.includes(resourceValue);
+    // less than
+    if (AbilityCondition.less_than.isEqual(this.condition)) {
+      if (typeof subjectValue === 'number' && typeof resourceValue === 'number') {
+        is = subjectValue < resourceValue;
       }
     }
 
+    // less or equal
+    if (AbilityCondition.less_or_equal.isEqual(this.condition)) {
+      if (typeof subjectValue === 'number' && typeof resourceValue === 'number') {
+        is = subjectValue <= resourceValue;
+      }
+    }
+
+    // more than
+    if (AbilityCondition.more_than.isEqual(this.condition)) {
+      if (typeof subjectValue === 'number' && typeof resourceValue === 'number') {
+        is = subjectValue > resourceValue;
+      }
+    }
+
+    // more or equal
+    if (AbilityCondition.more_or_equal.isEqual(this.condition)) {
+      if (typeof subjectValue === 'number' && typeof resourceValue === 'number') {
+        is = subjectValue >= resourceValue;
+      }
+    }
+
+    // in
+    if (AbilityCondition.in.isEqual(this.condition)) {
+      // value in array
+      if (isValue(subjectValue) && isArray(resourceValue)) {
+        is = resourceValue.includes(subjectValue);
+      }
+      // array intersects array
+      else if (isArray(subjectValue) && isArray(resourceValue)) {
+        is = subjectValue.some(v => resourceValue.includes(v));
+      }
+    }
+
+    // not in
     if (AbilityCondition.not_in.isEqual(this.condition)) {
-      // [<some>] and [<some>]
-      if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
-        is = !subjectValue.some(v => resourceValue.find(v1 => v1 === v));
-      }
-      // <some> and [<some>]
-      if (
-        (typeof subjectValue === 'string' || typeof subjectValue === 'number') &&
-        Array.isArray(resourceValue)
-      ) {
+      if (isValue(subjectValue) && isArray(resourceValue)) {
         is = !resourceValue.includes(subjectValue);
+      } else if (isArray(subjectValue) && isArray(resourceValue)) {
+        is = !subjectValue.some(v => resourceValue.includes(v));
       }
-      // [<some>] and <some>
-      if (
-        (typeof resourceValue === 'string' || typeof resourceValue === 'number') &&
-        Array.isArray(subjectValue)
-      ) {
+    }
+
+    // contains
+    if (AbilityCondition.contains.isEqual(this.condition)) {
+      // array contains value
+      if (isArray(subjectValue) && isValue(resourceValue)) {
+        is = subjectValue.includes(resourceValue);
+      }
+      // array intersects array
+      else if (isArray(subjectValue) && isArray(resourceValue)) {
+        is = subjectValue.some(v => resourceValue.includes(v));
+      }
+    }
+
+    // not contains
+    if (AbilityCondition.not_contains.isEqual(this.condition)) {
+      if (isArray(subjectValue) && isValue(resourceValue)) {
         is = !subjectValue.includes(resourceValue);
+      } else if (isArray(subjectValue) && isArray(resourceValue)) {
+        is = !subjectValue.some(v => resourceValue.includes(v));
       }
     }
 
@@ -148,10 +165,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
   public extractValues(
     resourceData: Resources | null,
     environment?: Environment | null,
-  ): [
-   AbilityRuleConfig['resource'] | undefined,
-    AbilityRuleConfig['resource'] | undefined,
-  ] {
+  ): [AbilityRuleConfig['resource'] | undefined, AbilityRuleConfig['resource'] | undefined] {
     let subjectValue;
     let resourceValue;
 
@@ -244,13 +258,45 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     return AbilityJSONParser.parseRule(config);
   }
 
-
-  static equal<Resources extends object = object, Environment = unknown>(
+  static equals<Resources extends object = object, Environment = unknown>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
     return new AbilityRule<Resources, Environment>({
-      condition: AbilityCondition.equal,
+      condition: AbilityCondition.equals,
+      subject,
+      resource,
+    });
+  }
+
+  static notEquals<Resources extends object = object, Environment = unknown>(
+    subject: string,
+    resource: AbilityRuleConfig['resource'],
+  ): AbilityRule<Resources, Environment> {
+    return new AbilityRule<Resources, Environment>({
+      condition: AbilityCondition.not_equals,
+      subject,
+      resource,
+    });
+  }
+
+  static contains<Resources extends object = object, Environment = unknown>(
+    subject: string,
+    resource: AbilityRuleConfig['resource'],
+  ): AbilityRule<Resources, Environment> {
+    return new AbilityRule<Resources, Environment>({
+      condition: AbilityCondition.contains,
+      subject,
+      resource,
+    });
+  }
+
+  static notContains<Resources extends object = object, Environment = unknown>(
+    subject: string,
+    resource: AbilityRuleConfig['resource'],
+  ): AbilityRule<Resources, Environment> {
+    return new AbilityRule<Resources, Environment>({
+      condition: AbilityCondition.not_contains,
       subject,
       resource,
     });
@@ -283,7 +329,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
     return new AbilityRule<Resources, Environment>({
-      condition: AbilityCondition.not_equal,
+      condition: AbilityCondition.not_equals,
       subject,
       resource,
     });

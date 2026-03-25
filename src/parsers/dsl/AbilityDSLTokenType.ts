@@ -27,8 +27,12 @@ export type TokenType =
   | 'CONTAINS' // contains – membership in array / substring
   | 'IN' // in – membership in array
   | 'NOT_IN' // in – membership in array
-  | 'GT_WORD' // greater – greater than
-  | 'LT_WORD' // less – less than
+  | 'NOT_CONTAINS' // array not contains
+  | 'CONTAINS' // array contains
+  | 'GT' // greater
+  | 'GTE' // greater than
+  | 'LT' // less
+  | 'LTE' // less than
   | 'NULL' // null – literal null
   | 'EQ_NULL' // is null – special null equality
   | 'NOT_EQ_NULL' // is not null – special null inequality
@@ -76,11 +80,14 @@ export class AbilityDSLTokenType extends AbilityCode<TokenType> {
   // =========================================================================
   public static NOT_EQ = new AbilityDSLTokenType('NOT_EQ'); // not equals
   public static EQ = new AbilityDSLTokenType('EQ'); // equals, is
-  public static CONTAINS = new AbilityDSLTokenType('CONTAINS');
   public static IN = new AbilityDSLTokenType('IN');
   public static NOT_IN = new AbilityDSLTokenType('NOT_IN');
-  public static GT_WORD = new AbilityDSLTokenType('GT_WORD'); // greater
-  public static LT_WORD = new AbilityDSLTokenType('LT_WORD'); // less
+  public static CONTAINS = new AbilityDSLTokenType('CONTAINS');
+  public static NOT_CONTAINS = new AbilityDSLTokenType('NOT_CONTAINS');
+  public static GT = new AbilityDSLTokenType('GT'); // greater
+  public static GTE = new AbilityDSLTokenType('GTE'); // greater than
+  public static LT = new AbilityDSLTokenType('LT'); // less
+  public static LTE = new AbilityDSLTokenType('LTE'); // less than
   public static NULL = new AbilityDSLTokenType('NULL');
   public static EQ_NULL = new AbilityDSLTokenType('EQ_NULL'); // is null
   public static NOT_EQ_NULL = new AbilityDSLTokenType('NOT_EQ_NULL'); // is not null
@@ -133,14 +140,18 @@ export class AbilityDSLTokenType extends AbilityCode<TokenType> {
     if (lower === 'contains') {
       return AbilityDSLTokenType.CONTAINS;
     }
+
+    if (lower === 'not_contains') {
+      return AbilityDSLTokenType.NOT_CONTAINS;
+    }
     if (lower === 'in') {
       return AbilityDSLTokenType.IN;
     }
     if (lower === 'greater') {
-      return AbilityDSLTokenType.GT_WORD;
+      return AbilityDSLTokenType.GT;
     }
     if (lower === 'less') {
-      return AbilityDSLTokenType.LT_WORD;
+      return AbilityDSLTokenType.LT;
     }
     if (lower === 'null') {
       return AbilityDSLTokenType.NULL;

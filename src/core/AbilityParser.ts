@@ -141,8 +141,8 @@ export class AbilityParser {
 
     // Equality/Inequality operations
     if (
-      rule.condition.isEqual(AbilityCondition.equal) ||
-      rule.condition.isEqual(AbilityCondition.not_equal)
+      rule.condition.isEqual(AbilityCondition.equals) ||
+      rule.condition.isEqual(AbilityCondition.not_equals)
     ) {
       return this.getPrimitiveType(rule.resource);
     }

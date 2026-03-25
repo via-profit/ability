@@ -1,7 +1,7 @@
-import { AbilityDSLParser } from '~/parsers/dsl/AbilityDSLParser';
-import AbilityCondition from '~/core/AbilityCondition';
-import AbilityCompare from '~/core/AbilityCompare';
-import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
+import { AbilityDSLParser } from '../../parsers/dsl/AbilityDSLParser';
+import AbilityCondition from '../../core/AbilityCondition';
+import AbilityCompare from '../../core/AbilityCompare';
+import AbilityPolicyEffect from '../../core/AbilityPolicyEffect';
 import { AbilityDSLLexer } from '../../parsers/dsl/AbilityDSLLexer';
 
 describe('AbilityDSLParser', () => {
@@ -46,14 +46,14 @@ permit order.update if any:
     // Rule 1: user.roles contains 'admin'
     const rule1 = ruleSet1.rules[0];
     expect(rule1.subject).toBe('user.roles');
-    expect(rule1.condition).toBe(AbilityCondition.in);
+    expect(rule1.condition).toBe(AbilityCondition.contains);
     expect(rule1.resource).toBe('admin');
     expect(rule1.name).toBe('contains role admin');
 
     // Rule 2: user.token is not null
     const rule2 = ruleSet1.rules[1];
     expect(rule2.subject).toBe('user.token');
-    expect(rule2.condition).toBe(AbilityCondition.not_equal);
+    expect(rule2.condition).toBe(AbilityCondition.not_equals);
     expect(rule2.resource).toBeNull();
 
     // Second rule set: "any of"
@@ -65,13 +65,13 @@ permit order.update if any:
     // Rule 3: user.roles contains 'developer'
     const rule3 = ruleSet2.rules[0];
     expect(rule3.subject).toBe('user.roles');
-    expect(rule3.condition).toBe(AbilityCondition.in);
+    expect(rule3.condition).toBe(AbilityCondition.contains);
     expect(rule3.resource).toBe('developer');
 
     // Rule 4: user.logit equals 'dev'
     const rule4 = ruleSet2.rules[1];
     expect(rule4.subject).toBe('user.logit');
-    expect(rule4.condition).toBe(AbilityCondition.equal);
+    expect(rule4.condition).toBe(AbilityCondition.equals);
     expect(rule4.resource).toBe('dev');
   });
 
@@ -98,14 +98,14 @@ permit order.view if all:
 
     const rule = ruleSet.rules[0];
     expect(rule.subject).toBe('user.id');
-    expect(rule.condition).toBe(AbilityCondition.equal);
+    expect(rule.condition).toBe(AbilityCondition.equals);
     expect(rule.resource).toBe('order.owner');
   });
 
   it('should parse a simple policy with one rule', () => {
     const dsl = `
 deny order.view if all:
-  user.id is not equals order.owner
+  user.id not equals order.owner
 `;
 
     const parser = new AbilityDSLParser(dsl);
@@ -125,7 +125,7 @@ deny order.view if all:
 
     const rule = ruleSet.rules[0];
     expect(rule.subject).toBe('user.id');
-    expect(rule.condition).toBe(AbilityCondition.not_equal);
+    expect(rule.condition).toBe(AbilityCondition.not_equals);
     expect(rule.resource).toBe('order.owner');
   });
 
@@ -133,8 +133,8 @@ deny order.view if all:
   it('should parse numeric values correctly', () => {
     const dsl = `
 deny order.cancel if any:
-  order.amount greater than 1000
-  order.amount less than 50
+  order.amount > 1000
+  order.amount < 50
 `;
     const parser = new AbilityDSLParser(dsl);
     const policies = parser.parse();
@@ -164,8 +164,8 @@ deny order.cancel if any:
     const dsl = `
 # Policy with numbers, arrays, and booleans
 deny order.update if any:
-  order.amount greater than 1000
-  order.amount less than 50
+  order.amount > 1000
+  order.amount < 50
   user.role equals 'admin'
   user.department contains 'IT'
   user.roles in ['admin', 'manager']
@@ -201,13 +201,13 @@ deny order.update if any:
     // Rule 3: user.role = 'admin'
     const rule3 = ruleSet.rules[2];
     expect(rule3.subject).toBe('user.role');
-    expect(rule3.condition).toBe(AbilityCondition.equal);
+    expect(rule3.condition).toBe(AbilityCondition.equals);
     expect(rule3.resource).toBe('admin');
 
     // Rule 4: user.department contains 'IT'
     const rule4 = ruleSet.rules[3];
     expect(rule4.subject).toBe('user.department');
-    expect(rule4.condition).toBe(AbilityCondition.in);
+    expect(rule4.condition).toBe(AbilityCondition.contains);
     expect(rule4.resource).toBe('IT');
 
     // Rule 5: user.roles in ['admin', 'manager']
@@ -220,7 +220,7 @@ deny order.update if any:
     // Rule 6: user.active = true
     const rule6 = ruleSet.rules[5];
     expect(rule6.subject).toBe('user.active');
-    expect(rule6.condition).toBe(AbilityCondition.equal);
+    expect(rule6.condition).toBe(AbilityCondition.equals);
     expect(rule6.resource).toBe(true);
   });
 
@@ -248,12 +248,12 @@ permit order.update if any:
 
     const rule1 = ruleSet.rules[0];
     expect(rule1.subject).toBe('user.role');
-    expect(rule1.condition).toBe(AbilityCondition.equal);
+    expect(rule1.condition).toBe(AbilityCondition.equals);
     expect(rule1.resource).toBe('admin');
 
     const rule2 = ruleSet.rules[1];
     expect(rule2.subject).toBe('user.department');
-    expect(rule2.condition).toBe(AbilityCondition.in);
+    expect(rule2.condition).toBe(AbilityCondition.contains);
     expect(rule2.resource).toBe('IT');
   });
 
@@ -283,7 +283,7 @@ permit order.update if any:
     expect(implicitGroup.compareMethod).toBe(AbilityCompare.or);
     expect(implicitGroup.rules).toHaveLength(1);
     expect(implicitGroup.rules[0].subject).toBe('user.active');
-    expect(implicitGroup.rules[0].condition).toBe(AbilityCondition.equal);
+    expect(implicitGroup.rules[0].condition).toBe(AbilityCondition.equals);
     expect(implicitGroup.rules[0].resource).toBe(true);
 
     // RuleSet 2 — any of:
@@ -291,10 +291,10 @@ permit order.update if any:
     expect(anyGroup.compareMethod).toBe(AbilityCompare.or);
     expect(anyGroup.rules).toHaveLength(2);
     expect(anyGroup.rules[0].subject).toBe('user.roles');
-    expect(anyGroup.rules[0].condition).toBe(AbilityCondition.in);
+    expect(anyGroup.rules[0].condition).toBe(AbilityCondition.contains);
     expect(anyGroup.rules[0].resource).toBe('admin');
     expect(anyGroup.rules[1].subject).toBe('user.department');
-    expect(anyGroup.rules[1].condition).toBe(AbilityCondition.in);
+    expect(anyGroup.rules[1].condition).toBe(AbilityCondition.contains);
     expect(anyGroup.rules[1].resource).toBe('IT');
 
     // RuleSet 3 — all of:
@@ -302,10 +302,10 @@ permit order.update if any:
     expect(allGroup.compareMethod).toBe(AbilityCompare.and);
     expect(allGroup.rules).toHaveLength(2);
     expect(allGroup.rules[0].subject).toBe('order.status');
-    expect(allGroup.rules[0].condition).toBe(AbilityCondition.equal);
+    expect(allGroup.rules[0].condition).toBe(AbilityCondition.equals);
     expect(allGroup.rules[0].resource).toBe('draft');
     expect(allGroup.rules[1].subject).toBe('order.owner');
-    expect(allGroup.rules[1].condition).toBe(AbilityCondition.equal);
+    expect(allGroup.rules[1].condition).toBe(AbilityCondition.equals);
     expect(allGroup.rules[1].resource).toBe('user.id');
   });
 
@@ -314,7 +314,7 @@ permit order.update if any:
 permit order.update if all:
   user.deletedAt is null
   user.token is not null
-  order.amount greater than 1000
+  order.amount > 1000
 `;
 
     const parser = new AbilityDSLParser(dsl);
@@ -334,13 +334,13 @@ permit order.update if all:
     // Rule 1: user.deletedAt is null
     const rule1 = ruleSet.rules[0];
     expect(rule1.subject).toBe('user.deletedAt');
-    expect(rule1.condition).toBe(AbilityCondition.equal);
+    expect(rule1.condition).toBe(AbilityCondition.equals);
     expect(rule1.resource).toBeNull();
 
     // Rule 2: user.token is not null
     const rule2 = ruleSet.rules[1];
     expect(rule2.subject).toBe('user.token');
-    expect(rule2.condition).toBe(AbilityCondition.not_equal);
+    expect(rule2.condition).toBe(AbilityCondition.not_equals);
     expect(rule2.resource).toBeNull();
 
     // Rule 3: order.amount greater than 1000 (numeric still works)
@@ -353,7 +353,7 @@ permit order.update if all:
   it('should parse environment paths correctly', () => {
     const dsl = `
 permit order.update if any:
-  env.time.hour greater than 9
+  env.time.hour > 9
   user.role equals 'admin'
 `;
 
@@ -378,7 +378,7 @@ permit order.update if any:
 
     const rule2 = ruleSet.rules[1];
     expect(rule2.subject).toBe('user.role');
-    expect(rule2.condition).toBe(AbilityCondition.equal);
+    expect(rule2.condition).toBe(AbilityCondition.equals);
     expect(rule2.resource).toBe('admin');
   });
 
@@ -391,7 +391,7 @@ permit test.action if all:
       const parser = new AbilityDSLParser(dsl);
       const policies = parser.parse();
       const rule = policies[0].ruleSet[0].rules[0];
-      expect(rule.condition).toBe(AbilityCondition.equal);
+      expect(rule.condition).toBe(AbilityCondition.equals);
       expect(rule.resource).toBe('John');
     });
 
@@ -403,7 +403,7 @@ permit test.action if all:
       const parser = new AbilityDSLParser(dsl);
       const policies = parser.parse();
       const rule = policies[0].ruleSet[0].rules[0];
-      expect(rule.condition).toBe(AbilityCondition.not_equal);
+      expect(rule.condition).toBe(AbilityCondition.not_equals);
       expect(rule.resource).toBe('John');
     });
 
@@ -415,7 +415,7 @@ permit test.action if all:
       const parser = new AbilityDSLParser(dsl);
       const policies = parser.parse();
       const rule = policies[0].ruleSet[0].rules[0];
-      expect(rule.condition).toBe(AbilityCondition.in);
+      expect(rule.condition).toBe(AbilityCondition.contains);
       expect(rule.resource).toBe('admin');
     });
 
@@ -427,7 +427,7 @@ permit test.action if all:
       const parser = new AbilityDSLParser(dsl);
       const policies = parser.parse();
       const rule = policies[0].ruleSet[0].rules[0];
-      expect(rule.condition).toBe(AbilityCondition.not_in);
+      expect(rule.condition).toBe(AbilityCondition.not_contains);
       expect(rule.resource).toBe('admin');
     });
 

@@ -23,8 +23,8 @@ import { AbilityDSLSyntaxError } from '~/parsers/dsl/AbilityDSLSyntaxError';
  *
  * Each rule is: <identifier> <operator> <value>
  *
- * Operators can be simple (equals, contains, in, greater, less) or
- * composed (is null, is not null, greater than, less than, etc.).
+ * Operators can be simple (equals, contains, in) or
+ * composed (is null, is not null, etc.).
  */
 export class AbilityDSLParser<
   Resource extends ResourceObject = Record<string, unknown>,
@@ -268,62 +268,89 @@ export class AbilityDSLParser<
         // Simple "equals" or "is". If the next token is "null", treat as "is null".
         if (this.check(AbilityDSLTokenType.NULL)) {
           this.advance();
-          return { condition: AbilityCondition.equal, operator: AbilityDSLTokenType.EQ_NULL };
+          return { condition: AbilityCondition.equals, operator: AbilityDSLTokenType.EQ_NULL };
         }
-        return { condition: AbilityCondition.equal, operator: AbilityDSLTokenType.EQ };
+        return { condition: AbilityCondition.equals, operator: AbilityDSLTokenType.EQ };
 
       case AbilityDSLTokenType.NOT_EQ:
-        return { condition: AbilityCondition.not_equal, operator: AbilityDSLTokenType.NOT_EQ };
+        return { condition: AbilityCondition.not_equals, operator: AbilityDSLTokenType.NOT_EQ };
 
       case AbilityDSLTokenType.EQ_NULL:
         // Already handled "is null"
-        return { condition: AbilityCondition.equal, operator: AbilityDSLTokenType.EQ_NULL };
+        return { condition: AbilityCondition.equals, operator: AbilityDSLTokenType.EQ_NULL };
 
       case AbilityDSLTokenType.NOT_EQ_NULL:
         // Already handled "is not null"
-        return { condition: AbilityCondition.not_equal, operator: AbilityDSLTokenType.NOT_EQ_NULL };
+        return {
+          condition: AbilityCondition.not_equals,
+          operator: AbilityDSLTokenType.NOT_EQ_NULL,
+        };
+      case AbilityDSLTokenType.NOT_CONTAINS:
+        return {
+          condition: AbilityCondition.not_contains,
+          operator: AbilityDSLTokenType.NOT_CONTAINS,
+        };
 
       case AbilityDSLTokenType.CONTAINS:
-        return { condition: AbilityCondition.in, operator: AbilityDSLTokenType.CONTAINS };
+        return { condition: AbilityCondition.contains, operator: AbilityDSLTokenType.CONTAINS };
 
       case AbilityDSLTokenType.IN:
         return { condition: AbilityCondition.in, operator: AbilityDSLTokenType.IN };
       case AbilityDSLTokenType.NOT_IN:
         return { condition: AbilityCondition.not_in, operator: AbilityDSLTokenType.NOT_IN };
-
-      case AbilityDSLTokenType.GT_WORD:
-        // optional "than"
-        if (this.matchWord('than')) {
-          // consume 'than'
-        }
-        // optional "or equal"
-        if (this.matchWord('equal')) {
-          return {
-            condition: AbilityCondition.more_or_equal,
-            operator: AbilityDSLTokenType.GT_WORD,
-          };
-        }
-        return { condition: AbilityCondition.more_than, operator: AbilityDSLTokenType.GT_WORD };
-      case AbilityDSLTokenType.LT_WORD:
-        // consume optional "than"
-        if (this.matchWord('than')) {
-          // just consume
-        }
-        if (this.matchWord('equal')) {
-          return {
-            condition: AbilityCondition.less_or_equal,
-            operator: AbilityDSLTokenType.LT_WORD,
-          };
-        }
-        return { condition: AbilityCondition.less_than, operator: AbilityDSLTokenType.LT_WORD };
+      case AbilityDSLTokenType.GT:
+        return {
+          condition: AbilityCondition.more_than,
+          operator: AbilityDSLTokenType.GT,
+        };
+      case AbilityDSLTokenType.GTE:
+        return {
+          condition: AbilityCondition.more_or_equal,
+          operator: AbilityDSLTokenType.GTE,
+        };
+      case AbilityDSLTokenType.LT:
+        return {
+          condition: AbilityCondition.less_than,
+          operator: AbilityDSLTokenType.LT,
+        };
+      case AbilityDSLTokenType.LTE:
+        return {
+          condition: AbilityCondition.less_or_equal,
+          operator: AbilityDSLTokenType.LTE,
+        };
+      // case AbilityDSLTokenType.GT:
+      //   // optional "than"
+      //   if (this.matchWord('than')) {
+      //     // consume 'than'
+      //   }
+      //   // optional "or equal"
+      //   if (this.matchWord('equal')) {
+      //     return {
+      //       condition: AbilityCondition.more_or_equal,
+      //       operator: AbilityDSLTokenType.GT,
+      //     };
+      //   }
+      //   return { condition: AbilityCondition.more_than, operator: AbilityDSLTokenType.GT };
+      // case AbilityDSLTokenType.LT:
+      //   // consume optional "than"
+      //   if (this.matchWord('than')) {
+      //     // just consume
+      //   }
+      //   if (this.matchWord('equal')) {
+      //     return {
+      //       condition: AbilityCondition.less_or_equal,
+      //       operator: AbilityDSLTokenType.LT,
+      //     };
+      //   }
+      //   return { condition: AbilityCondition.less_than, operator: AbilityDSLTokenType.LT };
       case AbilityDSLTokenType.NULL:
-        return { condition: AbilityCondition.equal, operator: AbilityDSLTokenType.NULL };
+        return { condition: AbilityCondition.equals, operator: AbilityDSLTokenType.NULL };
 
       default: {
         const suggestion = this.suggest(token.value, [
           AbilityDSLTokenType.EQ,
           AbilityDSLTokenType.CONTAINS,
-          AbilityDSLTokenType.GT_WORD,
+          AbilityDSLTokenType.GT,
           AbilityDSLTokenType.NOT_EQ,
           AbilityDSLTokenType.NOT_IN,
           AbilityDSLTokenType.EQ_NULL,
@@ -398,8 +425,8 @@ export class AbilityDSLParser<
    * Parses an array literal: [ <value>, <value>, ... ]
    * The opening bracket has already been consumed.
    */
-  private parseArray(): (string | number | boolean)[] {
-    const arr: (string | number | boolean)[] = [];
+  private parseArray(): (string | number | boolean | null)[] {
+    const arr: (string | number | boolean | null)[] = [];
 
     // Handle empty array
     if (this.check(AbilityDSLTokenType.RBRACKET)) {
@@ -486,7 +513,6 @@ export class AbilityDSLParser<
     const wave =
       ' '.repeat(Math.max(0, token.column - token.value.length - 1)) +
       '~'.repeat(token.value.length);
-
 
     const lineNumWidth = String(token.line + 1).length;
     const num = (n: number) => String(n).padStart(lineNumWidth, ' ');
@@ -587,10 +613,8 @@ export class AbilityDSLParser<
     const details = `${message}\nDetails: Unexpected token "${actual}", expected one of: ${expected}.`;
     const finalMsg = suggestion ? `${details} Did you mean '${suggestion}'?` : details;
 
-
     this.syntaxError(finalMsg, token ?? this.tokens[this.tokens.length - 1]);
   }
-
 
   /**
    * Consumes the current token if it matches the given type; otherwise throws.

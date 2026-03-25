@@ -1,33 +1,41 @@
 import AbilityCode from './AbilityCode';
 import { AbilityParserError } from '../core/AbilityError';
 
-export type AbilityConditionCodeType = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'in' | 'not in';
+export type AbilityConditionCodeType = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'in' | 'not in' | 'contains' | 'not contains';
 export type AbilityConditionLiteralType =
-  | 'equal'
-  | 'not_equal'
+  // plain values
+  | 'equals'
+  | 'not_equals'
+
+  // arrays
+  | 'contains'
+  | 'no_contains'
+  | 'in'
+  | 'not_in'
+  // numeric
   | 'more_than'
   | 'less_than'
   | 'less_or_equal'
-  | 'more_or_equal'
-  | 'in'
-  | 'not_in';
+  | 'more_or_equal';
 
 export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
-  public static equal = new AbilityCondition('=');
-  public static not_equal = new AbilityCondition('<>');
+  public static equals = new AbilityCondition('=');
+  public static not_equals = new AbilityCondition('<>');
   public static more_than = new AbilityCondition('>');
   public static less_than = new AbilityCondition('<');
   public static less_or_equal = new AbilityCondition('<=');
   public static more_or_equal = new AbilityCondition('>=');
   public static in = new AbilityCondition('in');
   public static not_in = new AbilityCondition('not in');
+  public static contains = new AbilityCondition('contains');
+  public static not_contains = new AbilityCondition('not contains');
 
   public static fromLiteral(literal: AbilityConditionLiteralType): AbilityCondition {
     switch (literal) {
-      case 'equal':
-        return this.equal;
-      case 'not_equal':
-        return this.not_equal;
+      case 'equals':
+        return this.equals;
+      case 'not_equals':
+        return this.not_equals;
       case 'more_than':
         return this.more_than;
       case 'less_than':
@@ -36,6 +44,10 @@ export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
         return this.less_or_equal;
       case 'more_or_equal':
         return this.more_or_equal;
+      case 'contains':
+        return this.contains;
+      case 'no_contains':
+        return this.not_contains;
       case 'in':
         return this.in;
       case 'not_in':

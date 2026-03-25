@@ -36,7 +36,7 @@ describe('AbilityPolicy', () => {
         effect: AbilityPolicyEffect.permit,
       });
 
-      const ruleSet = AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]);
+      const ruleSet = AbilityRuleSet.and([AbilityRule.equals('user.name', 'John')]);
 
       policy.addRuleSet(ruleSet);
 
@@ -52,7 +52,7 @@ describe('AbilityPolicy', () => {
         effect: AbilityPolicyEffect.permit,
       });
 
-      const ruleSet1 = AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]);
+      const ruleSet1 = AbilityRuleSet.and([AbilityRule.equals('user.name', 'John')]);
       const ruleSet2 = AbilityRuleSet.or([AbilityRule.moreThan('user.age', 18)]);
 
       policy.addRuleSet(ruleSet1).addRuleSet(ruleSet2);
@@ -73,7 +73,7 @@ describe('AbilityPolicy', () => {
         policy.compareMethod = AbilityCompare.and;
 
         policy
-          .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]))
+          .addRuleSet(AbilityRuleSet.and([AbilityRule.equals('user.name', 'John')]))
           .addRuleSet(AbilityRuleSet.and([AbilityRule.moreThan('user.age', 18)]));
 
         const result = await policy.check({
@@ -97,7 +97,7 @@ describe('AbilityPolicy', () => {
         policy.compareMethod = AbilityCompare.and;
 
         policy
-          .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]))
+          .addRuleSet(AbilityRuleSet.and([AbilityRule.equals('user.name', 'John')]))
           .addRuleSet(AbilityRuleSet.and([AbilityRule.moreThan('user.age', 18)]));
 
         const result = await policy.check({
@@ -121,8 +121,8 @@ describe('AbilityPolicy', () => {
         policy.compareMethod = AbilityCompare.and;
 
         policy
-          .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]))
-          .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.city', 'Moscow')]));
+          .addRuleSet(AbilityRuleSet.and([AbilityRule.equals('user.name', 'John')]))
+          .addRuleSet(AbilityRuleSet.and([AbilityRule.equals('user.city', 'Moscow')]));
 
         const result = await policy.check({
           user: {
@@ -146,7 +146,7 @@ describe('AbilityPolicy', () => {
         policy.compareMethod = AbilityCompare.or;
 
         policy
-          .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]))
+          .addRuleSet(AbilityRuleSet.and([AbilityRule.equals('user.name', 'John')]))
           .addRuleSet(AbilityRuleSet.and([AbilityRule.moreThan('user.age', 18)]));
 
         const result = await policy.check({
@@ -170,7 +170,7 @@ describe('AbilityPolicy', () => {
         policy.compareMethod = AbilityCompare.or;
 
         policy
-          .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]))
+          .addRuleSet(AbilityRuleSet.and([AbilityRule.equals('user.name', 'John')]))
           .addRuleSet(AbilityRuleSet.and([AbilityRule.moreThan('user.age', 18)]));
 
         const result = await policy.check({
@@ -210,11 +210,11 @@ describe('AbilityPolicy', () => {
       policy
         .addRuleSet(
           AbilityRuleSet.and([
-            AbilityRule.equal('user.name', 'John'),
+            AbilityRule.equals('user.name', 'John'),
             AbilityRule.moreThan('user.age', 18),
           ]),
         )
-        .addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.city', 'Moscow')]));
+        .addRuleSet(AbilityRuleSet.and([AbilityRule.equals('user.city', 'Moscow')]));
 
       // Case 1: First rule set matches
       let result = await policy.check({
@@ -268,7 +268,7 @@ describe('AbilityPolicy', () => {
         effect: AbilityPolicyEffect.permit,
       });
 
-      policy.addRuleSet(AbilityRuleSet.and([AbilityRule.equal('user.name', 'John')]));
+      policy.addRuleSet(AbilityRuleSet.and([AbilityRule.equals('user.name', 'John')]));
 
       await policy.check({ user: { name: 'John' } });
       const explain = policy.explain();
@@ -455,7 +455,7 @@ describe('AbilityPolicy', () => {
               {
                 subject: 'user.roles',
                 resource: 'administrator',
-                condition: 'not in',
+                condition: 'not contains',
               },
             ],
           },

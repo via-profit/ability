@@ -36,11 +36,13 @@ export class AbilityResult<Resource extends ResourceObject = Record<string, unkn
   }
 
   public isAllowed() {
-    return !this.isDenied();
+    const effect = this.getLastEffectOfMatchedPolicy();
+
+    return effect !== null && effect.isEqual(AbilityPolicyEffect.permit);
   }
 
   public isDenied() {
-    const effect = this.getLastEffect();
+    const effect = this.getLastEffectOfMatchedPolicy();
 
     return effect !== null && effect.isEqual(AbilityPolicyEffect.deny);
   }
@@ -50,7 +52,7 @@ export class AbilityResult<Resource extends ResourceObject = Record<string, unkn
    *
    * @returns {AbilityPolicyEffect | null}
    */
-  public getLastEffect(): AbilityPolicyEffect | null {
+  public getLastEffectOfMatchedPolicy(): AbilityPolicyEffect | null {
     for (let i = this.policies.length - 1; i >= 0; i--) {
       const p = this.policies[i];
       if (p.matchState.isEqual(AbilityMatch.match)) {

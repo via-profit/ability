@@ -120,11 +120,11 @@ const rule = new AbilityRule({
   name: 'Пользователь из отдела managers',
   subject: 'user.department', // <-- subject - это всегда строка dot.notation
   resource: 'managers',  // <-- resource может быть dot.notation строкой, либо значением примитива
-  condition: AbilityCondition.equal,
+  condition: AbilityCondition.equals,
 });
 
 // Сокращённая запись через статический конструктор
-const rule2 = AbilityRule.equal(
+const rule2 = AbilityRule.equals(
   'user.department', // subject
   'managers',        // resource
 );
@@ -267,7 +267,7 @@ const policy = new AbilityPolicy({
         name: 'Отдел managers',
         subject: 'user.department',
         resource: 'managers',
-        condition: AbilityCondition.equal,
+        condition: AbilityCondition.equals,
       }),
       new AbilityRule({
         id: 'r-role-manager',

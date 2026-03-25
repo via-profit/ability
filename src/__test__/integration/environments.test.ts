@@ -105,7 +105,7 @@ describe('AbilityRule — environment support', () => {
     const rule = new AbilityRule({
       subject: 'env.flag',
       resource: true,
-      condition: AbilityCondition.equal,
+      condition: AbilityCondition.equals,
     });
 
     const env = { flag: true };

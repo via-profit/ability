@@ -159,6 +159,21 @@ export class AbilityDSLLexer {
         return this.createToken(AbilityDSLTokenType.LBRACKET, char);
       case ']':
         return this.createToken(AbilityDSLTokenType.RBRACKET, char);
+      case '>':
+        if (this.peek() === '=') {
+          this.advance();
+          return this.createToken(AbilityDSLTokenType.GTE, '>=');
+        }
+        return this.createToken(AbilityDSLTokenType.GT, '>');
+
+      case '<':
+        if (this.peek() === '=') {
+          this.advance();
+          return this.createToken(AbilityDSLTokenType.LTE, '<=');
+        }
+        return this.createToken(AbilityDSLTokenType.LT, '<');
+      case '=':
+        return this.createToken(AbilityDSLTokenType.EQ, char);
     }
 
     throw new Error(`Unknown symbol '${char}'`);
@@ -222,19 +237,20 @@ export class AbilityDSLLexer {
     // Handle "not equals"
     if (word === 'not') {
       const next = this.peekWord();
-      if (next === 'equals') {
+      if (next === 'equals' || next === 'equal') {
         this.consumeWord();
         return this.createToken(AbilityDSLTokenType.NOT_EQ, 'not equals');
       }
 
       if (next === 'in') {
         this.consumeWord();
-        return this.createToken(AbilityDSLTokenType.NOT_IN, 'not contains');
+        return this.createToken(AbilityDSLTokenType.NOT_IN, 'not in');
       }
 
+      // "not contain(s)"
       if (next === 'contains' || next === 'contain') {
         this.consumeWord();
-        return this.createToken(AbilityDSLTokenType.NOT_IN, 'not contains');
+        return this.createToken(AbilityDSLTokenType.NOT_CONTAINS, 'not contains');
       }
     }
 
@@ -259,14 +275,15 @@ export class AbilityDSLLexer {
           return this.createToken(AbilityDSLTokenType.NOT_EQ_NULL, 'is not null');
         }
 
-        // "is not equal" -> "is not equals"
-        if (next2 === 'equal') {
+        // "is not contain" -> "is not contains"
+        // "is not contains"
+        if (next2 === 'contain' || next2 === 'contains') {
           this.consumeWord();
-          return this.createToken(AbilityDSLTokenType.NOT_EQ, 'not equals');
+          return this.createToken(AbilityDSLTokenType.NOT_CONTAINS, 'not contains');
         }
 
-        // "is not equals"
-        if (next2 === 'equals') {
+        // "is not equal"
+        if (next2 === 'equal') {
           this.consumeWord();
           return this.createToken(AbilityDSLTokenType.NOT_EQ, 'not equals');
         }
@@ -275,14 +292,9 @@ export class AbilityDSLLexer {
         return this.createToken(AbilityDSLTokenType.NOT_EQ, 'is');
       }
 
-      // "is equal" -> "is equals"
+      // "is equal"
       if (next === 'equal') {
-        this.consumeWord(); // consume "equal"
-        return this.createToken(AbilityDSLTokenType.EQ, 'equals');
-      }
-
-      if (next === 'equals') {
-        this.consumeWord(); // consume "equal"
+        this.consumeWord(); // consume "equal(s)"
         return this.createToken(AbilityDSLTokenType.EQ, 'equals');
       }
 
@@ -291,8 +303,8 @@ export class AbilityDSLLexer {
     }
 
     // "equals"
-    if (word === 'equals') {
-      return this.createToken(AbilityDSLTokenType.EQ, word);
+    if (word === 'equals' || word === 'equal') {
+      return this.createToken(AbilityDSLTokenType.EQ, 'equals');
     }
 
     // If the token contains a dot, it's either a path (identifier) or an action.
@@ -305,10 +317,10 @@ export class AbilityDSLLexer {
       return this.createToken(AbilityDSLTokenType.IDENTIFIER, word);
     }
 
-    // Only now handle plain "equals"
-    if (word === 'equals') {
-      return this.createToken(AbilityDSLTokenType.EQ, word);
-    }
+    // // Only now handle plain "equals" or "equal"
+    // if (word === 'equals' || word === 'equal') {
+    //   return this.createToken(AbilityDSLTokenType.EQ, 'equals');
+    // }
     // Group keywords
     if (word === 'all') {
       return this.createToken(AbilityDSLTokenType.ALL, word);
@@ -334,20 +346,28 @@ export class AbilityDSLLexer {
     }
 
     // Word-based comparison operators
-    if (word === 'equals') {
+    if (word === 'equals' || word === '=') {
       return this.createToken(AbilityDSLTokenType.EQ, word);
     }
-    // if (word === 'contains' || word === 'contain') {
-    //   return this.createToken(AbilityDSLTokenType.CONTAINS, word);
-    // }
-    if (word === 'in' || word === 'contains' || word === 'contain') {
+    if (word === 'contains' || word === 'contain') {
+      return this.createToken(AbilityDSLTokenType.CONTAINS, 'contains');
+    }
+    if (word === 'in') {
       return this.createToken(AbilityDSLTokenType.IN, word);
     }
-    if (word === 'greater') {
-      return this.createToken(AbilityDSLTokenType.GT_WORD, word);
+
+    if (word === '>') {
+      return this.createToken(AbilityDSLTokenType.GT, word);
     }
-    if (word === 'less') {
-      return this.createToken(AbilityDSLTokenType.LT_WORD, word);
+    if (word === '>=') {
+      return this.createToken(AbilityDSLTokenType.GT, word);
+    }
+
+    if (word === '<') {
+      return this.createToken(AbilityDSLTokenType.LT, word);
+    }
+    if (word === '<=') {
+      return this.createToken(AbilityDSLTokenType.LTE, word);
     }
     if (word === 'null') {
       return this.createToken(AbilityDSLTokenType.NULL, word);
@@ -392,7 +412,16 @@ export class AbilityDSLLexer {
 
   /** Returns true if the character is one of the defined symbols. */
   private isSymbol(char: string): boolean {
-    return char === '.' || char === ':' || char === ',' || char === '[' || char === ']';
+    return (
+      char === '.' ||
+      char === ':' ||
+      char === ',' ||
+      char === '[' ||
+      char === ']' ||
+      char === '<' ||
+      char === '>' ||
+      char === '='
+    );
   }
 
   /** Returns true if the character is a letter or underscore. */

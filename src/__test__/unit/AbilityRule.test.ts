@@ -36,7 +36,7 @@ describe('AbilityRule', () => {
   describe('check method', () => {
     describe('equality operations', () => {
       it('should return match when values are equal',async () => {
-        const rule = AbilityRule.equal('user.name', 'John');
+        const rule = AbilityRule.equals('user.name', 'John');
 
         const result = await rule.check({ user: { name: 'John' } });
 
@@ -44,7 +44,7 @@ describe('AbilityRule', () => {
       });
 
       it('should return mismatch when values are not equal',async () => {
-        const rule = AbilityRule.equal('user.name', 'John');
+        const rule = AbilityRule.equals('user.name', 'John');
 
         const result = await rule.check({ user: { name: 'Jane' } });
 
@@ -52,7 +52,7 @@ describe('AbilityRule', () => {
       });
 
       it('should compare with dot notation resource',async () => {
-        const rule = AbilityRule.equal('user.name', 'opponent.name');
+        const rule = AbilityRule.equals('user.name', 'opponent.name');
 
         const result = await rule.check({
           user: { name: 'John' },
@@ -129,7 +129,7 @@ describe('AbilityRule', () => {
         const rule = new AbilityRule({
           subject: 'user.profile.address.city',
           resource: 'default.city',
-          condition: AbilityCondition.equal,
+          condition: AbilityCondition.equals,
         });
 
         const [subjectValue, resourceValue] = rule.extractValues({
@@ -153,7 +153,7 @@ describe('AbilityRule', () => {
         const rule = new AbilityRule({
           subject: 'users[0].name',
           resource: 'expected.name',
-          condition: AbilityCondition.equal,
+          condition: AbilityCondition.equals,
         });
 
         const [subjectValue] = rule.extractValues({
@@ -165,7 +165,7 @@ describe('AbilityRule', () => {
       });
 
       it('should return [NaN, NaN] for null resource', () => {
-        const rule = AbilityRule.equal('user.name', 'John');
+        const rule = AbilityRule.equals('user.name', 'John');
         const [s, r] = rule.extractValues(null);
 
         expect(s).toBeNaN();
@@ -195,7 +195,7 @@ describe('AbilityRule', () => {
       const rule = new TestRule({
         id: 'test',
         name: 'test',
-        condition: AbilityCondition.equal,
+        condition: AbilityCondition.equals,
         subject: 'test',
         resource: '',
       });
@@ -212,7 +212,7 @@ describe('AbilityRule', () => {
       const rule = new TestRule({
         id: 'test',
         name: 'test',
-        condition: AbilityCondition.equal,
+        condition: AbilityCondition.equals,
         subject: 'test',
         resource: '',
       });
@@ -227,7 +227,7 @@ describe('AbilityRule', () => {
       const rule = new TestRule({
         id: 'test',
         name: 'test',
-        condition: AbilityCondition.equal,
+        condition: AbilityCondition.equals,
         subject: 'test',
         resource: '',
       });
@@ -239,15 +239,15 @@ describe('AbilityRule', () => {
 
   describe('static factory methods', () => {
     it('should create equal rule', () => {
-      const rule = AbilityRule.equal('user.name', 'John');
-      expect(rule.condition).toBe(AbilityCondition.equal);
+      const rule = AbilityRule.equals('user.name', 'John');
+      expect(rule.condition).toBe(AbilityCondition.equals);
       expect(rule.subject).toBe('user.name');
       expect(rule.resource).toBe('John');
     });
 
     it('should create notEqual rule', () => {
       const rule = AbilityRule.notEqual('user.name', 'John');
-      expect(rule.condition).toBe(AbilityCondition.not_equal);
+      expect(rule.condition).toBe(AbilityCondition.not_equals);
     });
 
     it('should create in rule', () => {
@@ -292,7 +292,7 @@ describe('AbilityRule', () => {
     });
 
     it('should export rule to config', () => {
-      const rule = AbilityRule.equal('user.name', 'John');
+      const rule = AbilityRule.equals('user.name', 'John');
       const config = AbilityJSONParser.ruleToJSON(rule);
 
       expect(config.subject).toBe('user.name');

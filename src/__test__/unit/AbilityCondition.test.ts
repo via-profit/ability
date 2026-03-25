@@ -6,11 +6,11 @@ import { AbilityParserError } from '../../core/AbilityError';
 describe('AbilityCondition', () => {
   describe('static properties', () => {
     it('should have all condition types defined', () => {
-      expect(AbilityCondition.equal).toBeInstanceOf(AbilityCondition);
-      expect(AbilityCondition.equal.code).toBe('=');
+      expect(AbilityCondition.equals).toBeInstanceOf(AbilityCondition);
+      expect(AbilityCondition.equals.code).toBe('=');
 
-      expect(AbilityCondition.not_equal).toBeInstanceOf(AbilityCondition);
-      expect(AbilityCondition.not_equal.code).toBe('<>');
+      expect(AbilityCondition.not_equals).toBeInstanceOf(AbilityCondition);
+      expect(AbilityCondition.not_equals.code).toBe('<>');
 
       expect(AbilityCondition.more_than).toBeInstanceOf(AbilityCondition);
       expect(AbilityCondition.more_than.code).toBe('>');
@@ -33,8 +33,8 @@ describe('AbilityCondition', () => {
 
     it('should have exactly 8 condition types', () => {
       const conditions = [
-        AbilityCondition.equal,
-        AbilityCondition.not_equal,
+        AbilityCondition.equals,
+        AbilityCondition.not_equals,
         AbilityCondition.more_than,
         AbilityCondition.less_than,
         AbilityCondition.less_or_equal,
@@ -98,8 +98,8 @@ describe('AbilityCondition', () => {
     });
 
     it('should work with static instances', () => {
-      expect(AbilityCondition.equal.isEqual(AbilityCondition.equal)).toBe(true);
-      expect(AbilityCondition.equal.isEqual(AbilityCondition.not_equal)).toBe(false);
+      expect(AbilityCondition.equals.isEqual(AbilityCondition.equals)).toBe(true);
+      expect(AbilityCondition.equals.isEqual(AbilityCondition.not_equals)).toBe(false);
       expect(AbilityCondition.in.isEqual(AbilityCondition.in)).toBe(true);
       expect(AbilityCondition.in.isEqual(AbilityCondition.not_in)).toBe(false);
     });
@@ -127,15 +127,15 @@ describe('AbilityCondition', () => {
     });
 
     it('should work with static instances', () => {
-      expect(AbilityCondition.equal.isNotEqual(AbilityCondition.equal)).toBe(false);
-      expect(AbilityCondition.equal.isNotEqual(AbilityCondition.not_equal)).toBe(true);
+      expect(AbilityCondition.equals.isNotEqual(AbilityCondition.equals)).toBe(false);
+      expect(AbilityCondition.equals.isNotEqual(AbilityCondition.not_equals)).toBe(true);
     });
   });
 
   describe('fromLiteral method', () => {
     it('should create condition from valid literals', () => {
-      expect(AbilityCondition.fromLiteral('equal').code).toBe('=');
-      expect(AbilityCondition.fromLiteral('not_equal').code).toBe('<>');
+      expect(AbilityCondition.fromLiteral('equals').code).toBe('=');
+      expect(AbilityCondition.fromLiteral('not_equals').code).toBe('<>');
       expect(AbilityCondition.fromLiteral('more_than').code).toBe('>');
       expect(AbilityCondition.fromLiteral('less_than').code).toBe('<');
       expect(AbilityCondition.fromLiteral('less_or_equal').code).toBe('<=');
@@ -145,8 +145,8 @@ describe('AbilityCondition', () => {
     });
 
     it('should return same instance for static literals', () => {
-      expect(AbilityCondition.fromLiteral('equal')).toBe(AbilityCondition.equal);
-      expect(AbilityCondition.fromLiteral('not_equal')).toBe(AbilityCondition.not_equal);
+      expect(AbilityCondition.fromLiteral('equals')).toBe(AbilityCondition.equals);
+      expect(AbilityCondition.fromLiteral('not_equals')).toBe(AbilityCondition.not_equals);
       expect(AbilityCondition.fromLiteral('in')).toBe(AbilityCondition.in);
       expect(AbilityCondition.fromLiteral('not_in')).toBe(AbilityCondition.not_in);
     });
@@ -172,8 +172,8 @@ describe('AbilityCondition', () => {
 
   describe('literal getter', () => {
     it('should return correct literal for code', () => {
-      expect(new AbilityCondition('=').literal).toBe('equal');
-      expect(new AbilityCondition('<>').literal).toBe('not_equal');
+      expect(new AbilityCondition('=').literal).toBe('equals');
+      expect(new AbilityCondition('<>').literal).toBe('not_equals');
       expect(new AbilityCondition('>').literal).toBe('more_than');
       expect(new AbilityCondition('<').literal).toBe('less_than');
       expect(new AbilityCondition('<=').literal).toBe('less_or_equal');
@@ -183,8 +183,8 @@ describe('AbilityCondition', () => {
     });
 
     it('should work with static instances', () => {
-      expect(AbilityCondition.equal.literal).toBe('equal');
-      expect(AbilityCondition.not_equal.literal).toBe('not_equal');
+      expect(AbilityCondition.equals.literal).toBe('equals');
+      expect(AbilityCondition.not_equals.literal).toBe('not_equals');
       expect(AbilityCondition.more_than.literal).toBe('more_than');
       expect(AbilityCondition.less_than.literal).toBe('less_than');
       expect(AbilityCondition.less_or_equal.literal).toBe('less_or_equal');
@@ -196,25 +196,25 @@ describe('AbilityCondition', () => {
 
   describe('inheritance from AbilityCode', () => {
     it('should inherit isEqual method from AbilityCode', () => {
-      expect(AbilityCondition.equal.isEqual).toBeDefined();
-      expect(AbilityCondition.equal.isEqual(AbilityCondition.equal)).toBe(true);
+      expect(AbilityCondition.equals.isEqual).toBeDefined();
+      expect(AbilityCondition.equals.isEqual(AbilityCondition.equals)).toBe(true);
     });
 
     it('should inherit isNotEqual method from AbilityCode', () => {
-      expect(AbilityCondition.equal.isNotEqual).toBeDefined();
-      expect(AbilityCondition.equal.isNotEqual(AbilityCondition.not_equal)).toBe(true);
+      expect(AbilityCondition.equals.isNotEqual).toBeDefined();
+      expect(AbilityCondition.equals.isNotEqual(AbilityCondition.not_equals)).toBe(true);
     });
 
     it('should inherit code getter from AbilityCode', () => {
-      expect(AbilityCondition.equal.code).toBeDefined();
-      expect(AbilityCondition.equal.code).toBe('=');
+      expect(AbilityCondition.equals.code).toBeDefined();
+      expect(AbilityCondition.equals.code).toBe('=');
     });
   });
 
   describe('type safety', () => {
     it('should have correct TypeScript literal types', () => {
-      const equal: AbilityCondition = AbilityCondition.equal;
-      const notEqual: AbilityCondition = AbilityCondition.not_equal;
+      const equal: AbilityCondition = AbilityCondition.equals;
+      const notEqual: AbilityCondition = AbilityCondition.not_equals;
       const in_: AbilityCondition = AbilityCondition.in;
       const notIn: AbilityCondition = AbilityCondition.not_in;
 
@@ -225,14 +225,14 @@ describe('AbilityCondition', () => {
     });
 
     it('should work in switch statements', () => {
-      const condition = AbilityCondition.equal;
+      const condition = AbilityCondition.equals;
       let result = '';
 
       switch (condition) {
-        case AbilityCondition.equal:
+        case AbilityCondition.equals:
           result = 'equality';
           break;
-        case AbilityCondition.not_equal:
+        case AbilityCondition.not_equals:
           result = 'inequality';
           break;
         default:
@@ -243,10 +243,10 @@ describe('AbilityCondition', () => {
     });
 
     it('should be usable in conditional logic', () => {
-      const isEquality = (cond: AbilityCondition) => cond.isEqual(AbilityCondition.equal);
+      const isEquality = (cond: AbilityCondition) => cond.isEqual(AbilityCondition.equals);
 
-      expect(isEquality(AbilityCondition.equal)).toBe(true);
-      expect(isEquality(AbilityCondition.not_equal)).toBe(false);
+      expect(isEquality(AbilityCondition.equals)).toBe(true);
+      expect(isEquality(AbilityCondition.not_equals)).toBe(false);
       expect(isEquality(AbilityCondition.in)).toBe(false);
     });
   });
@@ -254,18 +254,18 @@ describe('AbilityCondition', () => {
   describe('edge cases', () => {
     it('should handle special characters in codes', () => {
       expect(AbilityCondition.not_in.code).toBe('not in');
-      expect(AbilityCondition.not_equal.code).toBe('<>');
+      expect(AbilityCondition.not_equals.code).toBe('<>');
     });
 
     it('should maintain singleton instances', () => {
       // Статические свойства должны быть одним и тем же экземпляром
-      expect(AbilityCondition.equal).toBe(AbilityCondition.equal);
-      expect(AbilityCondition.equal).not.toBe(AbilityCondition.not_equal);
+      expect(AbilityCondition.equals).toBe(AbilityCondition.equals);
+      expect(AbilityCondition.equals).not.toBe(AbilityCondition.not_equals);
 
       // Новые экземпляры с тем же кодом не равны статическим
       const newEqual = new AbilityCondition('=');
-      expect(newEqual).not.toBe(AbilityCondition.equal);
-      expect(newEqual.isEqual(AbilityCondition.equal)).toBe(true);
+      expect(newEqual).not.toBe(AbilityCondition.equals);
+      expect(newEqual.isEqual(AbilityCondition.equals)).toBe(true);
     });
 
     it('should work with fromLiteral and then literal', () => {
