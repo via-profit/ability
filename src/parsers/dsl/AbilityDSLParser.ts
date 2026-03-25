@@ -8,6 +8,7 @@ import { AbilityDSLLexer } from '~/parsers/dsl/AbilityDSLLexer';
 import { AbilityDSLToken } from '~/parsers/dsl/AbilityDSLToken';
 import { AbilityDSLTokenType } from '~/parsers/dsl/AbilityDSLTokenType';
 import { ResourceObject } from '~/core/AbilityParser';
+import { AbilityDSLSyntaxError } from '~/parsers/dsl/AbilityDSLSyntaxError';
 
 /**
  * Parser for the Ability DSL.
@@ -54,7 +55,12 @@ export class AbilityDSLParser<
       this.consumeLeadingComments();
       // Every policy must start with an EFFECT token.
       if (!this.isStartOfPolicy()) {
-        throw new Error(`Expected policy, got ${this.peek().type.code}`);
+        const token = this.peek();
+        const expectedTypes = [AbilityDSLTokenType.EFFECT];
+        const suggestion = this.suggest(token.value, expectedTypes);
+        const details = `Expected policy, got ${token.type.code}.`;
+        const finalMsg = suggestion ? `${details}\n💡 Did you mean '${suggestion}'?` : details;
+        this.syntaxError(finalMsg, token);
       }
       policies.push(this.parsePolicy());
     }
@@ -151,7 +157,10 @@ export class AbilityDSLParser<
         if (this.check(AbilityDSLTokenType.IDENTIFIER)) {
           group.addRule(this.parseRule());
         } else {
-          throw new Error(`Unexpected token in implicit group: ${this.peek().type.code}`);
+          this.syntaxError(
+            `Unexpected token in implicit group: ${this.peek().type.code}`,
+            this.peek(),
+          );
         }
       }
 
@@ -195,7 +204,7 @@ export class AbilityDSLParser<
       if (this.check(AbilityDSLTokenType.IDENTIFIER)) {
         group.addRule(this.parseRule());
       } else {
-        throw new Error(`Unexpected token in group: ${this.peek().type.code}`);
+        this.syntaxError(`Unexpected token in group: ${this.peek().type.code}`, this.peek());
       }
     }
 
@@ -213,7 +222,7 @@ export class AbilityDSLParser<
     this.consumeLeadingComments();
     const meta = this.takeAnnotations();
     if (!this.check(AbilityDSLTokenType.IDENTIFIER)) {
-      throw new Error(`Expected identifier, got ${this.peek().type.code}`);
+      this.syntaxError(`Expected identifier, got ${this.peek().type.code}`, this.peek());
     }
 
     // Subject (e.g., "user.roles")
@@ -310,29 +319,24 @@ export class AbilityDSLParser<
       case AbilityDSLTokenType.NULL:
         return { condition: AbilityCondition.equal, operator: AbilityDSLTokenType.NULL };
 
-      default:
-        throw new Error(`Unexpected operator token: ${token.type}`);
+      default: {
+        const suggestion = this.suggest(token.value, [
+          AbilityDSLTokenType.EQ,
+          AbilityDSLTokenType.CONTAINS,
+          AbilityDSLTokenType.GT_WORD,
+          AbilityDSLTokenType.NOT_EQ,
+          AbilityDSLTokenType.NOT_IN,
+          AbilityDSLTokenType.EQ_NULL,
+          // TODO: Fill this sugg list
+          // ...
+        ]);
+        const msg = suggestion
+          ? `Unexpected operator token "${token.value}", did you mean '${suggestion}'?`
+          : `Unexpected operator token: ${token.type.code}`;
+        return this.syntaxError(msg, token);
+      }
     }
   }
-
-  // private consumeCommentsAndCaptureName(): AbilityDSLAnnotationAST | null {
-  //   let name: string | null = null;
-  //   const annotationName = '@name';
-  //   while (!this.isAtEnd() && this.check(AbilityDSLTokenType.COMMENT)) {
-  //     const comment = this.advance();
-  //     const content = comment.value;
-  //
-  //     // find annotation @name
-  //     if (content.startsWith(annotationName)) {
-  //       const namePart = content.slice(annotationName.length).trim(); // after "@name"
-  //       if (namePart) {
-  //         name = namePart;
-  //       }
-  //     }
-  //     // ignoring other comment text
-  //   }
-  //   return name !== null ? new AbilityDSLAnnotationAST(name) : null;
-  // }
 
   /**
    * Helper to match and consume a specific word token.
@@ -369,7 +373,7 @@ export class AbilityDSLParser<
       token.type.code === AbilityDSLTokenType.ANY.code ||
       token.type.code === AbilityDSLTokenType.EFFECT.code
     ) {
-      throw new Error(`Unexpected ${token.type} in value position`);
+      this.syntaxError(`Unexpected ${token.type.code} in value position`, token);
     }
 
     this.advance();
@@ -386,7 +390,7 @@ export class AbilityDSLParser<
       case AbilityDSLTokenType.IDENTIFIER:
         return token.value;
       default:
-        throw new Error(`Unexpected value token: ${token.type}`);
+        this.syntaxError(`Unexpected value token ${token.type.code}`, token);
     }
   }
 
@@ -417,7 +421,7 @@ export class AbilityDSLParser<
         arr.push(value);
       } else if (value === null) {
         // Null is allowed in arrays? Currently, we throw.
-        throw new Error('Unexpected null in array');
+        this.syntaxError('Unexpected null in array', this.peek());
         // arr.push(null);
       }
 
@@ -468,40 +472,138 @@ export class AbilityDSLParser<
   }
 
   // -------------------------------------------------------------------------
+  // #region Errors
+  // -------------------------------------------------------------------------
+
+  private syntaxError(details: string, token: AbilityDSLToken): never {
+    const lines = this.dsl.split(/\r?\n/);
+    const lineIdx = token.line - 1;
+    const linesBefore = lineIdx > 0 ? lines[lineIdx - 1] : '';
+    const current = lines[lineIdx];
+    const linesAfter = lineIdx + 1 < lines.length ? lines[lineIdx + 1] : '';
+    const pointer = ' '.repeat(Math.max(0, token.column - 1)) + '^';
+    // const pointer = ' '.repeat(Math.max(0, token.column - 2)) + '^';
+
+    let context = '';
+    if (linesBefore) {
+      context += linesBefore + '\n';
+    }
+    context += current + '\n';
+    context += pointer;
+    if (linesAfter) {
+      context += '\n' + linesAfter;
+    }
+
+    throw new AbilityDSLSyntaxError(token.line, token.column, context + '\n', details);
+  }
+
+  private getLine(lineNumber: number): string {
+    return this.dsl.split(/\r?\n/)[lineNumber - 1] ?? '';
+  }
+
+  private suggest(actual: string, expectedTypes: AbilityDSLTokenType[]): string | null {
+    const candidates: string[] = [];
+    for (const type of expectedTypes) {
+      candidates.push(...this.typeToValues(type));
+    }
+    // убираем дубликаты
+    const uniqueCandidates = [...new Set(candidates)];
+    let best: string | null = null;
+    let bestDist = 3;
+    for (const candidate of uniqueCandidates) {
+      const d = this.levenshteinDistance(actual.toLowerCase(), candidate.toLowerCase());
+      if (d < bestDist) {
+        bestDist = d;
+        best = candidate;
+      }
+    }
+    return best;
+  }
+
+  private levenshteinDistance(a: string, b: string): number {
+    const matrix = Array(b.length + 1)
+      .fill(null)
+      .map(() => Array(a.length + 1).fill(null));
+    for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
+    for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
+    for (let j = 1; j <= b.length; j++) {
+      for (let i = 1; i <= a.length; i++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,
+          matrix[j - 1][i] + 1,
+          matrix[j - 1][i - 1] + cost,
+        );
+      }
+    }
+    return matrix[b.length][a.length];
+  }
+
+  private formatPointer(line: string, column: number): string {
+    return line + '\n' + ' '.repeat(column - 1) + '^';
+  }
+
+  // -------------------------------------------------------------------------
   // #region Helper / lookahead methods
   // -------------------------------------------------------------------------
+  private typeToValues(type: AbilityDSLTokenType): string[] {
+    switch (type) {
+      case AbilityDSLTokenType.EFFECT:
+        return ['permit', 'allow', 'deny', 'forbidden'];
+      case AbilityDSLTokenType.IF:
+        return ['if'];
+      case AbilityDSLTokenType.ALL:
+        return ['all'];
+      case AbilityDSLTokenType.ANY:
+        return ['any'];
+      default:
+        return [];
+    }
+  }
 
   /**
    * Consumes one token from the list, ensuring it matches any of the given types.
    */
-  private consumeOneOf(types: AbilityDSLTokenType[], msg: string): AbilityDSLToken {
+  private consumeOneOf(types: AbilityDSLTokenType[], message: string): AbilityDSLToken {
+    const token = this.peek();
+
     for (const t of types) {
-      if (this.check(t)) {
+      if (token && token.type.code === t.code) {
         return this.advance();
       }
     }
-    throw new Error(msg);
+
+    const expected = types.map(t => t.code).join(', ');
+    const actual = token ? token.value : 'EOF';
+    const suggestion = this.suggest(actual, types);
+
+    const details = `${message}\nDetails: Unexpected token "${actual}", expected one of: ${expected}.`;
+    const finalMsg = suggestion ? `${details} Did you mean '${suggestion}'?` : details;
+
+
+    this.syntaxError(finalMsg, token ?? this.tokens[this.tokens.length - 1]);
   }
 
-  /**
-   * Checks if the current token matches the given type and advances if so.
-   */
-  private match(type: AbilityDSLTokenType): boolean {
-    if (this.check(type)) {
-      this.advance();
-      return true;
-    }
-    return false;
-  }
 
   /**
    * Consumes the current token if it matches the given type; otherwise throws.
    */
-  private consume(type: AbilityDSLTokenType, msg: string): AbilityDSLToken {
-    if (this.check(type)) {
+
+  private consume(type: AbilityDSLTokenType, message: string): AbilityDSLToken {
+    const token = this.peek();
+
+    if (token && token.type.code === type.code) {
       return this.advance();
     }
-    throw new Error(msg + ` at token ${this.peek()?.value}`);
+
+    const expected = type.code;
+    const actual = token ? token.value : 'EOF';
+    const suggestion = this.suggest(actual, [type]);
+
+    const details = `${message}\nDetails: Unexpected token "${actual}", expected "${expected}".`;
+    const finalMsg = suggestion ? `${details} Did you mean '${suggestion}'?` : details;
+
+    this.syntaxError(finalMsg, token ?? this.tokens[this.tokens.length - 1]);
   }
 
   /**

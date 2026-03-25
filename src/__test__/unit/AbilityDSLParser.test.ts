@@ -9,11 +9,11 @@ describe('AbilityDSLParser', () => {
   it('should parse a policy with two rule sets (all of and any of)', () => {
     const dsl = `
 # @name can order update
-permit order.update if any:
+permit order.update idf any:
   # @name authorized admin
   all of:
     # @name contains role admin
-    user.roles contains 'admin'
+    user.roles containb 'admin'
     user.token is not null
 
   # @name if is developer

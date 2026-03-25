@@ -2,6 +2,7 @@ import http from 'node:http';
 import { AbilityPolicyConfig } from './core/AbilityPolicy';
 import { AbilityDSLParser } from './parsers/dsl/AbilityDSLParser';
 import AbilityResolver from './core/AbilityResolver';
+import { AbilityDSLSyntaxError } from './parsers/dsl/AbilityDSLSyntaxError';
 
 const server = http.createServer();
 
@@ -60,12 +61,36 @@ server.on('request', async  (_req, res) => {
   res.statusCode = 200;
   res.setHeader('content-type', 'text/plain');
   const dsl = `
-deny user.passwordHash if any:
-  viewer.id is not equals owner.id
+
+#    @name can order update
+         permit order.update if any:
+  # @name authorized admin
+  all of:
+    # @name contains role admin
+      user.roles containy 'admin'
+    user.token is not null
+
+  # @name if is developer
+  any of:
+    user.roles contains 'developer'
+    user.logit equals 'dev'
 `;
 
+  let policies;
   // Парсинг DSL и получение массива политик (в нашем случае она одна)
-  const policies = new AbilityDSLParser(dsl).parse();
+  try {
+    policies = new AbilityDSLParser(dsl).parse();
+  } catch (err) {
+    if (err instanceof AbilityDSLSyntaxError) {
+      res.statusCode = 400;
+      res.end(err.toString());
+      return;
+    }
+
+    // другие ошибки — пробрасываем
+    throw err;
+  }
+
 
   // Создание резолвера для управления политиками
   const resolver = new AbilityResolver(policies);
