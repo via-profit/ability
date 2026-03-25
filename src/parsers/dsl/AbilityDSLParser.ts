@@ -478,20 +478,27 @@ export class AbilityDSLParser<
   private syntaxError(details: string, token: AbilityDSLToken): never {
     const lines = this.dsl.split(/\r?\n/);
     const lineIdx = token.line - 1;
-    const linesBefore = lineIdx > 0 ? lines[lineIdx - 1] : '';
+    const lineBefore = lineIdx > 0 ? lines[lineIdx - 1] : '';
     const current = lines[lineIdx];
     const linesAfter = lineIdx + 1 < lines.length ? lines[lineIdx + 1] : '';
-    const pointer = ' '.repeat(Math.max(0, token.column - 1)) + '^';
-    // const pointer = ' '.repeat(Math.max(0, token.column - 2)) + '^';
+    // const pointer = ' '.repeat(Math.max(0, token.column - 1)) + '~'.repeat(token.value.length);
+
+    const wave =
+      ' '.repeat(Math.max(0, token.column - token.value.length - 1)) +
+      '~'.repeat(token.value.length);
+
+
+    const lineNumWidth = String(token.line + 1).length;
+    const num = (n: number) => String(n).padStart(lineNumWidth, ' ');
 
     let context = '';
-    if (linesBefore) {
-      context += linesBefore + '\n';
+    if (lineBefore.trim() !== '') {
+      context += `${num(token.line - 1)} | ${lineBefore}\n`;
     }
-    context += current + '\n';
-    context += pointer;
-    if (linesAfter) {
-      context += '\n' + linesAfter;
+    context += `${num(token.line)} | ${current}\n`;
+    context += `${' '.repeat(lineNumWidth)} | ${wave}\n`;
+    if (linesAfter.trim() !== '') {
+      context += `${num(token.line + 1)} | ${linesAfter}`;
     }
 
     throw new AbilityDSLSyntaxError(token.line, token.column, context + '\n', details);

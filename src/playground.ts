@@ -61,7 +61,6 @@ server.on('request', async  (_req, res) => {
   res.statusCode = 200;
   res.setHeader('content-type', 'text/plain');
   const dsl = `
-
 #    @name can order update
          permit order.update if any:
   # @name authorized admin

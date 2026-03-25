@@ -2,18 +2,17 @@ import { AbilityDSLParser } from '~/parsers/dsl/AbilityDSLParser';
 import AbilityCondition from '~/core/AbilityCondition';
 import AbilityCompare from '~/core/AbilityCompare';
 import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
-import AbilityParser from '../../core/AbilityParser';
 import { AbilityDSLLexer } from '../../parsers/dsl/AbilityDSLLexer';
 
 describe('AbilityDSLParser', () => {
   it('should parse a policy with two rule sets (all of and any of)', () => {
     const dsl = `
 # @name can order update
-permit order.update idf any:
+permit order.update if any:
   # @name authorized admin
   all of:
     # @name contains role admin
-    user.roles containb 'admin'
+    user.roles contains 'admin'
     user.token is not null
 
   # @name if is developer

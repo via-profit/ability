@@ -74,7 +74,7 @@ export class AbilityDSLLexer {
     }
 
     // End-of-file marker to simplify parser termination.
-    this.tokens.push(this.createToken(AbilityDSLTokenType.EOF, '', this.line, this.column));
+    this.tokens.push(new AbilityDSLToken(AbilityDSLTokenType.EOF, ''));
 
     return this.tokens;
   }
@@ -84,9 +84,6 @@ export class AbilityDSLLexer {
   // -------------------------------------------------------------------------
 
   private readComment(): AbilityDSLToken {
-    const startLine = this.line;
-    const startColumn = this.column;
-
     this.advance(); // skip the shark symbol ('#')
 
     let value = '';
@@ -102,7 +99,7 @@ export class AbilityDSLLexer {
       value += char;
     }
 
-    return this.createToken(AbilityDSLTokenType.COMMENT, value.trim(), startLine, startColumn);
+    return this.createToken(AbilityDSLTokenType.COMMENT, value.trim());
   }
 
   /**
@@ -111,9 +108,6 @@ export class AbilityDSLLexer {
    * @returns A STRING token with the unescaped content.
    */
   private readString(): AbilityDSLToken {
-    const startLine = this.line;
-    const startColumn = this.column;
-
     const quote = this.advance(); // opening quote
     let value = '';
     let escaped = false;
@@ -135,7 +129,7 @@ export class AbilityDSLLexer {
 
       if (char === quote) {
         // Closing quote found: return the token
-        return this.createToken(AbilityDSLTokenType.STRING, value, startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.STRING, value);
       }
 
       value += char;
@@ -152,21 +146,19 @@ export class AbilityDSLLexer {
    * Reads a single-character symbol and returns the corresponding token.
    */
   private readSymbol(): AbilityDSLToken {
-    const startLine = this.line;
-    const startColumn = this.column;
     const char = this.advance();
 
     switch (char) {
       case '.':
-        return this.createToken(AbilityDSLTokenType.DOT, char, startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.DOT, char);
       case ':':
-        return this.createToken(AbilityDSLTokenType.COLON, char, startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.COLON, char);
       case ',':
-        return this.createToken(AbilityDSLTokenType.COMMA, char, startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.COMMA, char);
       case '[':
-        return this.createToken(AbilityDSLTokenType.LBRACKET, char, startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.LBRACKET, char);
       case ']':
-        return this.createToken(AbilityDSLTokenType.RBRACKET, char, startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.RBRACKET, char);
     }
 
     throw new Error(`Unknown symbol '${char}'`);
@@ -181,8 +173,6 @@ export class AbilityDSLLexer {
    * @returns A NUMBER token with the raw string representation.
    */
   private readNumber(): AbilityDSLToken {
-    const startLine = this.line;
-    const startColumn = this.column;
     const start = this.pos;
 
     // Consume digits and optional decimal point (but only one decimal point)
@@ -191,7 +181,7 @@ export class AbilityDSLLexer {
     }
 
     const value = this.input.slice(start, this.pos);
-    return this.createToken(AbilityDSLTokenType.NUMBER, value, startLine, startColumn);
+    return this.createToken(AbilityDSLTokenType.NUMBER, value);
   }
 
   // -------------------------------------------------------------------------
@@ -206,8 +196,6 @@ export class AbilityDSLLexer {
    * and "is not null" by peeking ahead and consuming the additional words.
    */
   private readIdentifierOrKeyword(): AbilityDSLToken {
-    const startLine = this.line;
-    const startColumn = this.column;
     const start = this.pos;
 
     // Read the first segment (letters, digits, underscore)
@@ -236,17 +224,17 @@ export class AbilityDSLLexer {
       const next = this.peekWord();
       if (next === 'equals') {
         this.consumeWord();
-        return this.createToken(AbilityDSLTokenType.NOT_EQ, 'not equals', startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.NOT_EQ, 'not equals');
       }
 
       if (next === 'in') {
         this.consumeWord();
-        return this.createToken(AbilityDSLTokenType.NOT_IN, 'not contains', startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.NOT_IN, 'not contains');
       }
 
       if (next === 'contains' || next === 'contain') {
         this.consumeWord();
-        return this.createToken(AbilityDSLTokenType.NOT_IN, 'not contains', startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.NOT_IN, 'not contains');
       }
     }
 
@@ -257,7 +245,7 @@ export class AbilityDSLLexer {
       // "is null"
       if (next === 'null') {
         this.consumeWord();
-        return this.createToken(AbilityDSLTokenType.EQ_NULL, 'is null', startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.EQ_NULL, 'is null');
       }
 
       // "is not ..."
@@ -268,43 +256,43 @@ export class AbilityDSLLexer {
         // "is not null"
         if (next2 === 'null') {
           this.consumeWord();
-          return this.createToken(AbilityDSLTokenType.NOT_EQ_NULL, 'is not null', startLine, startColumn);
+          return this.createToken(AbilityDSLTokenType.NOT_EQ_NULL, 'is not null');
         }
 
         // "is not equal" -> "is not equals"
         if (next2 === 'equal') {
           this.consumeWord();
-          return this.createToken(AbilityDSLTokenType.NOT_EQ, 'not equals', startLine, startColumn);
+          return this.createToken(AbilityDSLTokenType.NOT_EQ, 'not equals');
         }
 
         // "is not equals"
         if (next2 === 'equals') {
           this.consumeWord();
-          return this.createToken(AbilityDSLTokenType.NOT_EQ, 'not equals', startLine, startColumn);
+          return this.createToken(AbilityDSLTokenType.NOT_EQ, 'not equals');
         }
 
         // "is"
-        return this.createToken(AbilityDSLTokenType.NOT_EQ, 'is', startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.NOT_EQ, 'is');
       }
 
       // "is equal" -> "is equals"
       if (next === 'equal') {
         this.consumeWord(); // consume "equal"
-        return this.createToken(AbilityDSLTokenType.EQ, 'equals', startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.EQ, 'equals');
       }
 
       if (next === 'equals') {
         this.consumeWord(); // consume "equal"
-        return this.createToken(AbilityDSLTokenType.EQ, 'equals', startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.EQ, 'equals');
       }
 
       // "is"
-      return this.createToken(AbilityDSLTokenType.EQ, 'is', startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.EQ, 'is');
     }
 
     // "equals"
     if (word === 'equals') {
-      return this.createToken(AbilityDSLTokenType.EQ, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.EQ, word);
     }
 
     // If the token contains a dot, it's either a path (identifier) or an action.
@@ -312,71 +300,71 @@ export class AbilityDSLLexer {
       const last = this.tokens[this.tokens.length - 1];
       // If the previous token is EFFECT, then this is an ACTION token.
       if (last?.type === AbilityDSLTokenType.EFFECT) {
-        return this.createToken(AbilityDSLTokenType.ACTION, word, startLine, startColumn);
+        return this.createToken(AbilityDSLTokenType.ACTION, word);
       }
-      return this.createToken(AbilityDSLTokenType.IDENTIFIER, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.IDENTIFIER, word);
     }
 
     // Only now handle plain "equals"
     if (word === 'equals') {
-      return this.createToken(AbilityDSLTokenType.EQ, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.EQ, word);
     }
     // Group keywords
     if (word === 'all') {
-      return this.createToken(AbilityDSLTokenType.ALL, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.ALL, word);
     }
     if (word === 'any') {
-      return this.createToken(AbilityDSLTokenType.ANY, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.ANY, word);
     }
     if (word === 'of') {
-      return this.createToken(AbilityDSLTokenType.OF, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.OF, word);
     }
 
     // Effects (policy outcome)
     if (word === 'permit' || word === 'allow') {
-      return this.createToken(AbilityDSLTokenType.EFFECT, 'permit', startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.EFFECT, 'permit');
     }
     if (word === 'deny' || word === 'forbidden') {
-      return this.createToken(AbilityDSLTokenType.EFFECT, 'deny', startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.EFFECT, 'deny');
     }
 
     // "if" keyword
     if (word === 'if') {
-      return this.createToken(AbilityDSLTokenType.IF, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.IF, word);
     }
 
     // Word-based comparison operators
     if (word === 'equals') {
-      return this.createToken(AbilityDSLTokenType.EQ, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.EQ, word);
     }
     // if (word === 'contains' || word === 'contain') {
     //   return this.createToken(AbilityDSLTokenType.CONTAINS, word);
     // }
     if (word === 'in' || word === 'contains' || word === 'contain') {
-      return this.createToken(AbilityDSLTokenType.IN, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.IN, word);
     }
     if (word === 'greater') {
-      return this.createToken(AbilityDSLTokenType.GT_WORD, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.GT_WORD, word);
     }
     if (word === 'less') {
-      return this.createToken(AbilityDSLTokenType.LT_WORD, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.LT_WORD, word);
     }
     if (word === 'null') {
-      return this.createToken(AbilityDSLTokenType.NULL, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.NULL, word);
     }
     if (word === 'true' || word === 'false') {
-      return this.createToken(AbilityDSLTokenType.BOOLEAN, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.BOOLEAN, word);
     }
 
-    // If the token appears immediately after an EFFECT, and it doesn't contain a dot,
+    // If the token appears immediately after an EFFECT and it doesn't contain a dot,
     // it could be a simple action name (e.g., "create").
     const lastToken = this.tokens[this.tokens.length - 1];
     if (lastToken?.type === AbilityDSLTokenType.EFFECT) {
-      return this.createToken(AbilityDSLTokenType.ACTION, word, startLine, startColumn);
+      return this.createToken(AbilityDSLTokenType.ACTION, word);
     }
 
     // Default: treat as an identifier (e.g., a variable name or plain word)
-    return this.createToken(AbilityDSLTokenType.IDENTIFIER, word, startLine, startColumn);
+    return this.createToken(AbilityDSLTokenType.IDENTIFIER, word);
   }
 
   // -------------------------------------------------------------------------
@@ -457,7 +445,7 @@ export class AbilityDSLLexer {
     return this.input.slice(start, i);
   }
 
-  private createToken(type: AbilityDSLTokenType, value: string, line: number, column: number): AbilityDSLToken {
+  private createToken(type: AbilityDSLTokenType, value: string): AbilityDSLToken {
     return new AbilityDSLToken(type, value, {
       column: this.column,
       line: this.line,

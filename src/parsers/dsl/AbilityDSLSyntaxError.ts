@@ -36,12 +36,15 @@ export class AbilityDSLSyntaxError extends Error {
     const GREEN = useColor ? '\x1b[32m' : '';
     const CYAN = useColor ? '\x1b[36m' : '';
     const ORANGE = useColor ? '\x1b[33;1m' : '';
+    const GRAY = useColor ? '\x1b[90m' : '';
     const RESET = useColor ? '\x1b[0m' : '';
+
 
     const lines = this.context.split('\n');
 
     // Find line with ^
-    const pointerIndex = lines.findIndex(l => l.includes('^'));
+    const pointerIndex = lines.findIndex(l => l.includes('^') || l.includes('~'));
+    const commentIndex = lines.findIndex(l => l.trim().includes('#'));
 
     const formattedLines = lines.map((line, idx) => {
       if (idx === pointerIndex - 1) {
@@ -49,9 +52,15 @@ export class AbilityDSLSyntaxError extends Error {
         return `${BOLD}${ORANGE}${line}${RESET}`;
       }
       if (idx === pointerIndex) {
-        // Error with ^
+        // Error with ~~~~~
         return `${RED}${line}${RESET}`;
       }
+
+      // Comments # ...
+      if (idx === commentIndex) {
+        return `${GRAY}${line}${RESET}`;
+      }
+
       return line;
     });
 
