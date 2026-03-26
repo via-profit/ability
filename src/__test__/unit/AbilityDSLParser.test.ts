@@ -386,7 +386,7 @@ permit order.update if any:
     it('should parse "is equal" correctly', () => {
       const dsl = `
 permit test.action if all:
-  user.name is equal 'John'
+  user.name is equals 'John'
 `;
       const parser = new AbilityDSLParser(dsl);
       const policies = parser.parse();
@@ -398,7 +398,7 @@ permit test.action if all:
     it('should parse "is not equal" correctly', () => {
       const dsl = `
 permit test.action if all:
-  user.name is not equal 'John'
+  user.name is not equals 'John'
 `;
       const parser = new AbilityDSLParser(dsl);
       const policies = parser.parse();
