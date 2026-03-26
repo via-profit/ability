@@ -1,7 +1,17 @@
 import AbilityCode from './AbilityCode';
 import { AbilityParserError } from '../core/AbilityError';
 
-export type AbilityConditionCodeType = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'in' | 'not in' | 'contains' | 'not contains';
+export type AbilityConditionCodeType =
+  | '='
+  | '<>'
+  | '>'
+  | '<'
+  | '>='
+  | '<='
+  | 'in'
+  | 'not in'
+  | 'contains'
+  | 'not contains';
 export type AbilityConditionLiteralType =
   // plain values
   | 'equals'
@@ -13,18 +23,18 @@ export type AbilityConditionLiteralType =
   | 'in'
   | 'not_in'
   // numeric
-  | 'more_than'
+  | 'greater_than'
   | 'less_than'
   | 'less_or_equal'
-  | 'more_or_equal';
+  | 'greater_or_equal';
 
 export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
   public static equals = new AbilityCondition('=');
   public static not_equals = new AbilityCondition('<>');
-  public static more_than = new AbilityCondition('>');
+  public static greater_than = new AbilityCondition('>');
   public static less_than = new AbilityCondition('<');
   public static less_or_equal = new AbilityCondition('<=');
-  public static more_or_equal = new AbilityCondition('>=');
+  public static greater_or_equal = new AbilityCondition('>=');
   public static in = new AbilityCondition('in');
   public static not_in = new AbilityCondition('not in');
   public static contains = new AbilityCondition('contains');
@@ -36,14 +46,14 @@ export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
         return this.equals;
       case 'not_equals':
         return this.not_equals;
-      case 'more_than':
-        return this.more_than;
+      case 'greater_than':
+        return this.greater_than;
       case 'less_than':
         return this.less_than;
       case 'less_or_equal':
         return this.less_or_equal;
-      case 'more_or_equal':
-        return this.more_or_equal;
+      case 'greater_or_equal':
+        return this.greater_or_equal;
       case 'contains':
         return this.contains;
       case 'no_contains':

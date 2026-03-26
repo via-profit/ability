@@ -97,14 +97,14 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     }
 
     // more than
-    if (AbilityCondition.more_than.isEqual(this.condition)) {
+    if (AbilityCondition.greater_than.isEqual(this.condition)) {
       if (typeof subjectValue === 'number' && typeof resourceValue === 'number') {
         is = subjectValue > resourceValue;
       }
     }
 
     // more or equal
-    if (AbilityCondition.more_or_equal.isEqual(this.condition)) {
+    if (AbilityCondition.greater_or_equal.isEqual(this.condition)) {
       if (typeof subjectValue === 'number' && typeof resourceValue === 'number') {
         is = subjectValue >= resourceValue;
       }
@@ -361,7 +361,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
     return new AbilityRule<Resources, Environment>({
-      condition: AbilityCondition.more_than,
+      condition: AbilityCondition.greater_than,
       subject,
       resource,
     });
@@ -372,7 +372,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
     return new AbilityRule<Resources, Environment>({
-      condition: AbilityCondition.more_or_equal,
+      condition: AbilityCondition.greater_or_equal,
       subject,
       resource,
     });

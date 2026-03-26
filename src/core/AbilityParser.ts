@@ -123,9 +123,9 @@ export class AbilityParser {
   private static determineTypeFromRule(rule: AbilityRule): string {
     // Numeric comparisons - always number
     if (
-      rule.condition.isEqual(AbilityCondition.more_than) ||
+      rule.condition.isEqual(AbilityCondition.greater_than) ||
       rule.condition.isEqual(AbilityCondition.less_than) ||
-      rule.condition.isEqual(AbilityCondition.more_or_equal) ||
+      rule.condition.isEqual(AbilityCondition.greater_or_equal) ||
       rule.condition.isEqual(AbilityCondition.less_or_equal)
     ) {
       return 'number';

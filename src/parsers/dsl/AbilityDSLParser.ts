@@ -281,13 +281,13 @@ export class AbilityDSLParser<
       this.matchWord('or') &&
       this.matchWord('equal')
     ) {
-      return { condition: AbilityCondition.more_or_equal, operator: AbilityDSLTokenType.GTE };
+      return { condition: AbilityCondition.greater_or_equal, operator: AbilityDSLTokenType.GTE };
     }
     this.pos = savedPos;
 
     // greater than
     if (this.matchWord('greater') && this.matchWord('than')) {
-      return { condition: AbilityCondition.more_than, operator: AbilityDSLTokenType.GT };
+      return { condition: AbilityCondition.greater_than, operator: AbilityDSLTokenType.GT };
     }
     this.pos = savedPos;
 
@@ -324,7 +324,7 @@ export class AbilityDSLParser<
     this.pos = savedPos;
 
     // not equal
-    if (this.matchWord('not') && this.matchWord('equal')) {
+    if (this.matchWord('not') && this.matchWord('equals')) {
       return { condition: AbilityCondition.not_equals, operator: AbilityDSLTokenType.NOT_EQ };
     }
     this.pos = savedPos;
@@ -396,11 +396,11 @@ export class AbilityDSLParser<
         if (token.value === '!=')
           return { condition: AbilityCondition.not_equals, operator: AbilityDSLTokenType.NOT_EQ };
         if (token.value === '>')
-          return { condition: AbilityCondition.more_than, operator: AbilityDSLTokenType.GT };
+          return { condition: AbilityCondition.greater_than, operator: AbilityDSLTokenType.GT };
         if (token.value === '<')
           return { condition: AbilityCondition.less_than, operator: AbilityDSLTokenType.LT };
         if (token.value === '>=')
-          return { condition: AbilityCondition.more_or_equal, operator: AbilityDSLTokenType.GTE };
+          return { condition: AbilityCondition.greater_or_equal, operator: AbilityDSLTokenType.GTE };
         if (token.value === '<=')
           return { condition: AbilityCondition.less_or_equal, operator: AbilityDSLTokenType.LTE };
         break;
@@ -414,7 +414,7 @@ export class AbilityDSLParser<
           return { condition: AbilityCondition.equals, operator: AbilityDSLTokenType.EQ };
         if (token.value === 'greater') {
           // If we come here, it means "greater" without "than" – treat as '>'
-          return { condition: AbilityCondition.more_than, operator: AbilityDSLTokenType.GT };
+          return { condition: AbilityCondition.greater_than, operator: AbilityDSLTokenType.GT };
         }
         if (token.value === 'less') {
           return { condition: AbilityCondition.less_than, operator: AbilityDSLTokenType.LT };

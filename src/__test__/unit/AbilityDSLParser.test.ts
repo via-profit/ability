@@ -151,7 +151,7 @@ deny order.cancel if any:
 
     const rule1 = ruleSet.rules[0];
     expect(rule1.subject).toBe('order.amount');
-    expect(rule1.condition).toBe(AbilityCondition.more_than);
+    expect(rule1.condition).toBe(AbilityCondition.greater_than);
     expect(rule1.resource).toBe(1000);
 
     const rule2 = ruleSet.rules[1];
@@ -189,7 +189,7 @@ deny order.update if any:
     // Rule 1: order.amount > 1000
     const rule1 = ruleSet.rules[0];
     expect(rule1.subject).toBe('order.amount');
-    expect(rule1.condition).toBe(AbilityCondition.more_than);
+    expect(rule1.condition).toBe(AbilityCondition.greater_than);
     expect(rule1.resource).toBe(1000);
 
     // Rule 2: order.amount < 50
@@ -346,7 +346,7 @@ permit order.update if all:
     // Rule 3: order.amount greater than 1000 (numeric still works)
     const rule3 = ruleSet.rules[2];
     expect(rule3.subject).toBe('order.amount');
-    expect(rule3.condition).toBe(AbilityCondition.more_than);
+    expect(rule3.condition).toBe(AbilityCondition.greater_than);
     expect(rule3.resource).toBe(1000);
   });
 
@@ -373,7 +373,7 @@ permit order.update if any:
 
     const rule1 = ruleSet.rules[0];
     expect(rule1.subject).toBe('env.time.hour');
-    expect(rule1.condition).toBe(AbilityCondition.more_than);
+    expect(rule1.condition).toBe(AbilityCondition.greater_than);
     expect(rule1.resource).toBe(9);
 
     const rule2 = ruleSet.rules[1];

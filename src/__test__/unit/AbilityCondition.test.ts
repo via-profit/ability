@@ -12,8 +12,8 @@ describe('AbilityCondition', () => {
       expect(AbilityCondition.not_equals).toBeInstanceOf(AbilityCondition);
       expect(AbilityCondition.not_equals.code).toBe('<>');
 
-      expect(AbilityCondition.more_than).toBeInstanceOf(AbilityCondition);
-      expect(AbilityCondition.more_than.code).toBe('>');
+      expect(AbilityCondition.greater_than).toBeInstanceOf(AbilityCondition);
+      expect(AbilityCondition.greater_than.code).toBe('>');
 
       expect(AbilityCondition.less_than).toBeInstanceOf(AbilityCondition);
       expect(AbilityCondition.less_than.code).toBe('<');
@@ -21,8 +21,8 @@ describe('AbilityCondition', () => {
       expect(AbilityCondition.less_or_equal).toBeInstanceOf(AbilityCondition);
       expect(AbilityCondition.less_or_equal.code).toBe('<=');
 
-      expect(AbilityCondition.more_or_equal).toBeInstanceOf(AbilityCondition);
-      expect(AbilityCondition.more_or_equal.code).toBe('>=');
+      expect(AbilityCondition.greater_or_equal).toBeInstanceOf(AbilityCondition);
+      expect(AbilityCondition.greater_or_equal.code).toBe('>=');
 
       expect(AbilityCondition.in).toBeInstanceOf(AbilityCondition);
       expect(AbilityCondition.in.code).toBe('in');
@@ -35,10 +35,10 @@ describe('AbilityCondition', () => {
       const conditions = [
         AbilityCondition.equals,
         AbilityCondition.not_equals,
-        AbilityCondition.more_than,
+        AbilityCondition.greater_than,
         AbilityCondition.less_than,
         AbilityCondition.less_or_equal,
-        AbilityCondition.more_or_equal,
+        AbilityCondition.greater_or_equal,
         AbilityCondition.in,
         AbilityCondition.not_in,
       ];
@@ -136,10 +136,10 @@ describe('AbilityCondition', () => {
     it('should create condition from valid literals', () => {
       expect(AbilityCondition.fromLiteral('equals').code).toBe('=');
       expect(AbilityCondition.fromLiteral('not_equals').code).toBe('<>');
-      expect(AbilityCondition.fromLiteral('more_than').code).toBe('>');
+      expect(AbilityCondition.fromLiteral('greater_than').code).toBe('>');
       expect(AbilityCondition.fromLiteral('less_than').code).toBe('<');
       expect(AbilityCondition.fromLiteral('less_or_equal').code).toBe('<=');
-      expect(AbilityCondition.fromLiteral('more_or_equal').code).toBe('>=');
+      expect(AbilityCondition.fromLiteral('greater_or_equal').code).toBe('>=');
       expect(AbilityCondition.fromLiteral('in').code).toBe('in');
       expect(AbilityCondition.fromLiteral('not_in').code).toBe('not in');
     });
@@ -174,10 +174,10 @@ describe('AbilityCondition', () => {
     it('should return correct literal for code', () => {
       expect(new AbilityCondition('=').literal).toBe('equals');
       expect(new AbilityCondition('<>').literal).toBe('not_equals');
-      expect(new AbilityCondition('>').literal).toBe('more_than');
+      expect(new AbilityCondition('>').literal).toBe('greater_than');
       expect(new AbilityCondition('<').literal).toBe('less_than');
       expect(new AbilityCondition('<=').literal).toBe('less_or_equal');
-      expect(new AbilityCondition('>=').literal).toBe('more_or_equal');
+      expect(new AbilityCondition('>=').literal).toBe('greater_or_equal');
       expect(new AbilityCondition('in').literal).toBe('in');
       expect(new AbilityCondition('not in').literal).toBe('not_in');
     });
@@ -185,10 +185,10 @@ describe('AbilityCondition', () => {
     it('should work with static instances', () => {
       expect(AbilityCondition.equals.literal).toBe('equals');
       expect(AbilityCondition.not_equals.literal).toBe('not_equals');
-      expect(AbilityCondition.more_than.literal).toBe('more_than');
+      expect(AbilityCondition.greater_than.literal).toBe('greater_than');
       expect(AbilityCondition.less_than.literal).toBe('less_than');
       expect(AbilityCondition.less_or_equal.literal).toBe('less_or_equal');
-      expect(AbilityCondition.more_or_equal.literal).toBe('more_or_equal');
+      expect(AbilityCondition.greater_or_equal.literal).toBe('greater_or_equal');
       expect(AbilityCondition.in.literal).toBe('in');
       expect(AbilityCondition.not_in.literal).toBe('not_in');
     });
@@ -269,8 +269,8 @@ describe('AbilityCondition', () => {
     });
 
     it('should work with fromLiteral and then literal', () => {
-      const condition = AbilityCondition.fromLiteral('more_than');
-      expect(condition.literal).toBe('more_than');
+      const condition = AbilityCondition.fromLiteral('greater_than');
+      expect(condition.literal).toBe('greater_than');
       expect(condition.code).toBe('>');
     });
   });

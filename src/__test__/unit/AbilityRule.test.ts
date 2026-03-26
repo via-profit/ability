@@ -11,21 +11,21 @@ describe('AbilityRule', () => {
         name: 'Test Rule',
         subject: 'user.age',
         resource: 18,
-        condition: AbilityCondition.more_than,
+        condition: AbilityCondition.greater_than,
       });
 
       expect(rule.id).toBe('test-id');
       expect(rule.name).toBe('Test Rule');
       expect(rule.subject).toBe('user.age');
       expect(rule.resource).toBe(18);
-      expect(rule.condition).toBe(AbilityCondition.more_than);
+      expect(rule.condition).toBe(AbilityCondition.greater_than);
     });
 
     it('should generate name and id if not provided', () => {
       const rule = new AbilityRule({
         subject: 'user.age',
         resource: 18,
-        condition: AbilityCondition.more_than,
+        condition: AbilityCondition.greater_than,
       });
 
       expect(rule.id).toBeDefined();
@@ -265,9 +265,9 @@ describe('AbilityRule', () => {
       expect(AbilityRule.lessOrEqual('user.age', 18).condition).toBe(
         AbilityCondition.less_or_equal,
       );
-      expect(AbilityRule.moreThan('user.age', 18).condition).toBe(AbilityCondition.more_than);
+      expect(AbilityRule.moreThan('user.age', 18).condition).toBe(AbilityCondition.greater_than);
       expect(AbilityRule.moreOrEqual('user.age', 18).condition).toBe(
-        AbilityCondition.more_or_equal,
+        AbilityCondition.greater_or_equal,
       );
     });
   });

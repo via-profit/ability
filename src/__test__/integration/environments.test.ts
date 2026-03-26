@@ -7,7 +7,7 @@ describe('AbilityRule — environment support', () => {
     const rule = new AbilityRule({
       subject: 'env.time.hour',
       resource: 10,
-      condition: AbilityCondition.more_or_equal,
+      condition: AbilityCondition.greater_or_equal,
     });
 
     const env = { time: { hour: 12 } };
@@ -35,7 +35,7 @@ describe('AbilityRule — environment support', () => {
     const rule = new AbilityRule({
       subject: 'user.age',
       resource: 'env.minAge',
-      condition: AbilityCondition.more_or_equal,
+      condition: AbilityCondition.greater_or_equal,
     });
 
     const resource = { user: { age: 25 } };
@@ -50,7 +50,7 @@ describe('AbilityRule — environment support', () => {
     const rule = new AbilityRule({
       subject: 'env.time.hour',
       resource: 18,
-      condition: AbilityCondition.more_or_equal,
+      condition: AbilityCondition.greater_or_equal,
     });
 
     const env = { time: { hour: 10 } };
@@ -64,7 +64,7 @@ describe('AbilityRule — environment support', () => {
     const rule = new AbilityRule({
       subject: 'env.time.hour',
       resource: 10,
-      condition: AbilityCondition.more_or_equal,
+      condition: AbilityCondition.greater_or_equal,
     });
 
     const result = await rule.check(null, undefined);
@@ -91,7 +91,7 @@ describe('AbilityRule — environment support', () => {
     const rule = new AbilityRule({
       subject: 'env.score',
       resource: 50,
-      condition: AbilityCondition.more_than,
+      condition: AbilityCondition.greater_than,
     });
 
     const env = { score: 60 };

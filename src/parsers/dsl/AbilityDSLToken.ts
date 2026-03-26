@@ -10,7 +10,7 @@ export type AbilityDSLTokenConstructorProps = {
  * Represents a single token produced by the Ability DSL lexer.
  * Each token carries a type (e.g., EFFECT, IDENTIFIER, STRING) and its raw string value.
  */
-export class AbilityDSLToken {
+export class AbilityDSLToken  {
   /** The token type (e.g., EFFECT, IDENTIFIER, STRING). */
   readonly type: AbilityDSLTokenType;
 
