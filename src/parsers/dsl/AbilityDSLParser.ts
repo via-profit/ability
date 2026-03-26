@@ -5,8 +5,7 @@ import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
 import AbilityRule, { AbilityRuleConfig } from '~/core/AbilityRule';
 import AbilityRuleSet from '~/core/AbilityRuleSet';
 import { AbilityDSLLexer } from '~/parsers/dsl/AbilityDSLLexer';
-import { AbilityDSLToken } from '~/parsers/dsl/AbilityDSLToken';
-import { AbilityDSLTokenType } from '~/parsers/dsl/AbilityDSLTokenType';
+import { AbilityDSLToken, TokenType } from '~/parsers/dsl/AbilityDSLToken';
 import { ResourceObject } from '~/core/AbilityParser';
 import { AbilityDSLSyntaxError } from '~/parsers/dsl/AbilityDSLSyntaxError';
 
@@ -56,8 +55,8 @@ export class AbilityDSLParser<
       // Every policy must start with an EFFECT token.
       if (!this.isStartOfPolicy()) {
         const token = this.peek();
-        this.syntaxError(`Expected policy, got ${token.type.code}.`, token, [
-          AbilityDSLTokenType.EFFECT,
+        this.syntaxError(`Expected policy, got ${token.code}.`, token, [
+          'EFFECT',
         ]);
       }
       policies.push(this.parsePolicy());
@@ -81,27 +80,29 @@ export class AbilityDSLParser<
     const meta = this.takeAnnotations();
 
     // Effect: "permit" or "deny"
-    const effectToken = this.consume(AbilityDSLTokenType.EFFECT, 'Expected effect');
+    const effectToken = this.consume(AbilityDSLToken.EFFECT, 'Expected effect');
     const effect = effectToken.value;
 
     // Action: e.g. "order.update"
-    const actionToken = this.consume(AbilityDSLTokenType.ACTION, 'Expected action');
+    const actionToken = this.consume(AbilityDSLToken.ACTION, 'Expected action');
     const action = actionToken.value;
 
     // "if" keyword
-    this.consume(AbilityDSLTokenType.IF, 'Expected "if"');
+    this.consume(AbilityDSLToken.IF, 'Expected "if"');
 
     // Group selector: "all" or "any" – determines how the top‑level rule sets are combined.
     const compareToken = this.consumeOneOf(
-      [AbilityDSLTokenType.ALL, AbilityDSLTokenType.ANY],
+      [AbilityDSLToken.ALL, AbilityDSLToken.ANY],
       'Expected "all" or "any"',
     );
 
     const compareMethod =
-      compareToken.type === AbilityDSLTokenType.ALL ? AbilityCompare.and : AbilityCompare.or;
+      compareToken.code === AbilityDSLToken.ALL
+        ? AbilityCompare.and
+        : AbilityCompare.or;
 
     // Colon after the group keyword
-    this.consume(AbilityDSLTokenType.COLON, 'Expected ":"');
+    this.consume(AbilityDSLToken.COLON, 'Expected ":"');
 
     // Parse the list of rule sets (each "all of:" or "any of:" block)
     const ruleSets = this.parseRuleSets(compareMethod);
@@ -150,11 +151,11 @@ export class AbilityDSLParser<
           break;
         }
 
-        if (this.check(AbilityDSLTokenType.IDENTIFIER)) {
+        if (this.check(AbilityDSLToken.IDENTIFIER)) {
           group.addRule(this.parseRule());
         } else {
           this.syntaxError(
-            `Unexpected token in implicit group: ${this.peek().type.code}`,
+            `Unexpected token in implicit group: ${this.peek().code}`,
             this.peek(),
           );
         }
@@ -174,18 +175,18 @@ export class AbilityDSLParser<
     const meta = this.takeAnnotations();
 
     const compareToken = this.consumeOneOf(
-      [AbilityDSLTokenType.ALL, AbilityDSLTokenType.ANY],
+      [AbilityDSLToken.ALL, AbilityDSLToken.ANY],
       'Expected "all" or "any"',
     );
 
     const compareMethod =
-      compareToken.type === AbilityDSLTokenType.ALL ? AbilityCompare.and : AbilityCompare.or;
+      compareToken.code === AbilityDSLToken.ALL ? AbilityCompare.and : AbilityCompare.or;
 
-    if (this.check(AbilityDSLTokenType.OF)) {
+    if (this.check(AbilityDSLToken.OF)) {
       this.advance();
     }
 
-    this.consume(AbilityDSLTokenType.COLON, 'Expected ":"');
+    this.consume(AbilityDSLToken.COLON, 'Expected ":"');
 
     const group = new AbilityRuleSet({ compareMethod, name: meta.name });
 
@@ -196,10 +197,10 @@ export class AbilityDSLParser<
         break;
       }
 
-      if (this.check(AbilityDSLTokenType.IDENTIFIER)) {
+      if (this.check(AbilityDSLToken.IDENTIFIER)) {
         group.addRule(this.parseRule());
       } else {
-        this.syntaxError(`Unexpected token in group: ${this.peek().type.code}`, this.peek());
+        this.syntaxError(`Unexpected token in group: ${this.peek().code}`, this.peek());
       }
     }
 
@@ -216,12 +217,12 @@ export class AbilityDSLParser<
   private parseRule(): AbilityRule {
     this.consumeLeadingComments();
     const meta = this.takeAnnotations();
-    if (!this.check(AbilityDSLTokenType.IDENTIFIER)) {
-      this.syntaxError(`Expected identifier, got ${this.peek().type.code}`, this.peek());
+    if (!this.check(AbilityDSLToken.IDENTIFIER)) {
+      this.syntaxError(`Expected identifier, got ${this.peek().code}`, this.peek());
     }
 
     // Subject (e.g., "user.roles")
-    const subject = this.consume(AbilityDSLTokenType.IDENTIFIER, 'Expected field').value;
+    const subject = this.consume(AbilityDSLToken.IDENTIFIER, 'Expected field').value;
 
     // Operator (e.g., "contains", "equals", "is not null")
     const { condition, operator } = this.parseConditionOperator();
@@ -231,9 +232,9 @@ export class AbilityDSLParser<
 
     // Special operators that don't consume a value token.
     if (
-      operator === AbilityDSLTokenType.EQ_NULL ||
-      operator === AbilityDSLTokenType.NOT_EQ_NULL ||
-      operator === AbilityDSLTokenType.NULL
+      operator === AbilityDSLToken.EQ_NULL ||
+      operator === AbilityDSLToken.NOT_EQ_NULL ||
+      operator === AbilityDSLToken.NULL
     ) {
       resource = null;
     } else {
@@ -247,11 +248,11 @@ export class AbilityDSLParser<
 
     const resourceToken = this.tokens[beforePos];
 
-    if (typeof resource === 'string' && resourceToken.type.isEqual(AbilityDSLTokenType.IDENTIFIER) && !resourceToken.value.includes('.')) {
+    if (typeof resource === 'string' && resourceToken.code === AbilityDSLToken.IDENTIFIER && !resourceToken.value.includes('.')) {
           this.syntaxError(
             `Expected comparison operator or value, got \`${resource}\``,
             this.tokens[beforePos],
-            [AbilityDSLTokenType.KEYWORD],
+            [AbilityDSLToken.KEYWORD],
           );
     }
 
@@ -271,7 +272,7 @@ export class AbilityDSLParser<
    * Parses the comparison operator part of a rule.
    * Returns both the resulting AbilityCondition and the token type that was consumed.
    */
-  private parseConditionOperator(): { condition: AbilityCondition; operator: AbilityDSLTokenType } {
+  private parseConditionOperator(): { condition: AbilityCondition; operator: TokenType } {
     const savedPos = this.pos;
 
     // greater than or equal
@@ -281,13 +282,13 @@ export class AbilityDSLParser<
       this.matchWord('or') &&
       this.matchWord('equal')
     ) {
-      return { condition: AbilityCondition.greater_or_equal, operator: AbilityDSLTokenType.GTE };
+      return { condition: AbilityCondition.greater_or_equal, operator: AbilityDSLToken.GTE };
     }
     this.pos = savedPos;
 
     // greater than
     if (this.matchWord('greater') && this.matchWord('than')) {
-      return { condition: AbilityCondition.greater_than, operator: AbilityDSLTokenType.GT };
+      return { condition: AbilityCondition.greater_than, operator: AbilityDSLToken.GT };
     }
     this.pos = savedPos;
 
@@ -298,13 +299,13 @@ export class AbilityDSLParser<
       this.matchWord('or') &&
       this.matchWord('equal')
     ) {
-      return { condition: AbilityCondition.less_or_equal, operator: AbilityDSLTokenType.LTE };
+      return { condition: AbilityCondition.less_or_equal, operator: AbilityDSLToken.LTE };
     }
     this.pos = savedPos;
 
     // less than
     if (this.matchWord('less') && this.matchWord('than')) {
-      return { condition: AbilityCondition.less_than, operator: AbilityDSLTokenType.LT };
+      return { condition: AbilityCondition.less_than, operator: AbilityDSLToken.LT };
     }
     this.pos = savedPos;
 
@@ -312,48 +313,48 @@ export class AbilityDSLParser<
     if (this.matchWord('not') && this.matchWord('contains')) {
       return {
         condition: AbilityCondition.not_contains,
-        operator: AbilityDSLTokenType.NOT_CONTAINS,
+        operator: AbilityDSLToken.NOT_CONTAINS,
       };
     }
     this.pos = savedPos;
 
     // is equals
     if (this.matchWord('is') && this.matchWord('equals')) {
-      return { condition: AbilityCondition.equals, operator: AbilityDSLTokenType.EQ };
+      return { condition: AbilityCondition.equals, operator: AbilityDSLToken.EQ };
     }
     this.pos = savedPos;
 
     // not equal
     if (this.matchWord('not') && this.matchWord('equals')) {
-      return { condition: AbilityCondition.not_equals, operator: AbilityDSLTokenType.NOT_EQ };
+      return { condition: AbilityCondition.not_equals, operator: AbilityDSLToken.NOT_EQ };
     }
     this.pos = savedPos;
 
     // is not equals
     if (this.matchWord('is') && this.matchWord('not') && this.matchWord('equals')) {
-      return { condition: AbilityCondition.not_equals, operator: AbilityDSLTokenType.NOT_EQ };
+      return { condition: AbilityCondition.not_equals, operator: AbilityDSLToken.NOT_EQ };
     }
     this.pos = savedPos;
 
     // is in
     if (this.matchWord('is') && this.matchWord('in')) {
-      return { condition: AbilityCondition.in, operator: AbilityDSLTokenType.IN };
+      return { condition: AbilityCondition.in, operator: AbilityDSLToken.IN };
     }
     this.pos = savedPos;
 
     // not in
     if (this.matchWord('not') && this.matchWord('in')) {
-      return { condition: AbilityCondition.not_in, operator: AbilityDSLTokenType.NOT_IN };
+      return { condition: AbilityCondition.not_in, operator: AbilityDSLToken.NOT_IN };
     }
     this.pos = savedPos;
 
     // is not null
     if (this.matchWord('is') && this.matchWord('not')) {
-      if (this.check(AbilityDSLTokenType.NULL)) {
+      if (this.check(AbilityDSLToken.NULL)) {
         this.advance();
         return {
           condition: AbilityCondition.not_equals,
-          operator: AbilityDSLTokenType.NOT_EQ_NULL,
+          operator: AbilityDSLToken.NOT_EQ_NULL,
         };
       }
     }
@@ -361,11 +362,11 @@ export class AbilityDSLParser<
 
     // is null
     if (this.matchWord('is') && this.matchWord('null')) {
-      if (this.check(AbilityDSLTokenType.NULL)) {
+      if (this.check(AbilityDSLToken.NULL)) {
         this.advance();
         return {
           condition: AbilityCondition.equals,
-          operator: AbilityDSLTokenType.EQ_NULL,
+          operator: AbilityDSLToken.EQ_NULL,
         };
       }
     }
@@ -376,52 +377,52 @@ export class AbilityDSLParser<
     const token = this.peek();
 
     if (
-      token.type !== AbilityDSLTokenType.SYMBOL &&
-      token.type !== AbilityDSLTokenType.KEYWORD &&
-      token.type !== AbilityDSLTokenType.NULL
+      token.code !== AbilityDSLToken.SYMBOL &&
+      token.code !== AbilityDSLToken.KEYWORD &&
+      token.code !== AbilityDSLToken.NULL
     ) {
       this.syntaxError(`Expected comparison operator, got \`${token.value}\``, token, [
-        AbilityDSLTokenType.SYMBOL,
-        AbilityDSLTokenType.KEYWORD,
-        AbilityDSLTokenType.NULL,
+        AbilityDSLToken.SYMBOL,
+        AbilityDSLToken.KEYWORD,
+        AbilityDSLToken.NULL,
       ]);
     }
 
     this.advance();
 
-    switch (token.type) {
-      case AbilityDSLTokenType.SYMBOL:
+    switch (token.code) {
+      case AbilityDSLToken.SYMBOL:
         if (token.value === '=')
-          return { condition: AbilityCondition.equals, operator: AbilityDSLTokenType.EQ };
+          return { condition: AbilityCondition.equals, operator: AbilityDSLToken.EQ };
         if (token.value === '!=')
-          return { condition: AbilityCondition.not_equals, operator: AbilityDSLTokenType.NOT_EQ };
+          return { condition: AbilityCondition.not_equals, operator: AbilityDSLToken.NOT_EQ };
         if (token.value === '>')
-          return { condition: AbilityCondition.greater_than, operator: AbilityDSLTokenType.GT };
+          return { condition: AbilityCondition.greater_than, operator: AbilityDSLToken.GT };
         if (token.value === '<')
-          return { condition: AbilityCondition.less_than, operator: AbilityDSLTokenType.LT };
+          return { condition: AbilityCondition.less_than, operator: AbilityDSLToken.LT };
         if (token.value === '>=')
-          return { condition: AbilityCondition.greater_or_equal, operator: AbilityDSLTokenType.GTE };
+          return { condition: AbilityCondition.greater_or_equal, operator: AbilityDSLToken.GTE };
         if (token.value === '<=')
-          return { condition: AbilityCondition.less_or_equal, operator: AbilityDSLTokenType.LTE };
+          return { condition: AbilityCondition.less_or_equal, operator: AbilityDSLToken.LTE };
         break;
 
-      case AbilityDSLTokenType.KEYWORD:
+      case AbilityDSLToken.KEYWORD:
         if (token.value === 'contains')
-          return { condition: AbilityCondition.contains, operator: AbilityDSLTokenType.CONTAINS };
+          return { condition: AbilityCondition.contains, operator: AbilityDSLToken.CONTAINS };
         if (token.value === 'in')
-          return { condition: AbilityCondition.in, operator: AbilityDSLTokenType.IN };
+          return { condition: AbilityCondition.in, operator: AbilityDSLToken.IN };
         if (token.value === 'equals')
-          return { condition: AbilityCondition.equals, operator: AbilityDSLTokenType.EQ };
+          return { condition: AbilityCondition.equals, operator: AbilityDSLToken.EQ };
         if (token.value === 'greater') {
           // If we come here, it means "greater" without "than" – treat as '>'
-          return { condition: AbilityCondition.greater_than, operator: AbilityDSLTokenType.GT };
+          return { condition: AbilityCondition.greater_than, operator: AbilityDSLToken.GT };
         }
         if (token.value === 'less') {
-          return { condition: AbilityCondition.less_than, operator: AbilityDSLTokenType.LT };
+          return { condition: AbilityCondition.less_than, operator: AbilityDSLToken.LT };
         }
         if (token.value === 'is') {
           // "is" alone -> equals
-          return { condition: AbilityCondition.equals, operator: AbilityDSLTokenType.EQ };
+          return { condition: AbilityCondition.equals, operator: AbilityDSLToken.EQ };
         }
         break;
 
@@ -429,8 +430,8 @@ export class AbilityDSLParser<
         break;
     }
     return this.syntaxError(`Unexpected operator token \`${token.value}\``, token, [
-      AbilityDSLTokenType.SYMBOL,
-      AbilityDSLTokenType.KEYWORD,
+      AbilityDSLToken.SYMBOL,
+      AbilityDSLToken.KEYWORD,
     ]);
   }
 
@@ -442,11 +443,7 @@ export class AbilityDSLParser<
   private matchWord(word: string): boolean {
     if (this.isAtEnd()) return false;
     const token = this.peek();
-    if (
-      (token.type === AbilityDSLTokenType.KEYWORD ||
-        token.type === AbilityDSLTokenType.IDENTIFIER) &&
-      token.value === word
-    ) {
+    if ((token.code === AbilityDSLToken.KEYWORD || token.code === AbilityDSLToken.IDENTIFIER) && token.value === word) {
       this.advance();
       return true;
     }
@@ -463,7 +460,7 @@ export class AbilityDSLParser<
    */
   private parseValue(): AbilityRuleConfig['resource'] {
     // Arrays start with a left bracket
-    if (this.check(AbilityDSLTokenType.LBRACKET)) {
+    if (this.check(AbilityDSLToken.LBRACKET)) {
       this.advance();
       return this.parseArray();
     }
@@ -471,32 +468,33 @@ export class AbilityDSLParser<
     // Ensure we are not about to read a structural token as a value.
     const token = this.peek();
     if (
-      token.type.code === AbilityDSLTokenType.ALL.code ||
-      token.type.code === AbilityDSLTokenType.ANY.code ||
-      token.type.code === AbilityDSLTokenType.EFFECT.code
+      token.code === AbilityDSLToken.ALL ||
+      token.code === AbilityDSLToken.ANY ||
+      token.code === AbilityDSLToken.EFFECT
     ) {
-      this.syntaxError(`Unexpected ${token.type.code} in value position`, token);
+      this.syntaxError(`Unexpected ${token.code} in value position`, token);
     }
 
     this.advance();
 
-    switch (token.type) {
-      case AbilityDSLTokenType.STRING:
+    // CHECK THIS SWITCH COMPARE
+    switch (token.code) {
+      case AbilityDSLToken.STRING:
         return token.value;
-      case AbilityDSLTokenType.NUMBER:
+      case AbilityDSLToken.NUMBER:
         return Number(token.value);
-      case AbilityDSLTokenType.BOOLEAN:
+      case AbilityDSLToken.BOOLEAN:
         return token.value === 'true';
-      case AbilityDSLTokenType.NULL:
+      case AbilityDSLToken.NULL:
         return null;
-      case AbilityDSLTokenType.IDENTIFIER:
+      case AbilityDSLToken.IDENTIFIER:
         return token.value;
       default:
       {
         this.syntaxError(
           `Unexpected value token "${token.value}"`,
           token ?? this.tokens[this.tokens.length - 1],
-          [AbilityDSLTokenType.KEYWORD],
+          [AbilityDSLToken.KEYWORD],
         );
       }
     }
@@ -510,12 +508,12 @@ export class AbilityDSLParser<
     const arr: (string | number | boolean | null)[] = [];
 
     // Handle empty array
-    if (this.check(AbilityDSLTokenType.RBRACKET)) {
+    if (this.check(AbilityDSLToken.RBRACKET)) {
       this.advance();
       return arr;
     }
 
-    while (!this.isAtEnd() && !this.check(AbilityDSLTokenType.RBRACKET)) {
+    while (!this.isAtEnd() && !this.check(AbilityDSLToken.RBRACKET)) {
       const value = this.parseValue();
 
       // Flatten nested arrays if they appear (though grammar doesn't currently allow nesting).
@@ -533,12 +531,12 @@ export class AbilityDSLParser<
       }
 
       // Optional comma between elements
-      if (this.check(AbilityDSLTokenType.COMMA)) {
+      if (this.check(AbilityDSLToken.COMMA)) {
         this.advance();
       }
     }
 
-    this.consume(AbilityDSLTokenType.RBRACKET, 'Expected "]"');
+    this.consume(AbilityDSLToken.RBRACKET, 'Expected "]"');
     return arr;
   }
 
@@ -546,7 +544,7 @@ export class AbilityDSLParser<
   // #region Annotations and comments
   // -------------------------------------------------------------------------
   private consumeLeadingComments() {
-    while (this.check(AbilityDSLTokenType.COMMENT)) {
+    while (this.check(AbilityDSLToken.COMMENT)) {
       const token = this.advance();
       this.processCommentToken(token);
     }
@@ -577,7 +575,7 @@ export class AbilityDSLParser<
   // #region Errors
   // -------------------------------------------------------------------------
 
-  private syntaxError(details: string, token: AbilityDSLToken, expected?: AbilityDSLTokenType[]): never {
+  private syntaxError(details: string, token: AbilityDSLToken, expected?: TokenType[]): never {
     const lines = this.dsl.split(/\r?\n/);
     const lineIdx = token.line - 1;
     const lineBefore = lineIdx > 0 ? lines[lineIdx - 1] : '';
@@ -602,7 +600,7 @@ export class AbilityDSLParser<
 
     if (expected && expected?.length > 0) {
       const actual = token.value;
-      const suggestion = this.suggest(actual, [AbilityDSLTokenType.KEYWORD]);
+      const suggestion = this.suggest(actual, expected);
       const message = `Unexpected value token "${token.value}"`;
       const detailsMsg = `${message}\nDetails: Unexpected value token \`${actual}\``;
       finalDetails = suggestion ? `${detailsMsg} Did you mean \`${suggestion}\`?` : detailsMsg;
@@ -616,10 +614,10 @@ export class AbilityDSLParser<
     return this.dsl.split(/\r?\n/)[lineNumber - 1] ?? '';
   }
 
-  private suggest(actual: string, expectedTypes: AbilityDSLTokenType[]): string | null {
+  private suggest(actual: string, expectedTypes: TokenType[]): string | null {
     const candidates: string[] = [];
     for (const type of expectedTypes) {
-      candidates.push(...this.typeToValues(type));
+      candidates.push(type);
     }
     const uniqueCandidates = [...new Set(candidates)];
     let best: string | null = null;
@@ -656,69 +654,45 @@ export class AbilityDSLParser<
   // -------------------------------------------------------------------------
   // #region Helper / lookahead methods
   // -------------------------------------------------------------------------
-  private typeToValues(type: AbilityDSLTokenType): string[] {
-    switch (type) {
-      case AbilityDSLTokenType.EFFECT:
-        return ['permit', 'allow', 'deny', 'forbidden'];
-      case AbilityDSLTokenType.IF:
-        return ['if'];
-      case AbilityDSLTokenType.ALL:
-        return ['all'];
-      case AbilityDSLTokenType.ANY:
-        return ['any'];
-      case AbilityDSLTokenType.SYMBOL:
-        return ['=', '!=', '>', '<', '>=', '<='];
-      case AbilityDSLTokenType.KEYWORD:
-        return ['contains', 'in', 'equals', 'greater', 'less', 'not', 'is', 'or', 'than'];
-      default:
-        return [];
-    }
-  }
-
-  private consumeOneOf(types: AbilityDSLTokenType[], message: string): AbilityDSLToken {
+  private consumeOneOf(types: TokenType[], message: string): AbilityDSLToken {
     const token = this.peek();
     for (const t of types) {
-      if (token && token.type.code === t.code) {
+      if (token && token.code === t) {
         return this.advance();
       }
     }
-    const expected = types.map(t => t.code).join(', ');
-    const actual = token ? token.value : 'EOF';
+    const expected = types.map(t => t).join(', ');
+    const actual = token ? token.value : AbilityDSLToken.EOF;
     const suggestion = this.suggest(actual, types);
     const details = `${message}\nDetails: Unexpected token \`${actual}\`, expected one of: ${expected}.`;
     const finalMsg = suggestion ? `${details} Did you mean \`${suggestion}\`?` : details;
     this.syntaxError(finalMsg, token ?? this.tokens[this.tokens.length - 1]);
   }
 
-  private consume(type: AbilityDSLTokenType, message: string): AbilityDSLToken {
+  private consume(type: TokenType, message: string): AbilityDSLToken {
     const token = this.peek();
-    if (token && token.type.code === type.code) {
+    if (token && token.code === type) {
       return this.advance();
     }
-    const expected = type.code;
-    const actual = token ? token.value : 'EOF';
+    const expected = type;
+    const actual = token ? token.value : AbilityDSLToken.EOF;
     const suggestion = this.suggest(actual, [type]);
     const details = `${message}\nDetails: Unexpected token \`${actual}\`, expected "${expected}".`;
     const finalMsg = suggestion ? `${details} Did you mean \`${suggestion}\`?` : details;
     this.syntaxError(finalMsg, token ?? this.tokens[this.tokens.length - 1]);
   }
 
-  private check(type: AbilityDSLTokenType): boolean {
+  private check(type: TokenType): boolean {
     if (this.isAtEnd()) return false;
-    return this.peek().type.code === type.code;
-  }
-
-  private checkNext(type: AbilityDSLTokenType): boolean {
-    if (this.pos + 1 >= this.tokens.length) return false;
-    return this.tokens[this.pos + 1].type.code === type.code;
+    return this.peek().code === type;
   }
 
   private isStartOfPolicy(): boolean {
-    return this.check(AbilityDSLTokenType.EFFECT);
+    return this.check(AbilityDSLToken.EFFECT);
   }
 
   private isStartOfGroup(): boolean {
-    return this.check(AbilityDSLTokenType.ALL) || this.check(AbilityDSLTokenType.ANY);
+    return this.check(AbilityDSLToken.ALL) || this.check(AbilityDSLToken.ANY);
   }
 
   private advance(): AbilityDSLToken {
@@ -730,6 +704,6 @@ export class AbilityDSLParser<
   }
 
   private isAtEnd(): boolean {
-    return this.peek().type.code === AbilityDSLTokenType.EOF.code;
+    return this.peek().code === AbilityDSLToken.EOF;
   }
 }

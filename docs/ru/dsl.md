@@ -31,7 +31,7 @@ permit order.update if any:
 
   any of:
     user.roles contains 'developer'
-    user.logit equals 'dev'
+    user.logit is equals 'dev'
 ```
 
 Пример политики выше гласит - действие order.update будет разрешено при выполнении одного из двух условий:
@@ -223,5 +223,5 @@ permit order.update if any:
   # @name если это разработчик
   any of:
     user.roles contains 'developer'
-    user.logit equals 'dev'
+    user.logit is equals 'dev'
 ```

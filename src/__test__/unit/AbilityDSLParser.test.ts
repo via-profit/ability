@@ -18,7 +18,7 @@ permit order.update if any:
   # @name if is developer
   any of:
     user.roles contains 'developer'
-    user.logit equals 'dev'
+    user.logit is equals 'dev'
 `;
 
     const parser = new AbilityDSLParser(dsl);

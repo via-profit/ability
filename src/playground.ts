@@ -66,13 +66,13 @@ server.on('request', async  (_req, res) => {
   # @name authorized admin
   all of:
     # @name contains role admin
-      user.roles containy 'admin'
+      user.roles contain 'admin'
     user.token is not null
 
   # @name if is developer
   any of:
     user.roles contains 'developer'
-    user.logit equals 'dev'
+    user.logit is equals 'dev'
 `;
 
   let policies;

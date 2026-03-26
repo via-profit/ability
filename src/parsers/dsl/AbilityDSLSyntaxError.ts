@@ -33,8 +33,6 @@ export class AbilityDSLSyntaxError extends Error {
 
     const BOLD = useColor ? '\x1b[1m' : '';
     const RED = useColor ? '\x1b[31m' : '';
-    const GREEN = useColor ? '\x1b[32m' : '';
-    const CYAN = useColor ? '\x1b[36m' : '';
     const ORANGE = useColor ? '\x1b[33;1m' : '';
     const GRAY = useColor ? '\x1b[90m' : '';
     const RESET = useColor ? '\x1b[0m' : '';
