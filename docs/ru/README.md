@@ -12,6 +12,8 @@
 ## Содержание
 
  - [Быстрый старт](#быстрый-старт)
+ - [Объединение политик](#объединение-политик)
+ - [Решение проблем](./troubleshooting.md)
  - [Domain-Specific Language](./dsl.md)
  - [Api-Reference](./api.md)
 
@@ -93,6 +95,12 @@ resolver.enforce('user.passwordHash', {
  - [Domain-Specific Language](./dsl.md)
  - [Api-Reference](./api.md)
 
+
+## Объединение политик
+
+В реальном проекте следует использовать несколько политик сразу
+
+TODO: использование нескольких политик
 
 ## Лицензия
 

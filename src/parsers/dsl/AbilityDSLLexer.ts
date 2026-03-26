@@ -1,232 +1,184 @@
 import { AbilityDSLToken } from '~/parsers/dsl/AbilityDSLToken';
 import { AbilityDSLTokenType } from '~/parsers/dsl/AbilityDSLTokenType';
 
-/**
- * Lexer for the Ability DSL.
- *
- * Converts a raw DSL string into a stream of tokens. Handles:
- * - Comments (starting with '#')
- * - String literals (single or double quotes with escape sequences)
- * - Numbers (integer or decimal)
- * - Symbols: ., :, ,, [, ]
- * - Identifiers, keywords, and operators (including multi-word operators like "is null")
- *
- * The lexer does not interpret the tokens; it only classifies them by type.
- */
 export class AbilityDSLLexer {
   private readonly input: string;
   private pos = 0;
   private tokens: AbilityDSLToken[] = [];
-  private line: number = 1;
-  private column: number = 1;
+  private line = 1;
+  private column = 1;
+
+  // Список ключевых слов
+  private readonly keywords = new Set([
+    'if',
+    'all',
+    'any',
+    'of',
+    'permit',
+    'allow',
+    'deny',
+    'forbidden',
+    'true',
+    'false',
+    'null',
+    'contains',
+    'in',
+    'equals',
+    'greater',
+    'less',
+    'not',
+    'is',
+    'or',
+    'than',
+    'equal',
+  ]);
 
   constructor(input: string) {
     this.input = input;
   }
 
-  /**
-   * Main entry point: process the entire input and return a list of tokens.
-   */
   public tokenize(): AbilityDSLToken[] {
     while (!this.isAtEnd()) {
-      // Skip any whitespace (spaces, tabs, newlines)
       this.skipWhitespace();
-
-      // If we've reached the end after skipping whitespace, stop.
-      if (this.isAtEnd()) {
-        break;
-      }
+      if (this.isAtEnd()) break;
 
       const char = this.peek();
 
-      // Comments: everything after '#' until newline
       if (char === '#') {
         this.tokens.push(this.readComment());
         continue;
       }
 
-      // String literals: start with " or '
       if (char === '"' || char === "'") {
         this.tokens.push(this.readString());
         continue;
       }
 
-      // Numbers: sequence of digits (with optional decimal point)
       if (this.isDigit(char)) {
         this.tokens.push(this.readNumber());
         continue;
       }
 
-      // Single-character symbols (punctuation)
       if (this.isSymbol(char)) {
         this.tokens.push(this.readSymbol());
         continue;
       }
 
-      // Identifiers, keywords, operators: start with a letter or underscore
       if (this.isAlpha(char)) {
-        this.tokens.push(this.readIdentifierOrKeyword());
+        this.tokens.push(this.readWord());
         continue;
       }
 
-      // If none of the above matched, the character is unexpected.
-      throw new Error(`Unexpected character '${char}' at position ${this.pos}`);
+      throw new Error(`Unexpected character '${char}' at ${this.line}:${this.column}`);
     }
 
-    // End-of-file marker to simplify parser termination.
-    this.tokens.push(new AbilityDSLToken(AbilityDSLTokenType.EOF, ''));
-
+    this.tokens.push(new AbilityDSLToken(AbilityDSLTokenType.EOF, '', {line: this.line,column: this.column}));
     return this.tokens;
   }
 
-  // -------------------------------------------------------------------------
-  // #region String literal parsing
-  // -------------------------------------------------------------------------
-
   private readComment(): AbilityDSLToken {
-    this.advance(); // skip the shark symbol ('#')
-
+    const startLine = this.line;
+    const startColumn = this.column;
+    this.advance(); // skip '#'
     let value = '';
-
-    while (!this.isAtEnd()) {
-      const char = this.advance();
-
-      // if is end of line, then stop
-      if (char === '\n') {
-        break;
-      }
-
-      value += char;
+    while (!this.isAtEnd() && !this.isNewline()) {
+      value += this.advance();
     }
-
-    return this.createToken(AbilityDSLTokenType.COMMENT, value.trim());
+    return new AbilityDSLToken(AbilityDSLTokenType.COMMENT, value.trim(),{line: startLine, column: startColumn});
   }
 
-  /**
-   * Reads a string literal enclosed in single or double quotes.
-   * Supports backslash escape sequences.
-   * @returns A STRING token with the unescaped content.
-   */
   private readString(): AbilityDSLToken {
-    const quote = this.advance(); // opening quote
+    const startLine = this.line;
+    const startColumn = this.column;
+    const quote = this.advance();
     let value = '';
     let escaped = false;
 
     while (!this.isAtEnd()) {
       const char = this.advance();
-
       if (escaped) {
-        // Escaped character: add as-is (no special handling beyond removing backslash)
         value += char;
         escaped = false;
         continue;
       }
-
       if (char === '\\') {
         escaped = true;
         continue;
       }
-
       if (char === quote) {
-        // Closing quote found: return the token
-        return this.createToken(AbilityDSLTokenType.STRING, value);
+        return new AbilityDSLToken(AbilityDSLTokenType.STRING, value,{line: startLine, column: startColumn});
       }
-
       value += char;
     }
 
-    throw new Error(`Unterminated string`);
+    throw new Error(`Unterminated string at ${startLine}:${startColumn}`);
   }
 
-  // -------------------------------------------------------------------------
-  // #region Symbol parsing (single characters)
-  // -------------------------------------------------------------------------
+  private readNumber(): AbilityDSLToken {
+    const startLine = this.line;
+    const startColumn = this.column;
+    const start = this.pos;
+    while (!this.isAtEnd() && this.isDigit(this.peek())) {
+      this.advance();
+    }
+    const value = this.input.slice(start, this.pos);
+    return new AbilityDSLToken(AbilityDSLTokenType.NUMBER, value,{line: startLine, column: startColumn});
+  }
 
-  /**
-   * Reads a single-character symbol and returns the corresponding token.
-   */
   private readSymbol(): AbilityDSLToken {
+    const startLine = this.line;
+    const startColumn = this.column;
     const char = this.advance();
 
     switch (char) {
       case '.':
-        return this.createToken(AbilityDSLTokenType.DOT, char);
+        return new AbilityDSLToken(AbilityDSLTokenType.DOT, char,{line: startLine, column: startColumn});
       case ':':
-        return this.createToken(AbilityDSLTokenType.COLON, char);
+        return new AbilityDSLToken(AbilityDSLTokenType.COLON, char,{line: startLine, column: startColumn});
       case ',':
-        return this.createToken(AbilityDSLTokenType.COMMA, char);
+        return new AbilityDSLToken(AbilityDSLTokenType.COMMA, char,{line: startLine, column: startColumn});
       case '[':
-        return this.createToken(AbilityDSLTokenType.LBRACKET, char);
+        return new AbilityDSLToken(AbilityDSLTokenType.LBRACKET, char,{line: startLine, column: startColumn});
       case ']':
-        return this.createToken(AbilityDSLTokenType.RBRACKET, char);
+        return new AbilityDSLToken(AbilityDSLTokenType.RBRACKET, char,{line: startLine, column: startColumn});
       case '>':
         if (this.peek() === '=') {
           this.advance();
-          return this.createToken(AbilityDSLTokenType.GTE, '>=');
+          return new AbilityDSLToken(AbilityDSLTokenType.SYMBOL, '>=',{line: startLine, column: startColumn});
         }
-        return this.createToken(AbilityDSLTokenType.GT, '>');
-
+        return new AbilityDSLToken(AbilityDSLTokenType.SYMBOL, '>',{line: startLine, column: startColumn});
       case '<':
         if (this.peek() === '=') {
           this.advance();
-          return this.createToken(AbilityDSLTokenType.LTE, '<=');
+          return new AbilityDSLToken(AbilityDSLTokenType.SYMBOL, '<=',{line: startLine, column: startColumn});
         }
-        return this.createToken(AbilityDSLTokenType.LT, '<');
+        return new AbilityDSLToken(AbilityDSLTokenType.SYMBOL, '<',{line: startLine, column: startColumn});
       case '=':
-        return this.createToken(AbilityDSLTokenType.EQ, char);
+        return new AbilityDSLToken(AbilityDSLTokenType.SYMBOL, '=',{line: startLine, column: startColumn});
+      case '!':
+        if (this.peek() === '=') {
+          this.advance();
+          return new AbilityDSLToken(AbilityDSLTokenType.SYMBOL, '!=',{line: startLine, column: startColumn});
+        }
+        throw new Error(`Unexpected symbol '!' at ${this.line}:${this.column}`);
+      default:
+        throw new Error(`Unknown symbol '${char}' at ${this.line}:${this.column}`);
     }
-
-    throw new Error(`Unknown symbol '${char}'`);
   }
 
-  // -------------------------------------------------------------------------
-  // #region Number parsing
-  // -------------------------------------------------------------------------
-
-  /**
-   * Reads a numeric literal (integer or decimal). Does not support scientific notation.
-   * @returns A NUMBER token with the raw string representation.
-   */
-  private readNumber(): AbilityDSLToken {
+  private readWord(): AbilityDSLToken {
+    const startLine = this.line;
+    const startColumn = this.column;
     const start = this.pos;
 
-    // Consume digits and optional decimal point (but only one decimal point)
-    while (!this.isAtEnd() && this.isDigit(this.peek())) {
-      this.advance();
-    }
-
-    const value = this.input.slice(start, this.pos);
-    return this.createToken(AbilityDSLTokenType.NUMBER, value);
-  }
-
-  // -------------------------------------------------------------------------
-  // #region Identifier, keyword, and operator parsing
-  // -------------------------------------------------------------------------
-
-  /**
-   * Reads a sequence of characters that can form identifiers, keywords,
-   * operators, or paths (dotted names).
-   *
-   * This method also handles special multi-word operators like "is null"
-   * and "is not null" by peeking ahead and consuming the additional words.
-   */
-  private readIdentifierOrKeyword(): AbilityDSLToken {
-    const start = this.pos;
-
-    // Read the first segment (letters, digits, underscore)
+    // Первый сегмент
     while (!this.isAtEnd() && /[a-zA-Z0-9_]/.test(this.peek())) {
       this.advance();
     }
-
-    // Read subsequent segments separated by dots (e.g., user.roles)
+    // Сегменты через точку
     while (!this.isAtEnd() && this.peek() === '.') {
-      this.advance(); // consume the dot
-
-      // After a dot, we expect at least one letter or underscore
-      if (!/[a-zA-Z_]/.test(this.peek())) {
-        break; // dot not followed by a valid start of an identifier
-      }
-
+      this.advance(); // dot
+      if (!/[a-zA-Z_]/.test(this.peek())) break;
       while (!this.isAtEnd() && /[a-zA-Z0-9_]/.test(this.peek())) {
         this.advance();
       }
@@ -234,276 +186,96 @@ export class AbilityDSLLexer {
 
     const word = this.input.slice(start, this.pos);
 
-    // Handle "not equals"
-    if (word === 'not') {
-      const next = this.peekWord();
-      if (next === 'equals' || next === 'equal') {
-        this.consumeWord();
-        return this.createToken(AbilityDSLTokenType.NOT_EQ, 'not equals');
-      }
-
-      if (next === 'in') {
-        this.consumeWord();
-        return this.createToken(AbilityDSLTokenType.NOT_IN, 'not in');
-      }
-
-      // "not contain(s)"
-      if (next === 'contains' || next === 'contain') {
-        this.consumeWord();
-        return this.createToken(AbilityDSLTokenType.NOT_CONTAINS, 'not contains');
-      }
-    }
-
-    // Handle "is null" / "is not null" / "is not equals"
-    if (word === 'is') {
-      const next = this.peekWord();
-
-      // "is null"
-      if (next === 'null') {
-        this.consumeWord();
-        return this.createToken(AbilityDSLTokenType.EQ_NULL, 'is null');
-      }
-
-      // "is not ..."
-      if (next === 'not') {
-        this.consumeWord();
-        const next2 = this.peekWord();
-
-        // "is not null"
-        if (next2 === 'null') {
-          this.consumeWord();
-          return this.createToken(AbilityDSLTokenType.NOT_EQ_NULL, 'is not null');
-        }
-
-        // "is not contain" -> "is not contains"
-        // "is not contains"
-        if (next2 === 'contain' || next2 === 'contains') {
-          this.consumeWord();
-          return this.createToken(AbilityDSLTokenType.NOT_CONTAINS, 'not contains');
-        }
-
-        // "is not equal"
-        if (next2 === 'equal') {
-          this.consumeWord();
-          return this.createToken(AbilityDSLTokenType.NOT_EQ, 'not equals');
-        }
-
-        // "is"
-        return this.createToken(AbilityDSLTokenType.NOT_EQ, 'is');
-      }
-
-      // "is equal"
-      if (next === 'equal') {
-        this.consumeWord(); // consume "equal(s)"
-        return this.createToken(AbilityDSLTokenType.EQ, 'equals');
-      }
-
-      // "is"
-      return this.createToken(AbilityDSLTokenType.EQ, 'is');
-    }
-
-    // "equals"
-    if (word === 'equals' || word === 'equal') {
-      return this.createToken(AbilityDSLTokenType.EQ, 'equals');
-    }
-
-    // If the token contains a dot, it's either a path (identifier) or an action.
+    // Если есть точка — это путь (identifier или action)
     if (word.includes('.')) {
       const last = this.tokens[this.tokens.length - 1];
-      // If the previous token is EFFECT, then this is an ACTION token.
       if (last?.type === AbilityDSLTokenType.EFFECT) {
-        return this.createToken(AbilityDSLTokenType.ACTION, word);
+        return new AbilityDSLToken(AbilityDSLTokenType.ACTION, word,{line: startLine, column: startColumn});
       }
-      return this.createToken(AbilityDSLTokenType.IDENTIFIER, word);
+      return new AbilityDSLToken(AbilityDSLTokenType.IDENTIFIER, word,{line: startLine, column: startColumn});
     }
 
-    // // Only now handle plain "equals" or "equal"
-    // if (word === 'equals' || word === 'equal') {
-    //   return this.createToken(AbilityDSLTokenType.EQ, 'equals');
-    // }
-    // Group keywords
-    if (word === 'all') {
-      return this.createToken(AbilityDSLTokenType.ALL, word);
-    }
-    if (word === 'any') {
-      return this.createToken(AbilityDSLTokenType.ANY, word);
-    }
-    if (word === 'of') {
-      return this.createToken(AbilityDSLTokenType.OF, word);
-    }
-
-    // Effects (policy outcome)
-    if (word === 'permit' || word === 'allow') {
-      return this.createToken(AbilityDSLTokenType.EFFECT, 'permit');
-    }
-    if (word === 'deny' || word === 'forbidden') {
-      return this.createToken(AbilityDSLTokenType.EFFECT, 'deny');
-    }
-
-    // "if" keyword
-    if (word === 'if') {
-      return this.createToken(AbilityDSLTokenType.IF, word);
-    }
-
-    // Word-based comparison operators
-    if (word === 'equals' || word === '=') {
-      return this.createToken(AbilityDSLTokenType.EQ, word);
-    }
-    if (word === 'contains' || word === 'contain') {
-      return this.createToken(AbilityDSLTokenType.CONTAINS, 'contains');
-    }
-    if (word === 'in') {
-      return this.createToken(AbilityDSLTokenType.IN, word);
+    // Ключевые слова
+    if (this.keywords.has(word)) {
+      // Эффекты
+      if (word === 'permit' || word === 'allow') {
+        return new AbilityDSLToken(AbilityDSLTokenType.EFFECT, 'permit',{line: startLine, column: startColumn});
+      }
+      if (word === 'deny' || word === 'forbidden') {
+        return new AbilityDSLToken(AbilityDSLTokenType.EFFECT, 'deny',{line: startLine, column: startColumn});
+      }
+      // Групповые ключевые слова
+      if (word === 'all') {
+        return new AbilityDSLToken(AbilityDSLTokenType.ALL, word,{line: startLine, column: startColumn});
+      }
+      if (word === 'any') {
+        return new AbilityDSLToken(AbilityDSLTokenType.ANY, word,{line: startLine, column: startColumn});
+      }
+      if (word === 'of') {
+        return new AbilityDSLToken(AbilityDSLTokenType.OF, word,{line: startLine, column: startColumn});
+      }
+      if (word === 'if') {
+        return new AbilityDSLToken(AbilityDSLTokenType.IF, word,{line: startLine, column: startColumn});
+      }
+      // Булевы и null
+      if (word === 'true' || word === 'false') {
+        return new AbilityDSLToken(AbilityDSLTokenType.BOOLEAN, word,{line: startLine, column: startColumn});
+      }
+      if (word === 'null') {
+        return new AbilityDSLToken(AbilityDSLTokenType.NULL, word,{line: startLine, column: startColumn});
+      }
+      // Остальные ключевые слова (contains, in, equals, greater, less, not, is, or, than, equal)
+      return new AbilityDSLToken(AbilityDSLTokenType.KEYWORD, word,{line: startLine, column: startColumn});
     }
 
-    if (word === '>') {
-      return this.createToken(AbilityDSLTokenType.GT, word);
-    }
-    if (word === '>=') {
-      return this.createToken(AbilityDSLTokenType.GT, word);
-    }
-
-    if (word === '<') {
-      return this.createToken(AbilityDSLTokenType.LT, word);
-    }
-    if (word === '<=') {
-      return this.createToken(AbilityDSLTokenType.LTE, word);
-    }
-    if (word === 'null') {
-      return this.createToken(AbilityDSLTokenType.NULL, word);
-    }
-    if (word === 'true' || word === 'false') {
-      return this.createToken(AbilityDSLTokenType.BOOLEAN, word);
-    }
-
-    // If the token appears immediately after an EFFECT and it doesn't contain a dot,
-    // it could be a simple action name (e.g., "create").
+    // Если после EFFECT и нет точки — действие (например, "create")
     const lastToken = this.tokens[this.tokens.length - 1];
     if (lastToken?.type === AbilityDSLTokenType.EFFECT) {
-      return this.createToken(AbilityDSLTokenType.ACTION, word);
+      return new AbilityDSLToken(AbilityDSLTokenType.ACTION, word,{line: startLine, column: startColumn});
     }
 
-    // Default: treat as an identifier (e.g., a variable name or plain word)
-    return this.createToken(AbilityDSLTokenType.IDENTIFIER, word);
+    // Обычный идентификатор
+    return new AbilityDSLToken(AbilityDSLTokenType.IDENTIFIER, word,{line: startLine, column: startColumn});
   }
 
-  // -------------------------------------------------------------------------
-  // #region Helper methods for whitespace, comments, lookahead
-  // -------------------------------------------------------------------------
-
-  /** Skips any whitespace characters (spaces, tabs, newlines). */
   private skipWhitespace(): void {
     while (!this.isAtEnd() && /\s/.test(this.peek())) {
       this.advance();
     }
   }
 
-  /** Skips a comment starting with '#' until the end of the line. */
-  private skipComment(): void {
-    while (!this.isAtEnd() && this.peek() !== '\n') {
-      this.advance();
-    }
-  }
-
-  /** Returns true if the character is a digit (0-9). */
   private isDigit(char: string): boolean {
     return char >= '0' && char <= '9';
   }
 
-  /** Returns true if the character is one of the defined symbols. */
-  private isSymbol(char: string): boolean {
-    return (
-      char === '.' ||
-      char === ':' ||
-      char === ',' ||
-      char === '[' ||
-      char === ']' ||
-      char === '<' ||
-      char === '>' ||
-      char === '='
-    );
-  }
-
-  /** Returns true if the character is a letter or underscore. */
   private isAlpha(char: string): boolean {
     return /[a-zA-Z_]/.test(char);
   }
 
-  /** Peeks at the current character without consuming it. */
+  private isSymbol(char: string): boolean {
+    return ['.', ':', ',', '[', ']', '>', '<', '=', '!'].includes(char);
+  }
+
+  private isNewline(): boolean {
+    return this.peek() === '\n';
+  }
+
   private peek(): string {
     return this.input[this.pos];
   }
 
-  /** Advances the position and returns the character that was at the old position. */
   private advance(): string {
-    const nextChar = this.input[this.pos++];
-    if (nextChar === '\n') {
-      this.line += 1;
+    const ch = this.input[this.pos++];
+    if (ch === '\n') {
+      this.line++;
       this.column = 1;
     } else {
-      this.column += 1;
+      this.column++;
     }
-
-    return nextChar;
+    return ch;
   }
 
-  /** Checks if we have reached the end of the input. */
   private isAtEnd(): boolean {
     return this.pos >= this.input.length;
-  }
-
-  /**
-   * Peeks at the next word in the input (skipping whitespace) without consuming it.
-   * Used for multi-word operator detection (e.g., "is null").
-   */
-  private peekWord(): string {
-    let i = this.pos;
-
-    // Skip any whitespace
-    while (i < this.input.length && /\s/.test(this.input[i])) {
-      i++;
-    }
-
-    const start = i;
-
-    // Read the next word (letters, digits, underscore)
-    while (i < this.input.length && /[a-zA-Z0-9_]/.test(this.input[i])) {
-      i++;
-    }
-
-    return this.input.slice(start, i);
-  }
-
-  private createToken(type: AbilityDSLTokenType, value: string): AbilityDSLToken {
-    return new AbilityDSLToken(type, value, {
-      column: this.column,
-      line: this.line,
-    });
-  }
-
-  /**
-   * Consumes the next word (skipping whitespace) without generating a token.
-   * Used to consume "not" and "null" during multi-word operator detection.
-   */
-  private consumeWord(): void {
-    // Skip whitespace
-    while (!this.isAtEnd() && /\s/.test(this.peek())) {
-      this.advance();
-    }
-
-    // Consume the word characters
-    while (!this.isAtEnd() && /[a-zA-Z0-9_]/.test(this.peek())) {
-      this.advance();
-    }
-  }
-
-  /** Returns true if the character is whitespace (space, tab, newline, carriage return). */
-  private isWhitespace(char: string): boolean {
-    return char === ' ' || char === '\t' || char === '\n' || char === '\r';
-  }
-
-  /** Returns true if the character is alphanumeric or underscore. */
-  private isAlphaNumeric(char: string): boolean {
-    return /[a-zA-Z0-9_]/.test(char);
   }
 }

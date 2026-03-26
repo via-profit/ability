@@ -1,10 +1,12 @@
+import { AbilityCode } from '~/core/AbilityCode';
+
 /**
  * Discriminated union of all token types recognized by the Ability DSL lexer.
  */
 export type TokenType =
-// -------------------------------------------------------------------------
-// #region Structural tokens – define the shape of the policy
-// -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // #region Structural tokens – define the shape of the policy
+  // -------------------------------------------------------------------------
   | 'EFFECT' // permit, deny – overall policy effect
   | 'IF' // if – start of condition block
   | 'ACTION' // order.update – the action being governed
@@ -28,7 +30,6 @@ export type TokenType =
   | 'IN' // in – membership in array
   | 'NOT_IN' // in – membership in array
   | 'NOT_CONTAINS' // array not contains
-  | 'CONTAINS' // array contains
   | 'GT' // greater
   | 'GTE' // greater than
   | 'LT' // less
@@ -44,19 +45,22 @@ export type TokenType =
   | 'STRING' // any text inside single or double quotes
   | 'NUMBER' // integer or decimal number
   | 'BOOLEAN' // true / false
+  | 'SYMBOL' // symbols
 
+  // -------------------------------------------------------------------------
+  // #region Row operator
+  // -------------------------------------------------------------------------
+  | 'KEYWORD'
   // -------------------------------------------------------------------------
   // #region Fallback
   // -------------------------------------------------------------------------
   | 'UNKNOWN';
 
-import AbilityCode from '~/core/AbilityCode';
-
 /**
  * Strongly‑typed representation of a DSL token type.
  * Each instance holds a string code and inherits comparison methods from AbilityCode.
  */
-export class AbilityDSLTokenType extends AbilityCode<TokenType> {
+export class AbilityDSLTokenType<Code extends TokenType = TokenType> extends AbilityCode<Code> {
   // =========================================================================
   // #region Structural tokens
   // =========================================================================
@@ -74,6 +78,10 @@ export class AbilityDSLTokenType extends AbilityCode<TokenType> {
   public static ANY = new AbilityDSLTokenType('ANY');
   public static OF = new AbilityDSLTokenType('OF');
   public static COMMENT = new AbilityDSLTokenType('COMMENT');
+
+  //
+
+  public static SYMBOL = new AbilityDSLTokenType('SYMBOL');
 
   // =========================================================================
   // #region Comparison operators
@@ -99,73 +107,8 @@ export class AbilityDSLTokenType extends AbilityCode<TokenType> {
   public static NUMBER = new AbilityDSLTokenType('NUMBER');
   public static BOOLEAN = new AbilityDSLTokenType('BOOLEAN');
 
-  /**
-   * Resolves a raw word (or symbol) to the corresponding token type.
-   * Used during lexical analysis when the exact type is not yet known.
-   *
-   * @param str - The string fragment to classify.
-   * @returns The matching AbilityDSLTokenType.
-   */
-  public static resolve(str: string): AbilityDSLTokenType {
-    const lower = str.toLowerCase();
-
-    // Effects (policy outcome)
-    if (lower === 'permit' || lower === 'allow') {
-      return AbilityDSLTokenType.EFFECT;
-    }
-    if (lower === 'deny' || lower === 'forbidden') {
-      return AbilityDSLTokenType.EFFECT;
-    }
-
-    // Conditional keyword
-    if (lower === 'if') {
-      return AbilityDSLTokenType.IF;
-    }
-
-    // Group keywords
-    if (lower === 'all') {
-      return AbilityDSLTokenType.ALL;
-    }
-    if (lower === 'any') {
-      return AbilityDSLTokenType.ANY;
-    }
-    if (lower === 'of') {
-      return AbilityDSLTokenType.OF;
-    }
-
-    // Comparison operators
-    if (lower === 'equal' || lower === 'is') {
-      return AbilityDSLTokenType.EQ;
-    }
-    if (lower === 'contains') {
-      return AbilityDSLTokenType.CONTAINS;
-    }
-
-    if (lower === 'not_contains') {
-      return AbilityDSLTokenType.NOT_CONTAINS;
-    }
-    if (lower === 'in') {
-      return AbilityDSLTokenType.IN;
-    }
-    if (lower === 'greater') {
-      return AbilityDSLTokenType.GT;
-    }
-    if (lower === 'less') {
-      return AbilityDSLTokenType.LT;
-    }
-    if (lower === 'null') {
-      return AbilityDSLTokenType.NULL;
-    }
-
-    // Literal values
-    if (lower === 'true' || lower === 'false') {
-      return AbilityDSLTokenType.BOOLEAN;
-    }
-    if (!isNaN(Number(lower))) {
-      return AbilityDSLTokenType.NUMBER;
-    }
-
-    // Default: identifier (path, action, or plain word)
-    return AbilityDSLTokenType.IDENTIFIER;
-  }
+  // =========================================================================
+  // #region Raw operator token
+  // =========================================================================
+  public static KEYWORD = new AbilityDSLTokenType('KEYWORD');
 }

@@ -5,6 +5,7 @@ export type AbilityDSLTokenConstructorProps = {
   readonly column: number;
 };
 
+
 /**
  * Represents a single token produced by the Ability DSL lexer.
  * Each token carries a type (e.g., EFFECT, IDENTIFIER, STRING) and its raw string value.
