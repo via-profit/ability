@@ -8,7 +8,7 @@ describe('AbilityDSLParser', () => {
   it('should parse a policy with two rule sets (all of and any of)', () => {
     const dsl = `
 # @name can order update
-permit order.update if any:
+permit permission.order.update if any:
   # @name authorized admin
   all of:
     # @name contains role admin
@@ -78,7 +78,7 @@ permit order.update if any:
   // Additional test for a simple policy (single rule)
   it('should parse a simple policy with one rule', () => {
     const dsl = `
-permit order.view if all:
+permit permission.order.view if all:
   user.id equals order.owner
 `;
 
@@ -104,7 +104,7 @@ permit order.view if all:
 
   it('should parse a simple policy with one rule', () => {
     const dsl = `
-deny order.view if all:
+deny permission.order.view if all:
   user.id not equals order.owner
 `;
 
@@ -132,7 +132,7 @@ deny order.view if all:
   // Test with numeric values
   it('should parse numeric values correctly', () => {
     const dsl = `
-deny order.cancel if any:
+deny permission.order.cancel if any:
   order.amount > 1000
   order.amount < 50
 `;
@@ -163,7 +163,7 @@ deny order.cancel if any:
   it('should parse numeric comparisons, arrays, and booleans', () => {
     const dsl = `
 # Policy with numbers, arrays, and booleans
-deny order.update if any:
+deny permission.order.update if any:
   order.amount > 1000
   order.amount < 50
   user.role equals 'admin'
@@ -226,7 +226,7 @@ deny order.update if any:
 
   it('should parse shorthand policy with implicit group', () => {
     const dsl = `
-permit order.update if any:
+permit permission.order.update if any:
   user.role equals 'admin'
   user.department contains 'IT'
 `;
@@ -259,7 +259,7 @@ permit order.update if any:
 
   it('should parse mixed implicit and explicit groups', () => {
     const dsl = `
-permit order.update if any:
+permit permission.order.update if any:
   user.active equals true
   any of:
     user.roles contains 'admin'
@@ -311,7 +311,7 @@ permit order.update if any:
 
   it('should parse null comparisons correctly', () => {
     const dsl = `
-permit order.update if all:
+permit permission.order.update if all:
   user.deletedAt is null
   user.token is not null
   order.amount > 1000
@@ -352,7 +352,7 @@ permit order.update if all:
 
   it('should parse environment paths correctly', () => {
     const dsl = `
-permit order.update if any:
+permit permission.order.update if any:
   env.time.hour > 9
   user.role equals 'admin'
 `;
@@ -385,7 +385,7 @@ permit order.update if any:
   describe('Operators', () => {
     it('should parse "is equal" correctly', () => {
       const dsl = `
-permit test.permission if all:
+permit permission.test.permission if all:
   user.name is equals 'John'
 `;
       const parser = new AbilityDSLParser(dsl);
@@ -397,7 +397,7 @@ permit test.permission if all:
 
     it('should parse "is not equal" correctly', () => {
       const dsl = `
-permit test.permission if all:
+permit permission.test.permission if all:
   user.name is not equals 'John'
 `;
       const parser = new AbilityDSLParser(dsl);
@@ -409,7 +409,7 @@ permit test.permission if all:
 
     it('should parse "contains" correctly', () => {
       const dsl = `
-permit test.permission if all:
+permit permission.test.permission if all:
   user.roles contains 'admin'
 `;
       const parser = new AbilityDSLParser(dsl);
@@ -421,7 +421,7 @@ permit test.permission if all:
 
     it('should parse "not contains" correctly', () => {
       const dsl = `
-permit test.permission if all:
+permit permission.test.permission if all:
   user.roles not contains 'admin'
 `;
       const parser = new AbilityDSLParser(dsl);
@@ -433,7 +433,7 @@ permit test.permission if all:
 
     it('should parse "in" correctly (with array)', () => {
       const dsl = `
-permit test.permission if all:
+permit permission.test.permission if all:
   user.role in ['admin', 'manager']
 `;
       const parser = new AbilityDSLParser(dsl);
@@ -445,7 +445,7 @@ permit test.permission if all:
 
     it('should parse "not in" correctly (with array)', () => {
       const dsl = `
-permit test.permission if all:
+permit permission.test.permission if all:
   user.role not in ['admin', 'manager']
 `;
       const parser = new AbilityDSLParser(dsl);

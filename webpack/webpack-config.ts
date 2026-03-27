@@ -1,6 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /* @ts-ignore */
 import path from 'node:path';
+import fs from 'node:fs';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /* @ts-ignore */
 import { Configuration, DefinePlugin } from 'webpack';
@@ -50,6 +51,14 @@ const webpackBaseConfig: Configuration = {
     new DefinePlugin({
       'process.env.WEBPACK_INJECT_APP_VERSION': JSON.stringify(packageInfo.version),
     }),
+
+    {
+      apply: compiler => {
+        compiler.hooks.done.tap('CopyReadmePlugin', () => {
+          fs.copyFileSync('./docs/en/README.md', './README.md');
+        });
+      },
+    },
   ],
 };
 

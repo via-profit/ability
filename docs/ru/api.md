@@ -2,6 +2,9 @@
 
 ---
 
+[🇷🇺 Русская версия](api.md) | [🇬🇧 English](/docs/en/api.md)
+
+
 ## AbilityRule
 
 ### Назначение
