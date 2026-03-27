@@ -1,32 +1,51 @@
 import { Bench } from 'tinybench';
-import { AbilityInMemoryCache, AbilityPolicy, AbilityResolver } from '../dist/index.js';
+import {
+  AbilityInMemoryCache,
+  AbilityResolver,
+  AbilityDSLParser,
+  AbilityPolicy,
+} from '../dist/index.js';
 
 /**
  * @param {string} id
  */
 
 
-function makeHeavyPolicy(id) {
-  return new AbilityPolicy({
-    id,
-    name: id,
-    action: 'order.update',
-    effect: 'allow',
-    compareMethod: 'and',
-    ruleSet: [
-      { field: 'order.status', op: 'eq', value: 'pending' },
-      { field: 'order.total', op: 'gt', value: 100 },
-      { field: 'user.role', op: 'eq', value: 'manager' },
-      { field: 'order.items.length', op: 'gt', value: 2 },
-      { field: 'order.customer.id', op: 'eq', value: 1 },
-      { field: 'env.time.hour', op: 'gte', value: 9 },
-      { field: 'env.time.hour', op: 'lte', value: 18 },
-      { field: 'order.meta.flags.approved', op: 'eq', value: true },
-      { field: 'order.meta.tags', op: 'contains', value: 'priority' },
-      { field: 'order.meta.history.length', op: 'gt', value: 3 },
-    ],
-  });
-}
+const dsl = `
+# @name Allow order.update with complex conditions
+permit permission.order.update if all:
+
+  # @name Order status is pending
+  order.status is equals 'pending'
+
+  # @name Order total > 100
+  order.total greater than 100
+
+  # @name User is manager
+  user.role is equals 'manager'
+
+  # @name Order has more than 2 items
+  order.items.length greater than 2
+
+  # @name Customer ID is 1
+  order.customer.id is equals 1
+
+  # @name Time >= 9
+  env.time.hour greater than or equal 9
+
+  # @name Time <= 18
+  env.time.hour less than or equal 18
+
+  # @name Order approved flag is true
+  order.meta.flags.approved is true
+
+  # @name Tags contain "priority"
+  order.meta.tags contains 'priority'
+
+  # @name History length > 3
+  order.meta.history.length greater than 3
+
+`;
 
 const resource = {
   user: { id: 1, role: 'manager' },
@@ -51,10 +70,19 @@ const environment = {
 // ----------------------------
 // 3. Создаём 50 тяжёлых политик
 // ----------------------------
+const [policy] = new AbilityDSLParser(dsl).parse();
+const policies = Array.from({ length: 50 }, (_, i) => {
 
-const policies = Array.from({ length: 50 }, (_, i) => makeHeavyPolicy(`p${i}`));
+  return AbilityPolicy.fromJSON({
+    ...policy.toJSON(),
+    id: `policy-${i}`,
+    name: `policy-${i}`
+  });
+});
 
 // -------
+
+
 
 async function main() {
   const bench = new Bench({ time: 2000, warmup: 500 });
