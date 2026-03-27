@@ -3,7 +3,7 @@
 > Набор сервисов, частично реализующих принцип [Attribute Based Access Control](https://en.wikipedia.org/wiki/Attribute-based_access_control)
 > Пакет позволяет описывать правила, объединять их в группы, формировать политики и применять их к данным для определения разрешений.
 
-# Language / Язык
+## Language / Язык
 
 - [🇬🇧 English](/docs/en/README.md)
 - [🇷🇺 Русский](/docs/ru/README.md)

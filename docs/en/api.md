@@ -2,7 +2,7 @@
 
 ---
 
-# Language / Язык
+## Language / Язык
 
 - [🇬🇧 English](/docs/en/api.md)
 - [🇷🇺 Русский](/docs/ru/api.md)

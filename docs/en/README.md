@@ -3,7 +3,7 @@
 > A set of services that partially implement the [Attribute Based Access Control](https://en.wikipedia.org/wiki/Attribute-based_access_control) principle.
 > The package allows you to describe rules, combine them into groups, form policies, and apply them to data to determine permissions.
 
-# Language / Язык
+## Language / Язык
 
 - [🇬🇧 English](/docs/en/README.md)
 - [🇷🇺 Русский](/docs/ru/README.md)
@@ -26,7 +26,7 @@ Without complex configurations, without dependencies — just a minimal set of t
 - [Design Recommendations](#design-recommendations)
 - [Examples](#examples)
 - [Performance](#performance)
-- [API Reference](./docs/en/api.md)
+- [API Reference](./api.md)
 
 ## Quick Start
 
