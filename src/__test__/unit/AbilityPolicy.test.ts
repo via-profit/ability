@@ -12,13 +12,13 @@ describe('AbilityPolicy', () => {
       const policy = new AbilityPolicy({
         id: 'test-id',
         name: 'Test Policy',
-        action: 'order.create',
+        permission: 'order.create',
         effect: AbilityPolicyEffect.permit,
       });
 
       expect(policy.id).toBe('test-id');
       expect(policy.name).toBe('Test Policy');
-      expect(policy.action).toBe('order.create');
+      expect(policy.permission).toBe('order.create');
       expect(policy.effect).toBe(AbilityPolicyEffect.permit);
       expect(policy.ruleSet).toHaveLength(0);
       expect(policy.matchState).toBe(AbilityMatch.pending);
@@ -32,7 +32,7 @@ describe('AbilityPolicy', () => {
       const policy = new AbilityPolicy({
         id: 'test',
         name: 'Test',
-        action: 'test.action',
+        permission: 'test.permission',
         effect: AbilityPolicyEffect.permit,
       });
 
@@ -48,7 +48,7 @@ describe('AbilityPolicy', () => {
       const policy = new AbilityPolicy({
         id: 'test',
         name: 'Test',
-        action: 'test.action',
+        permission: 'test.permission',
         effect: AbilityPolicyEffect.permit,
       });
 
@@ -67,7 +67,7 @@ describe('AbilityPolicy', () => {
         const policy = new AbilityPolicy({
           id: 'test',
           name: 'Test',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: AbilityPolicyEffect.permit,
         });
         policy.compareMethod = AbilityCompare.and;
@@ -91,7 +91,7 @@ describe('AbilityPolicy', () => {
         const policy = new AbilityPolicy({
           id: 'test',
           name: 'Test',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: AbilityPolicyEffect.permit,
         });
         policy.compareMethod = AbilityCompare.and;
@@ -115,7 +115,7 @@ describe('AbilityPolicy', () => {
         const policy = new AbilityPolicy({
           id: 'test',
           name: 'Test',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: AbilityPolicyEffect.permit,
         });
         policy.compareMethod = AbilityCompare.and;
@@ -140,7 +140,7 @@ describe('AbilityPolicy', () => {
         const policy = new AbilityPolicy({
           id: 'test',
           name: 'Test',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: AbilityPolicyEffect.permit,
         });
         policy.compareMethod = AbilityCompare.or;
@@ -164,7 +164,7 @@ describe('AbilityPolicy', () => {
         const policy = new AbilityPolicy({
           id: 'test',
           name: 'Test',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: AbilityPolicyEffect.permit,
         });
         policy.compareMethod = AbilityCompare.or;
@@ -188,7 +188,7 @@ describe('AbilityPolicy', () => {
       const policy = new AbilityPolicy({
         id: 'test',
         name: 'Test',
-        action: 'test.action',
+        permission: 'test.permission',
         effect: AbilityPolicyEffect.permit,
       });
 
@@ -201,7 +201,7 @@ describe('AbilityPolicy', () => {
       const policy = new AbilityPolicy({
         id: 'test',
         name: 'Test',
-        action: 'test.action',
+        permission: 'test.permission',
         effect: AbilityPolicyEffect.permit,
         compareMethod: AbilityCompare.or,
       });
@@ -253,7 +253,7 @@ describe('AbilityPolicy', () => {
       const policy = new AbilityPolicy({
         id: 'test',
         name: 'Test',
-        action: 'test.action',
+        permission: 'test.permission',
         effect: AbilityPolicyEffect.permit,
       });
 
@@ -264,7 +264,7 @@ describe('AbilityPolicy', () => {
       const policy = new AbilityPolicy({
         id: 'test',
         name: 'Test Policy',
-        action: 'test.action',
+        permission: 'test.permission',
         effect: AbilityPolicyEffect.permit,
       });
 
@@ -286,7 +286,7 @@ describe('AbilityPolicy', () => {
       const config: AbilityPolicyConfig = {
         id: 'test-id',
         name: 'Test Policy',
-        action: 'order.create',
+        permission: 'order.create',
         effect: 'permit',
         compareMethod: 'or',
         ruleSet: [
@@ -314,7 +314,7 @@ describe('AbilityPolicy', () => {
 
       expect(policy.id).toBe('test-id');
       expect(policy.name).toBe('Test Policy');
-      expect(policy.action).toBe('order.create');
+      expect(policy.permission).toBe('order.create');
       expect(policy.effect.code).toBe('permit');
       expect(policy.compareMethod.code).toBe('or');
       expect(policy.ruleSet).toHaveLength(1);
@@ -325,7 +325,7 @@ describe('AbilityPolicy', () => {
       const config: AbilityPolicyConfig = {
         id: 'test-id',
         name: 'Test Policy',
-        action: 'order.create',
+        permission: 'order.create',
         effect: 'permit',
         compareMethod: 'and',
         ruleSet: [],
@@ -343,7 +343,7 @@ describe('AbilityPolicy', () => {
         {
           id: 'policy-1',
           name: 'Policy 1',
-          action: 'order.create',
+          permission: 'order.create',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [],
@@ -351,7 +351,7 @@ describe('AbilityPolicy', () => {
         {
           id: 'policy-2',
           name: 'Policy 2',
-          action: 'order.update',
+          permission: 'order.update',
           effect: 'deny',
           compareMethod: 'or',
           ruleSet: [],
@@ -378,7 +378,7 @@ describe('AbilityPolicy', () => {
       const originalConfig: AbilityPolicyConfig = {
         id: 'test-id',
         name: 'Test Policy',
-        action: 'order.create',
+        permission: 'order.create',
         effect: 'deny',
         compareMethod: 'and',
         ruleSet: [
@@ -409,7 +409,7 @@ describe('AbilityPolicy', () => {
       const policy = new AbilityPolicy({
         id: 'test',
         name: 'Test',
-        action: 'test.action',
+        permission: 'test.permission',
         effect: AbilityPolicyEffect.permit,
       });
 
@@ -417,7 +417,7 @@ describe('AbilityPolicy', () => {
 
       expect(config.id).toBe('test');
       expect(config.name).toBe('Test');
-      expect(config.action).toBe('test.action');
+      expect(config.permission).toBe('test.permission');
       expect(config.effect).toBe('permit');
       expect(config.compareMethod).toBe('and');
       expect(config.ruleSet).toHaveLength(0);
@@ -443,7 +443,7 @@ describe('AbilityPolicy', () => {
       const config: AbilityPolicyConfig = {
         id: 'policy-1',
         name: 'Deny status change for non-admins',
-        action: 'order.status',
+        permission: 'order.status',
         effect: 'deny',
         compareMethod: 'and',
         ruleSet: [
@@ -496,7 +496,7 @@ describe('AbilityPolicy', () => {
       const config: AbilityPolicyConfig = {
         id: 'policy-1',
         name: 'Deny status change for non-admins',
-        action: 'order.status',
+        permission: 'order.status',
         effect: 'deny',
         compareMethod: 'and',
         ruleSet: [

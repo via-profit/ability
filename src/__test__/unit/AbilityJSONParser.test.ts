@@ -151,7 +151,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [
@@ -173,7 +173,7 @@ describe('AbilityJSONParser', () => {
 
       const result = AbilityParser.generateTypeDefs(policies);
 
-      expect(result).toContain("['test.action']");
+      expect(result).toContain("['test.permission']");
       expect(result).toContain('readonly user: {');
       expect(result).toContain('readonly name: string;');
     });
@@ -183,7 +183,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [
@@ -213,7 +213,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [
@@ -243,7 +243,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy 1',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [
@@ -264,7 +264,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'policy-2',
           name: 'Test Policy 2',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [
@@ -289,12 +289,12 @@ describe('AbilityJSONParser', () => {
       expect(result).toContain('readonly value: string | number;');
     });
 
-    it('should handle multiple actions', () => {
+    it('should handle multiple permissions', () => {
       const policies = [
         AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Policy 1',
-          action: 'order.create',
+          permission: 'order.create',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [
@@ -315,7 +315,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'policy-2',
           name: 'Policy 2',
-          action: 'user.update',
+          permission: 'user.update',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [
@@ -348,7 +348,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [
@@ -387,7 +387,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [
@@ -417,7 +417,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [
@@ -447,7 +447,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [
@@ -477,7 +477,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'policy-1',
           name: 'Test Policy',
-          action: 'test.action',
+          permission: 'test.permission',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [
@@ -517,7 +517,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'auth-policy',
           name: 'Authorization Required',
-          action: '*.authorized',
+          permission: '*.authorized',
           effect: 'permit',
           compareMethod: 'and',
           ruleSet: [
@@ -550,7 +550,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'status-policy',
           name: 'Prevent Status Change',
-          action: 'order.status.update',
+          permission: 'order.status.update',
           effect: 'deny',
           compareMethod: 'and',
           ruleSet: [
@@ -602,7 +602,7 @@ describe('AbilityJSONParser', () => {
         AbilityPolicy.fromJSON({
           id: 'password-policy',
           name: 'Password Access Restriction',
-          action: 'user.account.password.read',
+          permission: 'user.account.password.read',
           effect: 'deny',
           compareMethod: 'and',
           ruleSet: [

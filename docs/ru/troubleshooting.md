@@ -6,14 +6,14 @@
 
 ```ts
 const dsl = `
-deny action.test if all:
+deny permission.test if all:
   user.age is equals 16
 `;
 
 const policies = new AbilityDSLParser(dsl).parse();
 const resolver = new AbilityResolver(policies);
 
-const result = await resolver.resolve('action.test', {
+const result = await resolver.resolve('test', {
   user: { age: 16 },
 });
 
@@ -27,7 +27,7 @@ console.log(result.isAllowed()); // false ✔
 **Что происходит, если условия `не выполнены`?**
 
 ```ts
-const result = await resolver.resolve('action.test', {
+const result = await resolver.resolve('test', {
   user: { age: 12 },
 });
 

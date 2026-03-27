@@ -84,7 +84,7 @@ export class AbilityParser {
 
     // Iterate through all policies
     policies.forEach(policy => {
-      const action = policy.action;
+      const action = policy.permission;
 
       // Initialize object for action if it doesn't exist
       if (!typeStructure[action]) {

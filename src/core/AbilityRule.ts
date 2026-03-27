@@ -68,7 +68,6 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     let is: boolean = false;
 
     const [subjectValue, resourceValue] = this.extractValues(resource, environment);
-    const isArray = Array.isArray;
     const isValue = (v: unknown) =>
       typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' || v === null;
 
@@ -113,20 +112,20 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     // in
     if (AbilityCondition.in.isEqual(this.condition)) {
       // value in array
-      if (isValue(subjectValue) && isArray(resourceValue)) {
+      if (isValue(subjectValue) && Array.isArray(resourceValue)) {
         is = resourceValue.includes(subjectValue);
       }
       // array intersects array
-      else if (isArray(subjectValue) && isArray(resourceValue)) {
+      else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
         is = subjectValue.some(v => resourceValue.includes(v));
       }
     }
 
     // not in
     if (AbilityCondition.not_in.isEqual(this.condition)) {
-      if (isValue(subjectValue) && isArray(resourceValue)) {
+      if (isValue(subjectValue) && Array.isArray(resourceValue)) {
         is = !resourceValue.includes(subjectValue);
-      } else if (isArray(subjectValue) && isArray(resourceValue)) {
+      } else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
         is = !subjectValue.some(v => resourceValue.includes(v));
       }
     }
@@ -134,21 +133,81 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     // contains
     if (AbilityCondition.contains.isEqual(this.condition)) {
       // array contains value
-      if (isArray(subjectValue) && isValue(resourceValue)) {
+      if (Array.isArray(subjectValue) && isValue(resourceValue)) {
         is = subjectValue.includes(resourceValue);
       }
       // array intersects array
-      else if (isArray(subjectValue) && isArray(resourceValue)) {
+      else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
         is = subjectValue.some(v => resourceValue.includes(v));
       }
     }
 
     // not contains
     if (AbilityCondition.not_contains.isEqual(this.condition)) {
-      if (isArray(subjectValue) && isValue(resourceValue)) {
+      if (Array.isArray(subjectValue) && isValue(resourceValue)) {
         is = !subjectValue.includes(resourceValue);
-      } else if (isArray(subjectValue) && isArray(resourceValue)) {
+      } else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
         is = !subjectValue.some(v => resourceValue.includes(v));
+      }
+    }
+
+    // length equals
+    if (AbilityCondition.length_equals.isEqual(this.condition)) {
+      // foo.bar == n
+      if (isValue(subjectValue) && typeof resourceValue === 'number') {
+        is = String(subjectValue).length === resourceValue;
+      }
+      // ['foo', 'bar'] = n
+      else if (Array.isArray(subjectValue) && typeof resourceValue === 'number') {
+        is = subjectValue.length === resourceValue;
+      }
+      // ['foo', 'bar'] = ['baz', 'taz']
+      else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
+        is = subjectValue.length === resourceValue.length;
+      }
+      // 'foo' = 'bar'
+      else if (typeof subjectValue === 'string' && typeof resourceValue === 'string') {
+        is = subjectValue.length === resourceValue.length;
+      }
+    }
+
+    // length greater than
+    if (AbilityCondition.length_greater_than.isEqual(this.condition)) {
+      // foo.bar > n
+      if (isValue(subjectValue) && typeof resourceValue === 'number') {
+        is = String(subjectValue).length > resourceValue;
+      }
+      // ['foo', 'bar'] > n
+      else if (Array.isArray(subjectValue) && typeof resourceValue === 'number') {
+        is = subjectValue.length > resourceValue;
+      }
+      // ['foo', 'bar'] > ['baz', 'taz']
+      else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
+        is = subjectValue.length > resourceValue.length;
+      }
+      // 'foo' > 'bar'
+      else if (typeof subjectValue === 'string' && typeof resourceValue === 'string') {
+        is = subjectValue.length > resourceValue.length;
+      }
+    }
+
+    // length greater than
+    if (AbilityCondition.length_less_than.isEqual(this.condition)) {
+      // foo.bar < n
+      if (isValue(subjectValue) && typeof resourceValue === 'number') {
+        is = String(subjectValue).length < resourceValue;
+      }
+      // ['foo', 'bar'] < n
+      else if (Array.isArray(subjectValue) && typeof resourceValue === 'number') {
+        is = subjectValue.length < resourceValue;
+      }
+      // ['foo', 'bar'] < ['baz', 'taz']
+      else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
+        is = subjectValue.length < resourceValue.length;
+      }
+      // 'foo' < 'bar'
+      else if (typeof subjectValue === 'string' && typeof resourceValue === 'string') {
+        is = subjectValue.length < resourceValue.length;
       }
     }
 

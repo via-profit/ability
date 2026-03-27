@@ -29,7 +29,7 @@ permit order.update if any:
     const policy = policies[0];
 
     // Policy level checks
-    expect(policy.action).toBe('order.update');
+    expect(policy.permission).toBe('order.update');
     expect(policy.effect).toBe(AbilityPolicyEffect.permit);
     expect(policy.compareMethod).toBe(AbilityCompare.or);
     expect(policy.name).toBe('can order update');
@@ -88,7 +88,7 @@ permit order.view if all:
     expect(policies).toHaveLength(1);
     const policy = policies[0];
 
-    expect(policy.action).toBe('order.view');
+    expect(policy.permission).toBe('order.view');
     expect(policy.effect).toBe(AbilityPolicyEffect.permit);
     expect(policy.compareMethod).toBe(AbilityCompare.and);
     expect(policy.ruleSet).toHaveLength(1);
@@ -115,7 +115,7 @@ deny order.view if all:
     expect(policies).toHaveLength(1);
     const policy = policies[0];
 
-    expect(policy.action).toBe('order.view');
+    expect(policy.permission).toBe('order.view');
     expect(policy.effect).toBe(AbilityPolicyEffect.deny);
     expect(policy.compareMethod).toBe(AbilityCompare.and);
     expect(policy.ruleSet).toHaveLength(1);
@@ -142,7 +142,7 @@ deny order.cancel if any:
     expect(policies).toHaveLength(1);
     const policy = policies[0];
 
-    expect(policy.action).toBe('order.cancel');
+    expect(policy.permission).toBe('order.cancel');
     expect(policy.effect).toBe(AbilityPolicyEffect.deny);
     expect(policy.ruleSet).toHaveLength(1);
 
@@ -177,7 +177,7 @@ deny order.update if any:
     expect(policies).toHaveLength(1);
     const policy = policies[0];
 
-    expect(policy.action).toBe('order.update');
+    expect(policy.permission).toBe('order.update');
     expect(policy.effect).toBe(AbilityPolicyEffect.deny);
     expect(policy.compareMethod).toBe(AbilityCompare.or);
     expect(policy.ruleSet).toHaveLength(1);
@@ -237,7 +237,7 @@ permit order.update if any:
     expect(policies).toHaveLength(1);
     const policy = policies[0];
 
-    expect(policy.action).toBe('order.update');
+    expect(policy.permission).toBe('order.update');
     expect(policy.effect).toBe(AbilityPolicyEffect.permit);
     expect(policy.compareMethod).toBe(AbilityCompare.or);
     expect(policy.ruleSet).toHaveLength(1);
@@ -322,7 +322,7 @@ permit order.update if all:
 
     expect(policies).toHaveLength(1);
     const policy = policies[0];
-    expect(policy.action).toBe('order.update');
+    expect(policy.permission).toBe('order.update');
     expect(policy.effect).toBe(AbilityPolicyEffect.permit);
     expect(policy.compareMethod).toBe(AbilityCompare.and);
     expect(policy.ruleSet).toHaveLength(1);
@@ -363,7 +363,7 @@ permit order.update if any:
     expect(policies).toHaveLength(1);
     const policy = policies[0];
 
-    expect(policy.action).toBe('order.update');
+    expect(policy.permission).toBe('order.update');
     expect(policy.effect).toBe(AbilityPolicyEffect.permit);
     expect(policy.compareMethod).toBe(AbilityCompare.or);
     expect(policy.ruleSet).toHaveLength(1);
@@ -385,7 +385,7 @@ permit order.update if any:
   describe('Operators', () => {
     it('should parse "is equal" correctly', () => {
       const dsl = `
-permit test.action if all:
+permit test.permission if all:
   user.name is equals 'John'
 `;
       const parser = new AbilityDSLParser(dsl);
@@ -397,7 +397,7 @@ permit test.action if all:
 
     it('should parse "is not equal" correctly', () => {
       const dsl = `
-permit test.action if all:
+permit test.permission if all:
   user.name is not equals 'John'
 `;
       const parser = new AbilityDSLParser(dsl);
@@ -409,7 +409,7 @@ permit test.action if all:
 
     it('should parse "contains" correctly', () => {
       const dsl = `
-permit test.action if all:
+permit test.permission if all:
   user.roles contains 'admin'
 `;
       const parser = new AbilityDSLParser(dsl);
@@ -421,7 +421,7 @@ permit test.action if all:
 
     it('should parse "not contains" correctly', () => {
       const dsl = `
-permit test.action if all:
+permit test.permission if all:
   user.roles not contains 'admin'
 `;
       const parser = new AbilityDSLParser(dsl);
@@ -433,7 +433,7 @@ permit test.action if all:
 
     it('should parse "in" correctly (with array)', () => {
       const dsl = `
-permit test.action if all:
+permit test.permission if all:
   user.role in ['admin', 'manager']
 `;
       const parser = new AbilityDSLParser(dsl);
@@ -445,7 +445,7 @@ permit test.action if all:
 
     it('should parse "not in" correctly (with array)', () => {
       const dsl = `
-permit test.action if all:
+permit test.permission if all:
   user.role not in ['admin', 'manager']
 `;
       const parser = new AbilityDSLParser(dsl);

@@ -10,7 +10,7 @@ describe('AbilityResolver — cache integration', () => {
     const policy = new AbilityPolicy({
       id,
       name: id,
-      action: 'test.action',
+      permission: 'test.permission',
       effect: AbilityPolicyEffect.permit,
       compareMethod: AbilityCompare.and,
     });
@@ -31,8 +31,8 @@ describe('AbilityResolver — cache integration', () => {
       cache: new AbilityInMemoryCache(),
     });
 
-    await resolver.resolve('test.action', resource, environment);
-    await resolver.resolve('test.action', resource, environment);
+    await resolver.resolve('test.permission', resource, environment);
+    await resolver.resolve('test.permission', resource, environment);
 
     expect(policy.check).toHaveBeenCalledTimes(1);
   });
@@ -43,8 +43,8 @@ describe('AbilityResolver — cache integration', () => {
 
     const resolver = new AbilityResolver([policy]);
 
-    await resolver.resolve('test.action', resource, environment);
-    await resolver.resolve('test.action', resource, environment);
+    await resolver.resolve('test.permission', resource, environment);
+    await resolver.resolve('test.permission', resource, environment);
 
     expect(policy.check).toHaveBeenCalledTimes(2);
   });
@@ -59,13 +59,13 @@ describe('AbilityResolver — cache integration', () => {
 
     const resolver = new AbilityResolver([policy], { cache });
 
-    await resolver.resolve('test.action', resource, environment);
+    await resolver.resolve('test.permission', resource, environment);
     expect(policy.check).toHaveBeenCalledTimes(1);
 
     // TTL = 60 сек → истекает
     jest.advanceTimersByTime(61_000);
 
-    await resolver.resolve('test.action', resource, environment);
+    await resolver.resolve('test.permission', resource, environment);
     expect(policy.check).toHaveBeenCalledTimes(2);
 
     jest.useRealTimers();
@@ -79,8 +79,8 @@ describe('AbilityResolver — cache integration', () => {
 
     const resolver = new AbilityResolver([p1, p2], { cache: new AbilityInMemoryCache() });
 
-    await resolver.resolve('test.action', resource, environment);
-    await resolver.resolve('test.action', resource, environment);
+    await resolver.resolve('test.permission', resource, environment);
+    await resolver.resolve('test.permission', resource, environment);
 
     expect(p1.check).toHaveBeenCalledTimes(1);
     expect(p2.check).toHaveBeenCalledTimes(1);
@@ -92,9 +92,9 @@ describe('AbilityResolver — cache integration', () => {
 
     const resolver = new AbilityResolver([policy], { cache: new AbilityInMemoryCache() });
 
-    await resolver.resolve('test.action', { user: { id: 1 } }, { time: { hour: 10 } });
-    await resolver.resolve('test.action', { user: { id: 2 } }, { time: { hour: 10 } });
-    await resolver.resolve('test.action', { user: { id: 1 } }, { time: { hour: 11 } });
+    await resolver.resolve('test.permission', { user: { id: 1 } }, { time: { hour: 10 } });
+    await resolver.resolve('test.permission', { user: { id: 2 } }, { time: { hour: 10 } });
+    await resolver.resolve('test.permission', { user: { id: 1 } }, { time: { hour: 11 } });
 
     expect(policy.check).toHaveBeenCalledTimes(3);
   });

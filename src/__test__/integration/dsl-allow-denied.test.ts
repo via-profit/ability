@@ -4,13 +4,13 @@ import AbilityResolver from '../../core/AbilityResolver';
 describe('DSL isAllowed/isDenied test', () => {
   it('should isAllowed be true, isDenied be false', async () => {
     const dsl = `
-      permit action.test if all:
+      permit permission.test if all:
         user.age is equals 21
     `;
     const policies = new AbilityDSLParser(dsl).parse();
     const resolver = new AbilityResolver(policies);
 
-    const result = await resolver.resolve('action.test', {
+    const result = await resolver.resolve('permission.test', {
       user: { age: 21 },
     });
 
@@ -20,13 +20,13 @@ describe('DSL isAllowed/isDenied test', () => {
 
   it('should isAllowed be false, isDenied be true', async () => {
     const dsl = `
-      permit action.test if all:
+      permit permission.test if all:
         user.age is equals 21
     `;
     const policies = new AbilityDSLParser(dsl).parse();
     const resolver = new AbilityResolver(policies);
 
-    const result = await resolver.resolve('action.test', {
+    const result = await resolver.resolve('permission.test', {
       user: { age: 0 },
     });
 
@@ -36,13 +36,13 @@ describe('DSL isAllowed/isDenied test', () => {
 
   it('should isDenied be true, isAllowed be false', async () => {
     const dsl = `
-      deny action.test if all:
+      deny permission.test if all:
         user.age is equals 21
     `;
     const policies = new AbilityDSLParser(dsl).parse();
     const resolver = new AbilityResolver(policies);
 
-    const result = await resolver.resolve('action.test', {
+    const result = await resolver.resolve('permission.test', {
       user: { age: 21 },
     });
 
@@ -52,13 +52,13 @@ describe('DSL isAllowed/isDenied test', () => {
 
   it('should isDenied be false, isAllowed be true', async () => {
     const dsl = `
-      deny action.test if all:
+      deny permission.test if all:
         user.age is equals 16
     `;
     const policies = new AbilityDSLParser(dsl).parse();
     const resolver = new AbilityResolver(policies);
 
-    const result = await resolver.resolve('action.test', {
+    const result = await resolver.resolve('permission.test', {
       user: { age: 12, token: 'token-value' },
     });
 

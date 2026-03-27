@@ -10,31 +10,31 @@ Ability DSL — это декларативный язык для описани
 Политика состоит из:
 
 ```
-<effect> <action> if <all|any>:
+<effect> <permission> if <all|any>:
   <group>...
 ```
 
 Где:
 
 - **effect** — `permit` или `deny`
-- **action** — строка вида `resource.operation`
+- **permission** — строка вида `permission.foo.bar`
 - **if all:** — все группы должны быть истинны
 - **if any:** — хотя бы одна группа должна быть истинна
 
 Пример:
 
 ```dsl
-permit order.update if any:
+permit permission.order.update if any:
   all of:
     user.roles contains 'admin'
     user.token is not null
 
   any of:
-    user.roles contains 'developer'
+    user.roles permission.contains 'developer'
     user.logit is equals 'dev'
 ```
 
-Пример политики выше гласит - действие order.update будет разрешено при выполнении одного из двух условий:
+Пример политики выше гласит - разрешение permission.order.update будет разрешено при выполнении одного из двух условий:
 1. user.roles содержит 'admin' **и** user.token не null
 2. user.roles содержит 'developer' **или** user.login равен 'dev'
 
@@ -110,7 +110,7 @@ any of:
 
 ## Правила
 
-Правило - это ключевая единица политик. Именно правила определяют действие в политике. С помощью правил задаются условия по которым определяется эффективность политики (‘permit’ или ‘deny’)
+Правило - это ключевая единица политик. Именно правила определяют ключ разрешения в политике. С помощью правил задаются условия по которым определяется эффективность политики (‘permit’ или ‘deny’)
 
 Правило имеет форму:
 
@@ -139,24 +139,60 @@ order.total
 
 ### Таблица всех операторов
 
-| Оператор DSL                     | Синоним | Описание                                |
-|----------------------------------|---------|-----------------------------------------|
-| `is equals`                      | `=`     | Проверяет равенство значений            |
-| `is not equals`                  | `!=`    | Проверяет неравенство                   |
-| `greater than`                   | `>`     | Левое значение больше правого           |
-| `greater than or equal`          | `>=`    | Левое значение больше или равно правому |
-| `less than`                      | `<`     | Левое значение меньше правого           |
-| `less than or equal`             | `<=`    | Левое значение меньше или равно правому |
-| `is null`                        |         | Значение равно `null`                   |
-| `is not null`                    |         | Значение не равно `null`                |
-| `in [...]`                       |         | Значение содержится в списке            |
-| `not in [...]`                   |         | Значение отсутствует в списке           |
-| `contains`                       |         | Коллекция содержит элемент              |
-| `not contains`                   |         | Коллекция не содержит элемент           |
-| `starts with`  не поддерживается |         | Строка начинается с подстроки           |
-| `ends with` не поддерживается    |         | Строка заканчивается подстрокой         |
-| `matches` не поддерживается      |         | Соответствует регулярному выражению     |
-| `not matches`  не поддерживается |         | Не соответствует регулярному выражению  |
+**Базовые операторы сравнения**
+
+| Оператор DSL | Синонимы | Пример | Описание | Типы |
+|--------------|----------|--------|----------|------|
+| **is equals** | `=`, `==`, `equals` | `age is equals 18` | Строгое равенство | number, string, boolean |
+| **is not equals** | `!=`, `<>`, `not equals` | `role is not equals 'admin'` | Строгое неравенство | number, string, boolean |
+| **greater than** | `>`, `gt` | `age greater than 18` | Больше | number, date |
+| **greater than or equal** | `>=`, `gte` | `age greater than or equal 18` | Больше или равно | number, date |
+| **less than** | `<`, `lt` | `age less than 18` | Меньше | number, date |
+| **less than or equal** | `<=`, `lte` | `age less than or equal 18` | Меньше или равно | number, date |
+
+
+**Null‑операторы**
+
+| Оператор DSL | Синонимы | Пример | Описание | Типы |
+|--------------|----------|--------|----------|------|
+| **is null** | `== null`, `= null` | `middleName is null` | Значение отсутствует | any |
+| **is not null** | `!= null` | `middleName is not null` | Значение присутствует | any |
+
+**Операторы для списков (массивов)**
+
+| Оператор DSL | Синонимы                  | Пример | Описание | Типы |
+|--------------|---------------------------|--------|----------|------|
+| **in [...]** | -                         | `role in ['admin', 'manager']` | Значение входит в список | number, string |
+| **not in [...]** | -                         | `role not in ['banned']` | Значение не входит | number, string |
+| **contains** | `includes`, `has`         | `tags contains 'vip'` | Массив содержит элемент | array |
+| **not contains** | `not includes`, `not has` | `tags not contains 'vip'` | Массив не содержит элемент | array |
+
+
+**Строковые операторы**
+
+| Оператор DSL | Синонимы | Пример | Описание | Типы |
+|--------------|----------|--------|----------|------|
+| **starts with** | `begins with` | `email starts with 'admin@'` | Строка начинается с | string |
+| **not starts with** | — | `email not starts with 'test'` | Строка не начинается с | string |
+| **ends with** | — | `email ends with '.ru'` | Строка заканчивается на | string |
+| **not ends with** | — | `email not ends with '.com'` | Строка не заканчивается на | string |
+| **includes** | `contains substring` | `name includes 'lex'` | Строка содержит подстроку | string |
+| **not includes** | — | `name not includes 'test'` | Строка не содержит подстроку | string |
+
+**Булевые операторы**
+
+| Оператор DSL | Синонимы | Пример | Описание | Типы |
+|--------------|----------|--------|----------|------|
+| **is true** | `= true` | `isActive is true` | Значение истинно | boolean |
+| **is false** | `= false` | `isActive is false` | Значение ложно | boolean |
+
+**Операторы длины**
+
+| Оператор DSL | Синонимы | Пример | Описание | Типы |
+|--------------|----------|--------|----------|------|
+| **length equals** | `len =` | `tags length equals 3` | Длина равна | array, string |
+| **length greater than** | `len >` | `tags length greater than 2` | Длина больше | array, string |
+| **length less than** | `len <` | `tags length less than 5` | Длина меньше | array, string |
 
 ### Value (значение)
 
@@ -182,6 +218,9 @@ order.tag in ['vip', 'priority']
 
 # токен пользователя не null
 user.token is not null
+
+# логин пользователя длиннее 12 символов
+user.login length greater than 12
 ```
 
 
@@ -193,7 +232,7 @@ user.token is not null
 Если правила идут без `all of:` или `any of:`, они объединяются оператором политики:
 
 ```dsl
-permit order.update if all:
+permit permission.order.update if all:
   user.roles contains 'admin'
   user.token is not null
 ```
@@ -201,7 +240,7 @@ permit order.update if all:
 Эквивалентно:
 
 ```dsl
-permit order.update if all:
+permit permission.order.update if all:
   all of:
     user.roles contains 'admin'
     user.token is not null
@@ -213,7 +252,7 @@ permit order.update if all:
 
 ```dsl
 # @name разрешено обновление заказа
-permit order.update if any:
+permit permission.order.update if any:
 
   # @name если это администратор
   all of:

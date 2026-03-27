@@ -22,7 +22,7 @@ server.on('request', async  (_req, res) => {
     {
       id: 'policy-1',
       name: 'Deny if is admin and order amount <= 1000',
-      action: 'order.status',
+      permission: 'order.status',
       effect: 'deny',
       compareMethod: 'and',
       ruleSet: [

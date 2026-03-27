@@ -16,7 +16,7 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
 
   public constructor(
     /**
-     * `Important!` The incorrect Resources type was intentionally passed to AbilityPolicy so that TypeScript could suggest the name of the action and the structure of its resource in the parse method.
+     * `Important!` The incorrect Resources type was intentionally passed to AbilityPolicy so that TypeScript could suggest the name of the permission and the structure of its resource in the parse method.
      */
     policyOrListOfPolicies: readonly AbilityPolicy<Resources>[] | AbilityPolicy<Resources>,
     options?: AbilityResolverOptions,
@@ -29,19 +29,20 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
   }
 
   /**
-   * Resolve policy for the resource and action
+   * Resolve policy for the resource and permission key
    *
-   * @param action - Action
+   * @param permission - Permission key
    * @param resource - Resource
    * @param environment
    */
-  public async resolve<Action extends keyof Resources>(
-    action: Action,
-    resource: Resources[Action],
+  public async resolve<Permission extends keyof Resources>(
+    permission: Permission,
+    resource: Resources[Permission],
     environment?: Environment,
-  ): Promise<AbilityResult<Resources[Action]>> {
+  ): Promise<AbilityResult<Resources[Permission]>> {
+
     const filteredPolicies = this.policies.filter(policy =>
-      AbilityResolver.isInActionContain(policy.action, String(action)),
+      AbilityResolver.isInPermissionContain(policy.permission, String(permission).replace(/^permission\./, '')),
     );
 
     for (const policy of filteredPolicies) {
@@ -72,12 +73,12 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
     return new AbilityResult(filteredPolicies);
   }
 
-  public async enforce<Action extends keyof Resources>(
-    action: Action,
-    resource: Resources[Action],
+  public async enforce<Permission extends keyof Resources>(
+    permission: Permission,
+    resource: Resources[Permission],
     environment?: Environment,
   ): Promise<void | never> {
-    const result = await this.resolve(action, resource, environment);
+    const result = await this.resolve(permission, resource, environment);
 
     if (result.isDenied()) {
       const policyName = result.getLastMatchedPolicy()?.name?.toString() || 'unknown';
@@ -86,13 +87,13 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
   }
 
   /**
-   * Check if the action is contained in another action
-   * @param actionA - The first action to check
-   * @param actionB - The second action to check
+   * Check if the permission key is contained in another permission key
+   * @param permissionA - The first permission to check
+   * @param permissionB - The second permission to check
    */
-  public static isInActionContain(actionA: string, actionB: string) {
-    const A = actionA.split('.');
-    const B = actionB.split('.');
+  public static isInPermissionContain(permissionA: string, permissionB: string) {
+    const A = permissionA.split('.');
+    const B = permissionB.split('.');
 
     const [longer, shorter] = A.length >= B.length ? [A, B] : [B, A];
 
@@ -101,9 +102,9 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
     });
   }
 
-  private makeCacheKey<Action extends keyof Resources>(
+  private makeCacheKey<Permission extends keyof Resources>(
     policyId: string,
-    resource: Resources[Action],
+    resource: Resources[Permission],
     environment?: Environment,
   ): string {
     if (!this.cache) {

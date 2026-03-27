@@ -2,43 +2,43 @@ import AbilityPolicy from '../../core/AbilityPolicy';
 import AbilityResolver from '../../core/AbilityResolver';
 
 describe('AbilityResolver', () => {
-  describe('isInActionContain', () => {
+  describe('isInPermissionContain', () => {
     it('should return true for exact matches', () => {
-      expect(AbilityResolver.isInActionContain('order.create', 'order.create')).toBe(true);
-      expect(AbilityResolver.isInActionContain('user.update', 'user.update')).toBe(true);
+      expect(AbilityResolver.isInPermissionContain('order.create', 'order.create')).toBe(true);
+      expect(AbilityResolver.isInPermissionContain('user.update', 'user.update')).toBe(true);
     });
 
     it('should handle wildcard at the end', () => {
-      expect(AbilityResolver.isInActionContain('order.*', 'order.create')).toBe(true);
-      expect(AbilityResolver.isInActionContain('order.*', 'order.update')).toBe(true);
-      expect(AbilityResolver.isInActionContain('order.*', 'order.delete')).toBe(true);
-      expect(AbilityResolver.isInActionContain('order.*', 'user.create')).toBe(false);
+      expect(AbilityResolver.isInPermissionContain('order.*', 'order.create')).toBe(true);
+      expect(AbilityResolver.isInPermissionContain('order.*', 'order.update')).toBe(true);
+      expect(AbilityResolver.isInPermissionContain('order.*', 'order.delete')).toBe(true);
+      expect(AbilityResolver.isInPermissionContain('order.*', 'user.create')).toBe(false);
     });
 
     it('should handle wildcard at the beginning', () => {
-      expect(AbilityResolver.isInActionContain('*.create', 'order.create')).toBe(true);
-      expect(AbilityResolver.isInActionContain('*.create', 'user.create')).toBe(true);
-      expect(AbilityResolver.isInActionContain('*.create', 'order.update')).toBe(false);
+      expect(AbilityResolver.isInPermissionContain('*.create', 'order.create')).toBe(true);
+      expect(AbilityResolver.isInPermissionContain('*.create', 'user.create')).toBe(true);
+      expect(AbilityResolver.isInPermissionContain('*.create', 'order.update')).toBe(false);
     });
 
     it('should handle multiple wildcards', () => {
-      expect(AbilityResolver.isInActionContain('user.*.*', 'user.profile.update')).toBe(true);
-      expect(AbilityResolver.isInActionContain('user.*.*', 'user.settings.delete')).toBe(true);
-      expect(AbilityResolver.isInActionContain('user.*.*', 'order.create')).toBe(false);
+      expect(AbilityResolver.isInPermissionContain('user.*.*', 'user.profile.update')).toBe(true);
+      expect(AbilityResolver.isInPermissionContain('user.*.*', 'user.settings.delete')).toBe(true);
+      expect(AbilityResolver.isInPermissionContain('user.*.*', 'order.create')).toBe(false);
     });
 
     it('should handle wildcard in the middle', () => {
-      expect(AbilityResolver.isInActionContain('user.*.update', 'user.profile.update')).toBe(true);
-      expect(AbilityResolver.isInActionContain('user.*.update', 'user.settings.update')).toBe(true);
-      expect(AbilityResolver.isInActionContain('user.*.update', 'user.profile.delete')).toBe(false);
+      expect(AbilityResolver.isInPermissionContain('user.*.update', 'user.profile.update')).toBe(true);
+      expect(AbilityResolver.isInPermissionContain('user.*.update', 'user.settings.update')).toBe(true);
+      expect(AbilityResolver.isInPermissionContain('user.*.update', 'user.profile.delete')).toBe(false);
     });
 
     it('should handle different path lengths', () => {
-      expect(AbilityResolver.isInActionContain('account.read', 'account.private.read')).toBe(false);
+      expect(AbilityResolver.isInPermissionContain('account.read', 'account.private.read')).toBe(false);
       expect(
-        AbilityResolver.isInActionContain('account.some.foo.bar', 'account.some.foo.bar'),
+        AbilityResolver.isInPermissionContain('account.some.foo.bar', 'account.some.foo.bar'),
       ).toBe(true);
-      expect(AbilityResolver.isInActionContain('account.some.foo', 'account.some.*')).toBe(true);
+      expect(AbilityResolver.isInPermissionContain('account.some.foo', 'account.some.*')).toBe(true);
     });
   });
 
@@ -47,7 +47,7 @@ describe('AbilityResolver', () => {
       const policy = AbilityPolicy.fromJSON({
         id: 'test',
         name: 'test',
-        action: 'test.action',
+        permission: 'test.permission',
         effect: 'permit',
         compareMethod: 'and',
         ruleSet: [],
@@ -62,7 +62,7 @@ describe('AbilityResolver', () => {
       const policy1 = AbilityPolicy.fromJSON({
         id: 'test1',
         name: 'test1',
-        action: 'test.action1',
+        permission: 'test.permission1',
         effect: 'permit',
         compareMethod: 'and',
         ruleSet: [],
@@ -71,7 +71,7 @@ describe('AbilityResolver', () => {
       const policy2 = AbilityPolicy.fromJSON({
         id: 'test2',
         name: 'test2',
-        action: 'test.action2',
+        permission: 'test.permission2',
         effect: 'deny',
         compareMethod: 'and',
         ruleSet: [],
@@ -90,11 +90,11 @@ describe('AbilityResolver', () => {
       [key: string]: Record<string, unknown>;
     };
 
-    it('should filter policies by action', async () => {
+    it('should filter policies by permission', async () => {
       const policy1 = AbilityPolicy.fromJSON<TestResources>({
         id: 'policy1',
         name: 'Policy 1',
-        action: 'order.create',
+        permission: 'order.create',
         effect: 'permit',
         compareMethod: 'and',
         ruleSet: [],
@@ -103,7 +103,7 @@ describe('AbilityResolver', () => {
       const policy2 = AbilityPolicy.fromJSON<TestResources>({
         id: 'policy2',
         name: 'Policy 2',
-        action: 'order.update',
+        permission: 'order.update',
         effect: 'deny',
         compareMethod: 'and',
         ruleSet: [],
@@ -115,11 +115,11 @@ describe('AbilityResolver', () => {
       expect(result.policies[0].id).toBe('policy1');
     });
 
-    it('should handle wildcard actions', () => {
+    it('should handle wildcard permissions', () => {
       const policy = AbilityPolicy.fromJSON<TestResources>({
         id: 'policy',
         name: 'Policy',
-        action: 'order.*',
+        permission: 'order.*',
         effect: 'permit',
         compareMethod: 'and',
         ruleSet: [],

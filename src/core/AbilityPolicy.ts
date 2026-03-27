@@ -9,7 +9,7 @@ import { AbilityJSONParser } from '../parsers/json/AbilityJSONParser';
 import { AbilityDSLParser } from '../parsers/dsl/AbilityDSLParser';
 
 export type AbilityPolicyConfig = {
-  readonly action: string;
+  readonly permission: string;
   readonly effect: AbilityPolicyEffectCodeType;
   readonly compareMethod: AbilityCompareCodeType;
   readonly ruleSet: readonly AbilityRuleSetConfig[];
@@ -20,7 +20,7 @@ export type AbilityPolicyConfig = {
 export type AbilityPolicyConstructorProps = {
   id: string;
   name: string;
-  action: string;
+  permission: string;
   effect: AbilityPolicyEffect;
   compareMethod?: AbilityCompare;
 };
@@ -60,15 +60,15 @@ export class AbilityPolicy<
 
   /**
    * Running the `enforce` or `resolve` method
-   * will select only those from all passed policies that fall under the specified action.
+   * will select only those from all passed policies that fall under the specified permission key.
    */
-  public action: string;
+  public permission: string;
 
   public constructor(params: AbilityPolicyConstructorProps) {
-    const { name, id, action, effect, compareMethod = AbilityCompare.and } = params;
+    const { name, id, permission, effect, compareMethod = AbilityCompare.and } = params;
     this.name = name;
     this.id = id;
-    this.action = action;
+    this.permission = permission;
     this.effect = effect;
     this.compareMethod = compareMethod;
   }

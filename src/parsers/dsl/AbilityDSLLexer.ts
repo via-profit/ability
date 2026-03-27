@@ -21,7 +21,14 @@ export class AbilityDSLLexer {
     'false',
     'null',
     'contains',
+    'includes',
+    'length',
+    'has',
     'in',
+    'gt',
+    'lt',
+    'gte',
+    'lte',
     'equals',
     'greater',
     'less',
@@ -150,8 +157,19 @@ export class AbilityDSLLexer {
           this.advance();
           return new AbilityDSLToken(AbilityDSLToken.SYMBOL, '<=', startLine, startColumn);
         }
+
+        if (this.peek() === '>') {
+          this.advance();
+          return new AbilityDSLToken(AbilityDSLToken.SYMBOL, '<>', startLine, startColumn);
+        }
+
         return new AbilityDSLToken(AbilityDSLToken.SYMBOL, '<', startLine, startColumn);
       case '=':
+        if (this.peek() === '=') {
+          this.advance();
+          return new AbilityDSLToken(AbilityDSLToken.SYMBOL, '==', startLine, startColumn);
+        }
+
         return new AbilityDSLToken(AbilityDSLToken.SYMBOL, '=', startLine, startColumn);
       case '!':
         if (this.peek() === '=') {
@@ -184,11 +202,13 @@ export class AbilityDSLLexer {
 
     const word = this.input.slice(start, this.pos);
 
-    // Если есть точка — это путь (identifier или action)
+    // Если есть точка — это путь (identifier или permission)
     if (word.includes('.')) {
       const last = this.tokens[this.tokens.length - 1];
       if (last?.code === AbilityDSLToken.EFFECT) {
-        return new AbilityDSLToken(AbilityDSLToken.ACTION, word, startLine, startColumn);
+        if (word.startsWith('permission.')) {
+          return new AbilityDSLToken(AbilityDSLToken.PERMISSION, word, startLine, startColumn);
+        }
       }
       return new AbilityDSLToken(AbilityDSLToken.IDENTIFIER, word, startLine, startColumn);
     }
@@ -223,14 +243,14 @@ export class AbilityDSLLexer {
         return new AbilityDSLToken(AbilityDSLToken.NULL, word, startLine, startColumn);
       }
 
-       // Остальные ключевые слова (contains, in, equals, greater, less, not, is, or, than, equal)
+      // Остальные ключевые слова (contains, in, equals, greater, less, not, is, or, than, equal)
       return new AbilityDSLToken(AbilityDSLToken.KEYWORD, word, startLine, startColumn);
     }
 
     // Если после EFFECT и нет точки — действие (например, "create")
     const lastToken = this.tokens[this.tokens.length - 1];
     if (lastToken?.code === AbilityDSLToken.EFFECT) {
-      return new AbilityDSLToken(AbilityDSLToken.ACTION, word, startLine, startColumn);
+      return new AbilityDSLToken(AbilityDSLToken.PERMISSION, word, startLine, startColumn);
     }
 
     // Обычный идентификатор
@@ -277,25 +297,24 @@ export class AbilityDSLLexer {
   private isAtEnd(): boolean {
     return this.pos >= this.input.length;
   }
-  public static readonly WORD_IF = 'if';
-  public static readonly WORD_ALL = 'all';
-  public static readonly WORD_ANY = 'any';
-  public static readonly WORD_OF = 'of';
-  public static readonly WORD_PERMIT = 'permit';
-  public static readonly WORD_ALLOW = 'allow';
-  public static readonly WORD_DENY = 'deny';
-  public static readonly WORD_FORBIDDEN = 'forbidden';
-  public static readonly WORD_TRUE = 'true';
-  public static readonly WORD_FALSE = 'false';
-  public static readonly WORD_NULL = 'null';
-  public static readonly WORD_CONTAINS = 'contains';
-  public static readonly WORD_IN = 'in';
-  public static readonly WORD_EQUALS = 'equals';
-  public static readonly WORD_GREATER = 'greater';
-  public static readonly WORD_LESS = 'less';
-  public static readonly WORD_NOT = 'not';
-  public static readonly WORD_IS = 'is';
-  public static readonly WORD_OR = 'or';
-  public static readonly WORD_THAN = 'than';
-
+  // public static readonly WORD_IF = 'if';
+  // public static readonly WORD_ALL = 'all';
+  // public static readonly WORD_ANY = 'any';
+  // public static readonly WORD_OF = 'of';
+  // public static readonly WORD_PERMIT = 'permit';
+  // public static readonly WORD_ALLOW = 'allow';
+  // public static readonly WORD_DENY = 'deny';
+  // public static readonly WORD_FORBIDDEN = 'forbidden';
+  // public static readonly WORD_TRUE = 'true';
+  // public static readonly WORD_FALSE = 'false';
+  // public static readonly WORD_NULL = 'null';
+  // public static readonly WORD_CONTAINS = 'contains';
+  // public static readonly WORD_IN = 'in';
+  // public static readonly WORD_EQUALS = 'equals';
+  // public static readonly WORD_GREATER = 'greater';
+  // public static readonly WORD_LESS = 'less';
+  // public static readonly WORD_NOT = 'not';
+  // public static readonly WORD_IS = 'is';
+  // public static readonly WORD_OR = 'or';
+  // public static readonly WORD_THAN = 'than';
 }

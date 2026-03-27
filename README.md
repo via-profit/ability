@@ -89,11 +89,11 @@
 
 1. **Правила (AbilityRule)** — минимальные условия сравнения.
 2. **Группы правил (AbilityRuleSet)** — объединение правил с логикой `and` или `or`.
-3. **Политики (AbilityPolicy)** — набор групп правил + действие (`action`) + эффект (`effect`).
+3. **Политики (AbilityPolicy)** — набор групп правил + ключ разрешения (`permission`) + эффект (`effect`).
 
 Политики применяются через **AbilityResolver**, который:
 
-- отбирает подходящие политики по `action` (с учётом wildcard),
+- отбирает подходящие политики по `permission` (с учётом wildcard),
 - выполняет их проверку,
 - формирует итоговый результат в виде **AbilityResult**.
 
@@ -253,7 +253,7 @@ import {
 const policy = new AbilityPolicy({
   id: 'policy-order-update-deny-managers',
   name: 'Запрет обновления заказа для менеджеров (кроме админов)',
-  action: 'order.update',
+  permission: 'order.update',
   effect: AbilityPolicyEffect.deny,
   compareMethod: AbilityCompare.and,
   ruleSet: [
@@ -296,7 +296,7 @@ import { AbilityPolicy } from '@via-profit/ability';
 const policy = AbilityPolicy.parse({
   id: 'policy-order-update-deny-managers',
   name: 'Запрет доступа для менеджеров (исключение: администраторы)',
-  action: 'order.update',
+  permission: 'order.update',
   effect: 'deny',
   compareMethod: 'and',
   ruleSet: [
@@ -382,7 +382,7 @@ const isMatch = match.isEqual(AbilityMatch.match);
 
 `AbilityResolver` — центральный компонент, который:
 
-1. Отбирает политики по `action` (с учётом wildcard).
+1. Отбирает политики по `permission` (с учётом wildcard).
 2. Вызывает `policy.check(resource, environment?)` для каждой.
 3. Формирует итоговый результат в виде `AbilityResult`.
 4. При необходимости выбрасывает `AbilityError` (метод `enforce`).
@@ -405,7 +405,7 @@ const isMatch = match.isEqual(AbilityMatch.match);
 
 Поддерживаются шаблоны с `*`:
 
-| Политика (action) | Действие | Совпадает |
+| Политика (permission) | Действие | Совпадает |
 |-------------------|----------|-----------|
 | `order.*`         | `order.create` | да |
 | `order.*`         | `order.update` | да |
@@ -424,13 +424,13 @@ const isMatch = match.isEqual(AbilityMatch.match);
 ```ts
 const policies = [
   AbilityPolicy.parse({
-    action: 'order.*',
+    permission: 'order.*',
     effect: 'permit',
     compareMethod: 'and',
     ruleSet: [],
   }),
   AbilityPolicy.parse({
-    action: 'order.update',
+    permission: 'order.update',
     effect: 'deny',
     compareMethod: 'and',
     ruleSet: [],
@@ -446,19 +446,19 @@ await new AbilityResolver(policies).enforce('order.update', resource);
 ```ts
 const policies = [
   {
-    action: 'order.*',
+    permission: 'order.*',
     effect: 'deny', // по умолчанию запрещено
     compareMethod: 'and',
     ruleSet: [],
   },
   {
-    action: 'order.create',
+    permission: 'order.create',
     effect: 'permit', // создание разрешено
     compareMethod: 'and',
     ruleSet: [],
   },
   {
-    action: 'order.update',
+    permission: 'order.update',
     effect: 'deny',
     compareMethod: 'and',
     ruleSet: [
@@ -527,7 +527,7 @@ await resolver.enforce('order.create', {
 
 `generateTypeDefs` принимает список политик и анализирует:
 
-- все `action`,
+- все `permission`,
 - все `subject` и `resource` пути,
 - строит дерево объектов,
 - генерирует корректный TypeScript‑тип `Resources`.
@@ -541,7 +541,7 @@ await resolver.enforce('order.create', {
   {
     "id": "order-update",
     "name": "Update order",
-    "action": "order.update",
+    "permission": "order.update",
     "effect": "permit",
     "compareMethod": "and",
     "ruleSet": [
@@ -681,7 +681,7 @@ await resolver.enforce('order.update', resource, environment);
 {
   "id": "deny-night-updates",
   "name": "Deny updates at night",
-  "action": "order.update",
+  "permission": "order.update",
   "effect": "deny",
   "compareMethod": "and",
   "ruleSet": [
@@ -879,28 +879,28 @@ explanations.forEach(explain => {
 
 ## Рекомендации по проектированию
 
-### Именование действий
+### Именование ключей доступа
 
-- Используйте иерархические ключи: `order.create`, `order.update.status`, `user.profile.update`.
-- Группируйте по доменам: `user.*`, `order.*`, `product.*`.
+- Используйте иерархические ключи: `permission.order.create`, `permission.order.update.status`, `permission.user.profile.update`.
+- Группируйте по доменам: `permission.user.*`, `permission.order.*`, `permission.product.*`.
 - Не смешивайте разные домены в одном действии.
 
 ### Структура данных
 
 - Явно описывайте `Resources` в TypeScript.
 - Не передавайте «лишние» поля — это усложняет понимание.
-- Старайтесь, чтобы структура данных для одного `action` была стабильной.
+- Старайтесь, чтобы структура данных для одного `permission` была стабильной.
 
 ### Проектирование политик
 
-- Общие правила — через wildcard (`order.*`).
-- Специфичные ограничения — через точные действия (`order.update`).
+- Общие правила — через wildcard (`permission.order.*`).
+- Специфичные ограничения — через точные действия (`permission.order.update`).
 - Для запретов используйте `effect: deny`.
 - Для разрешений — `effect: permit`.
 
 ### Типичные ошибки
 
-- Ожидание, что отсутствие совпавших политик означает deny — это зависит от вашей модели. Обычно отсутствие deny трактуется как allow.
+- Ожидание, что отсутствие совпавших политик означает deny — это зависит от вашей модели. Обычно отсутствие deny трактуется как deny.
 - Смешивание бизнес-логики и политик доступа.
 - Слишком крупные политики с десятками правил — лучше разбивать.
 
@@ -913,10 +913,10 @@ explanations.forEach(explain => {
 import { useEffect, useState } from 'react';
 import { AbilityResolver } from '@via-profit/ability';
 
-export function useAbility<Action extends keyof Resources>(
+export function useAbility<Permission extends keyof Resources>(
   resolver: AbilityResolver<Resources>,
-  action: Action,
-  resource: Resources[Action],
+  permission: Permission,
+  resource: Resources[Permission],
 ) {
   const [allowed, setAllowed] = useState<boolean | null>(null);
 
@@ -925,7 +925,7 @@ export function useAbility<Action extends keyof Resources>(
 
     async function check() {
       try {
-        const result = await resolver.resolve(action, resource);
+        const result = await resolver.resolve(permission, resource);
         if (!cancelled) {
           setAllowed(result.isAllowed());
         }
@@ -941,7 +941,7 @@ export function useAbility<Action extends keyof Resources>(
     return () => {
       cancelled = true;
     };
-  }, [resolver, action, resource]);
+  }, [resolver, permission, resource]);
 
   return allowed;
 }

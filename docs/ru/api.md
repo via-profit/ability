@@ -69,15 +69,15 @@
 
 ### Свойства
 
-| Свойство | Тип | Описание |
-|----------|-----|----------|
-| `id` | `string` | Идентификатор |
-| `name` | `string` | Название |
-| `action` | `string` | Действие (с поддержкой `*`) |
-| `effect` | `AbilityPolicyEffect` | `permit` или `deny` |
-| `compareMethod` | `AbilityCompare` | Логика сравнения групп |
-| `ruleSet` | `AbilityRuleSet[]` | Группы правил |
-| `matchState` | `AbilityMatch` | Результат проверки |
+| Свойство | Тип | Описание                           |
+|----------|-----|------------------------------------|
+| `id` | `string` | Идентификатор                      |
+| `name` | `string` | Название                           |
+| `permission` | `string` | Ключ разрешения (с поддержкой `*`) |
+| `effect` | `AbilityPolicyEffect` | `permit` или `deny`                |
+| `compareMethod` | `AbilityCompare` | Логика сравнения групп             |
+| `ruleSet` | `AbilityRuleSet[]` | Группы правил                      |
+| `matchState` | `AbilityMatch` | Результат проверки                 |
 
 ### Методы
 
@@ -95,7 +95,7 @@
 
 ### Назначение
 
-Применяет политики к действию и ресурсу, формирует итоговый результат.
+Применяет политики к ключу разрешения и ресурсу, формирует итоговый результат.
 
 ### Свойства
 
@@ -105,13 +105,13 @@
 
 ### Методы
 
-| Метод | Аргументы | Возвращает | Описание |
-|-------|-----------|------------|----------|
-| `resolve(action, resource, environment?)` | `string, any, object?` | `Promise<AbilityResult>` | Мягкая проверка |
-| `enforce(action, resource, environment?)` | `string, any, object?` | `Promise<void>` | Строгая проверка, выбрасывает `AbilityError` при deny |
-| `invalidatePolicy(policyId)` | `string` | `Promise<void>` | Инвалидация кэша политики |
-| `invalidateCache()` | — | `Promise<void>` | Полная очистка кэша |
-| `static isInActionContain(a, b)` | `string, string` | `boolean` | Проверка соответствия действия шаблону |
+| Метод                                         | Аргументы | Возвращает | Описание |
+|-----------------------------------------------|-----------|------------|----------|
+| `resolve(permission, resource, environment?)` | `string, any, object?` | `Promise<AbilityResult>` | Мягкая проверка |
+| `enforce(permission, resource, environment?)` | `string, any, object?` | `Promise<void>` | Строгая проверка, выбрасывает `AbilityError` при deny |
+| `invalidatePolicy(policyId)`                  | `string` | `Promise<void>` | Инвалидация кэша политики |
+| `invalidateCache()`                           | — | `Promise<void>` | Полная очистка кэша |
+| `static isInPermissionContain(a, b)`          | `string, string` | `boolean` | Проверка соответствия действия шаблону |
 
 ---
 

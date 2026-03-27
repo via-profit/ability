@@ -1,5 +1,5 @@
 import AbilityCode from './AbilityCode';
-import { AbilityParserError } from '../core/AbilityError';
+import { AbilityParserError } from '~/core/AbilityError';
 
 export type AbilityConditionCodeType =
   | '='
@@ -11,7 +11,10 @@ export type AbilityConditionCodeType =
   | 'in'
   | 'not in'
   | 'contains'
-  | 'not contains';
+  | 'not contains'
+  | 'length greater than'
+  | 'length less than'
+  | 'length equals';
 export type AbilityConditionLiteralType =
   // plain values
   | 'equals'
@@ -26,7 +29,10 @@ export type AbilityConditionLiteralType =
   | 'greater_than'
   | 'less_than'
   | 'less_or_equal'
-  | 'greater_or_equal';
+  | 'greater_or_equal'
+  | 'length_greater_than'
+  | 'length_less_than'
+  | 'length_equals';
 
 export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
   public static equals = new AbilityCondition('=');
@@ -39,6 +45,9 @@ export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
   public static not_in = new AbilityCondition('not in');
   public static contains = new AbilityCondition('contains');
   public static not_contains = new AbilityCondition('not contains');
+  public static length_greater_than = new AbilityCondition('length greater than');
+  public static length_less_than = new AbilityCondition('length less than');
+  public static length_equals = new AbilityCondition('length equals');
 
   public static fromLiteral(literal: AbilityConditionLiteralType): AbilityCondition {
     switch (literal) {
@@ -62,6 +71,10 @@ export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
         return this.in;
       case 'not_in':
         return this.not_in;
+      case 'length_greater_than':
+        return this.length_greater_than;
+      case 'length_equals':
+        return this.length_equals;
       default:
         throw new AbilityParserError(`Literal ${literal} does not found in AbilityCondition class`);
     }

@@ -6,7 +6,7 @@ export type TokenType =
   // -------------------------------------------------------------------------
   | 'EFFECT' // permit, deny – overall policy effect
   | 'IF' // if – start of condition block
-  | 'ACTION' // order.update – the action being governed
+  | 'PERMISSION' // order.update – the permission being governed
   | 'IDENTIFIER' // user.roles, env.time.hour – dot‑notation paths or simple names
   | 'COLON' // : – separates keyword from block content
   | 'COMMA' // , – separates array elements
@@ -35,6 +35,9 @@ export type TokenType =
   | 'EQ_NULL' // is null – special null equality
   | 'NOT_EQ_NULL' // is not null – special null inequality
   | 'NOT_EQ' // not equal
+  | 'LEN_GT' // length greater
+  | 'LEN_LT' // length less
+  | 'LEN_EQ' // length equals
 
   // -------------------------------------------------------------------------
   // #region Literal values
@@ -85,7 +88,7 @@ export class AbilityDSLToken<Code extends TokenType = TokenType> extends Ability
 
   public static readonly EFFECT: TokenType = 'EFFECT';
   public static readonly IF: TokenType = 'IF';
-  public static readonly ACTION: TokenType = 'ACTION';
+  public static readonly PERMISSION: TokenType = 'PERMISSION';
   public static readonly IDENTIFIER: TokenType = 'IDENTIFIER';
   public static readonly COLON: TokenType = 'COLON';
   public static readonly COMMA: TokenType = 'COMMA';
@@ -109,6 +112,9 @@ export class AbilityDSLToken<Code extends TokenType = TokenType> extends Ability
   public static readonly NULL: TokenType = 'NULL';
   public static readonly EQ_NULL: TokenType = 'EQ_NULL';
   public static readonly NOT_EQ_NULL: TokenType = 'NOT_EQ_NULL';
+  public static readonly LEN_GT: TokenType = 'LEN_GT';
+  public static readonly LEN_LT: TokenType = 'LEN_LT';
+  public static readonly LEN_EQ: TokenType = 'LEN_EQ';
   public static readonly NOT_EQ: TokenType = 'NOT_EQ';
   public static readonly STRING: TokenType = 'STRING';
   public static readonly NUMBER: TokenType = 'NUMBER';

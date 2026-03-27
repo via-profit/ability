@@ -20,7 +20,7 @@ describe('Complex integration scenarios', () => {
     const config: AbilityPolicyConfig = {
       id: 'policy-1',
       name: 'Deny status change for non-admins',
-      action: 'order.status',
+      permission: 'order.status',
       effect: 'deny',
       compareMethod: 'and',
       ruleSet: [
