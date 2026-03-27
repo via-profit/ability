@@ -158,7 +158,8 @@ permit permission.order.update if any:
 
 ### Ключ разрешения (permission key)
 
-Ключ разрешения записываются в `dot notation` виде, но поддерживают возможность использования шаблонов при помощи символа `*`. Это позволяет группировать ключи, а так же переопределять политики с похожими ключами.
+Ключ разрешения записываются в `dot notation` виде, но поддерживают возможность использования wildcard шаблонов при
+помощи символа `*`. Это позволяет группировать ключи, а так же переопределять политики с похожими ключами.
 
 Если под ключ подходит несколько политик, **выполняются все**. Итог определяется **последней совпавшей политикой**:
 
@@ -176,24 +177,42 @@ permit permission.order.update if any:
 | `user.profile.*`  | `user.profile.update`  | да |
 | `user.profile.*`  | `user.settings.update` | нет |
 
+**Пример политики с wildcard**
 ```ts
-const policies = [
-  AbilityPolicy.parse({
-    permission: 'order.*',
-    effect: 'permit',
-    compareMethod: 'and',
-    ruleSet: [],
-  }),
-  AbilityPolicy.parse({
-    permission: 'order.update',
-    effect: 'deny',
-    compareMethod: 'and',
-    ruleSet: [],
-  }),
-];
+import { AbilityDSLParser, AbilityResolver } from '@via-profit/ability';
 
-await new AbilityResolver(policies).enforce('order.update', resource);
+// DSL не полный и показан только ради примера
+const dsl = `
+permit permission.order.*
+deny permission.order.update
+`;
+
+const policies = new AbilityDSLParser(dsl).parse();
+const resolver = new AbilityResolver(policies);
+
+await resolver.enforce('order.update', resource); // выбросит AbilityError
+
 ```
+
+**Пояснение**
+
+В DSL порядок политик имеет значение:
+последняя совпавшая политика выигрывает.
+
+Поэтому:
+
+1. `permit` `permission.order.*` разрешает всё, что начинается с `order.`
+2. `deny` `permission.order.update` перекрывает это разрешение.
+
+Итог выполнения:
+
+```
+order.update → deny
+order.create → permit
+order.delete → permit
+order.view   → permit
+```
+
 
 ### Комментарии
 
