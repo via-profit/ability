@@ -768,6 +768,7 @@ console.log(result.isAllowed()); // false ✔
 // hooks/use-ability.ts
 import { useEffect, useState } from 'react';
 import { AbilityResolver } from '@via-profit/ability';
+import { Resources } from './generated-types';
 
 export function useAbility<Permission extends keyof Resources>(
   resolver: AbilityResolver<Resources>,
