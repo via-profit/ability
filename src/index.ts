@@ -16,6 +16,5 @@ export * from './cache/AbilityCacheAdapter';
 export * from './cache/AbilityInMemoryCache';
 export * from './parsers/json/AbilityJSONParser';
 export * from './parsers/dsl/AbilityDSLParser';
-export * from './parsers/dsl/AbilityDSLTokenType';
 export * from './parsers/dsl/AbilityDSLLexer';
 export * from './parsers/dsl/AbilityDSLToken';

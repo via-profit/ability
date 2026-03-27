@@ -188,14 +188,16 @@ export class AbilityDSLLexer {
     const start = this.pos;
 
     // Первый сегмент
-    while (!this.isAtEnd() && /[a-zA-Z0-9_]/.test(this.peek())) {
+    while (!this.isAtEnd() && /[a-zA-Z0-9_*]/.test(this.peek())) {
       this.advance();
     }
     // Сегменты через точку
     while (!this.isAtEnd() && this.peek() === '.') {
       this.advance(); // dot
-      if (!/[a-zA-Z_]/.test(this.peek())) break;
-      while (!this.isAtEnd() && /[a-zA-Z0-9_]/.test(this.peek())) {
+      if (!/[a-zA-Z_*]/.test(this.peek())) {
+        break;
+      }
+      while (!this.isAtEnd() && /[a-zA-Z0-9_*]/.test(this.peek())) {
         this.advance();
       }
     }

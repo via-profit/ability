@@ -20,6 +20,7 @@
 - [Отладка политик](#отладка-политик)
 - [Решение проблем](#решение-проблем)
 - [Рекомендации по проектированию](#рекомендации-по-проектированию)
+- [Примеры](#примеры)
 - [Api-Reference](./docs/ru/api.md)
 
 
@@ -107,6 +108,7 @@ resolver.enforce('user.passwordHash', {
 4. В группе правил (`RuleSet`) с оператором сравнения `all` дальнейшее выполнение правил прекращается как только первое же правило вернёт `mismatch`.
 5. Для составления политик используйте [DSL](#dsl) — это проще и удобнее
 6. Для хранения политик на сервере используйте JSON. Политики возможно экспортировать в JSON и импортировать из JSON
+7. Чаще всего следует опираться на утверждение если разрешение не выдано явно → доступ запрещён.
 
 ---
 
@@ -800,6 +802,183 @@ function OrderUpdateButton({ order, user }) {
   return <button>Update order</button>;
 }
 ```
+
+
+## Примеры
+
+
+### Пример сложной многоступенчатой политики
+
+Ниже - сложный набора политик, на примере использования в кинотеатре (выбуманный пример).
+
+**Пример демонстрирует:**
+ - работу с ролями (admin, seller, manager, VIP, banned),
+ - временные ограничения (`env.time.hour`),
+ - wildcard‑права (`permission.*`),
+ - ограничения по количеству билетов,
+ - запрет на продажу уже проданных билетов,
+ - комбинацию `permit`/`deny`‑политик,
+ - приоритет политик и модель Default Deny.
+
+
+**Краткое описание правил**
+- **Администратор**  
+  Имеет wildcard‑права (`permission.*`) и может выполнять любые действия.  
+  Может редактировать стоимость билетов.
+
+- **Продавец**  
+  Может продавать билеты только в рабочие часы (09:00–23:00).  
+  Не может продавать билеты, если:
+   - кинотеатр закрыт,
+   - билет уже продан.
+
+- **Менеджер**  
+  Имеет те же права, что и продавец.
+
+- **Покупатели**
+   - Пользователь старше 21 года может покупать билеты.
+   - VIP‑пользователь может покупать билеты в любое время.
+   - Заблокированный пользователь (`status = banned`) не может покупать билеты.
+   - Любой пользователь не может купить более 6 билетов.
+
+
+**Общая диаграмма политик**
+
+```mermaid
+flowchart LR
+
+%% ==== ROLES ====
+
+   subgraph Roles[Роли]
+      A[Администратор]
+      B[Продавец]
+      C[Менеджер]
+   end
+
+   subgraph Buyers[Покупатели]
+      U1[Пользователь > 21]
+      U2[VIP пользователь]
+      U3[Заблокированный пользователь]
+   end
+
+%% ==== ADMIN ====
+
+   A --> A1[Wildcard: permission.*]
+   A --> A2[Редактировать цену билетов]
+
+   A1 --> FINAL[Итоговое решение]
+   A2 --> FINAL
+
+%% ==== SELLER ====
+
+   B --> B1[Продавать билеты]
+
+   B1 -->|09:00–23:00| B2[Разрешено]
+   B1 -->|Вне времени| D2[Запрещено]
+   B1 -->|ticket.status = sold| D3[Запрещено]
+
+   B2 --> FINAL
+   D2 --> FINAL
+   D3 --> FINAL
+
+%% ==== MANAGER ====
+
+   C --> C1[Продавать билеты как продавец]
+   C1 --> FINAL
+
+%% ==== BUYERS ====
+
+   U1 --> U1A[Покупать билеты]
+   U1A -->|ticketsCount < 6| U1OK[Разрешено]
+   U1A -->|ticketsCount ≥ 6| U1DENY[Запрещено]
+
+   U2 --> U2A[Покупать билеты в любое время]
+   U2A -->|ticketsCount < 6| U2OK[Разрешено]
+   U2A -->|ticketsCount ≥ 6| U2DENY[Запрещено]
+
+   U3 --> U3A[Запрещено покупать билеты]
+
+   U1OK --> FINAL
+   U1DENY --> FINAL
+   U2OK --> FINAL
+   U2DENY --> FINAL
+   U3A --> FINAL
+
+%% ==== DENY RULES ====
+
+   D1[Запрещено покупать билеты, если user.status = banned] --> FINAL
+
+```
+
+**DSL политик**
+
+```dsl
+############################################################
+# @name Admin can edit ticket price
+permit permission.ticket.price.edit if all:
+  user.role is equals 'admin'
+
+
+############################################################
+# @name Seller can sell tickets during working hours
+permit permission.ticket.sell if all:
+  user.role is equals 'seller'
+  all of:
+    env.time.hour greater than or equal 9
+    env.time.hour less than or equal 23
+
+
+############################################################
+# @name Users older than 21 can buy tickets
+permit permission.ticket.buy if all:
+  user.age greater than 21
+
+
+############################################################
+# @name VIP users can buy tickets anytime
+permit permission.ticket.buy if all:
+  user.isVIP is true
+
+
+############################################################
+# @name Deny buying tickets if user is banned
+deny permission.ticket.buy if all:
+  user.status is equals 'banned'
+
+
+############################################################
+# @name Deny selling tickets if cinema is closed
+deny permission.ticket.sell if all:
+  any of:
+    env.time.hour less than 9
+    env.time.hour greater than 23
+
+
+############################################################
+# @name Manager can do everything seller can
+permit permission.ticket.sell if all:
+  user.role is equals 'manager'
+
+
+############################################################
+# @name Admin wildcard permissions
+permit permission.* if all:
+  user.role is equals 'admin'
+
+
+############################################################
+# @name Limit tickets per user (max 6)
+deny permission.ticket.buy if all:
+  user.ticketsCount greater than or equal 6
+
+
+############################################################
+# @name Cannot sell already sold tickets
+deny permission.ticket.sell if all:
+  ticket.status is equals 'sold'
+
+```
+
 
 
 ## Лицензия
