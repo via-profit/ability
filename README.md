@@ -813,7 +813,7 @@ function OrderUpdateButton({ order, user }) {
 
 **Пример демонстрирует:**
  - работу с ролями (admin, seller, manager, VIP, banned),
- - временные ограничения (`env.time.hour`),
+ - временн́ые ограничения (`env.time.hour`),
  - wildcard‑права (`permission.*`),
  - ограничения по количеству билетов,
  - запрет на продажу уже проданных билетов,
