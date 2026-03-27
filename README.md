@@ -980,6 +980,143 @@ deny permission.ticket.sell if all:
 ```
 
 
+Ниже показано, как использовать приведённые выше политики в Node.js + TypeScript.
+
+**Подготовка политик**
+
+```ts
+import { AbilityDSLParser } from '@via-profit/ability';
+import cinemaDSL from './policies/cinema.dsl';
+
+export const policies = new AbilityDSLParser(cinemaDSL).parse();
+```
+
+**Создание резолвера**
+
+```ts
+import { AbilityResolver } from '@via-profit/ability';
+import { policies } from './policies';
+
+const resolver = new AbilityResolver(policies);
+```
+
+**Проверка разрешений (enforce)**
+
+Пример: покупка билета.
+
+Метод enforce выбрасывает исключение `AbilityError`, если доступ запрещён.
+
+```ts
+await resolver.enforce('ticket.buy', {
+  user: { age: 25, ticketsCount: 1 },
+  env: { time: { hour: 18 } },
+});
+
+```
+Если разрешено — код продолжит выполнение.
+Если запрещено — будет выброшено исключение `AbilityError`.
+
+
+
+**Проверка разрешений без исключений (resolve)**
+
+`resolve` возвращает объект результата:
+
+```ts
+const result = await resolver.resolve('ticket.buy', {
+  user: { age: 25, ticketsCount: 1 },
+  env: { time: { hour: 18 } },
+});
+
+if (result.isAllowed()) {
+  console.log('Покупка разрешена');
+} else {
+  console.log('Покупка запрещена');
+}
+
+```
+
+**Продавец может продавать только в рабочие часы***
+
+```ts
+await resolver.enforce('ticket.sell', {
+  user: { role: 'seller' },
+  env: { time: { hour: 15 } },
+  ticket: { status: 'available' },
+});
+
+```
+
+**Подготовка данных для резолвера**
+
+В примерах выше в резолвер передаются простые константные объекты:
+
+```ts
+resolver.enforce('ticket.buy', {
+  user: { age: 25 },
+  env: { time: { hour: 18 } },
+});
+```
+
+Это сделано для наглядности. В реальном приложении данные для резолвера должны формироваться динамически — из тех источников, которые доступны вашему серверу.
+
+**Пользователь** (`user`) обычно берётся из:
+
+
+- JWT‑токена
+- сессии
+- базы данных
+- middleware авторизации
+
+Пример:
+
+```ts
+const user = await db.users.findById(session.userId);
+```
+
+**Окружение (Environment)** (`env`)
+
+Это любые внешние параметры, которые могут влиять на доступ:
+
+- текущее время сервера
+- часовой пояс
+- IP‑адрес
+- заголовки запроса
+- конфигурация системы
+
+Пример:
+
+```ts
+const env = {
+  time: {
+    hour: new Date().getHours(),
+  },
+  ip: req.ip,
+};
+```
+
+**Ресурс** (например, `ticket`)
+
+Если действие связано с конкретным объектом — его тоже нужно загрузить:
+
+```ts
+const ticket = await db.tickets.findById(req.params.ticketId);
+```
+
+**Контекст**
+
+Контекст — это объект, который вы передаёте в `resolve` или `enforce`.  
+Он содержит **все данные**, которые могут понадобиться политикам:
+
+- `user` — данные о текущем пользователе
+- `env` — данные окружения (время, IP, география, настройки системы)
+- `resource` или `ticket` — данные о сущности, над которой выполняется действие
+- любые другие объекты, которые вы используете в DSL
+
+**Важно понимать:**
+
+> Контекст формируется под конкретное действие и конкретные политики. Его не нужно хранить заранее — вы собираете его динамически перед вызовом резолвера.
+
 
 ## Лицензия
 
