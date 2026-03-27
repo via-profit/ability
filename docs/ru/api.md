@@ -2,7 +2,10 @@
 
 ---
 
-[🇷🇺 Русская версия](api.md) | [🇬🇧 English](/docs/en/api.md)
+# Language / Язык
+
+- [🇬🇧 English](/docs/en/api.md)
+- [🇷🇺 Русский](/docs/ru/api.md)
 
 
 ## AbilityRule

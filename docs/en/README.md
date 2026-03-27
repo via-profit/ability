@@ -3,7 +3,10 @@
 > A set of services that partially implement the [Attribute Based Access Control](https://en.wikipedia.org/wiki/Attribute-based_access_control) principle.
 > The package allows you to describe rules, combine them into groups, form policies, and apply them to data to determine permissions.
 
-[🇬🇧 English](README.md) | [🇷🇺 Русская версия](/docs/ru/README.md)
+# Language / Язык
+
+- [🇬🇧 English](/docs/en/README.md)
+- [🇷🇺 Русский](/docs/ru/README.md)
 
 ## Purpose
 
