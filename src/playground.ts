@@ -75,26 +75,10 @@ server.on('request', async  (_req, res) => {
     user.logit is equals 'dev'
 `;
 
-  let policies;
-  // Парсинг DSL и получение массива политик (в нашем случае она одна)
-  try {
-    policies = new AbilityDSLParser(dsl).parse();
-  } catch (err) {
-    if (err instanceof AbilityDSLSyntaxError) {
-      res.statusCode = 400;
-      res.end(err.toString());
-      return;
-    }
+ const policies = new AbilityDSLParser<MyResources>(dsl).parse();
 
-    // другие ошибки — пробрасываем
-    throw err;
-  }
-
-
-  // Создание резолвера для управления политиками
   const resolver = new AbilityResolver(policies);
 
-  // Данные пользователя, который получает доступ
   const viewer = {
     id: '123',
   };
@@ -107,9 +91,10 @@ server.on('request', async  (_req, res) => {
     // passwordHash: '...'
   };
 
-  const result = await resolver.resolve('user.passwordHash', {
-    viewer,
-    owner: user,
+  const result = await resolver.resolve('order.status', {
+    order: {
+      amount: 200
+    }
   });
 
   console.log(result.isDenied()); // true

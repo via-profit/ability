@@ -1,13 +1,13 @@
-import AbilityCompare from '~/core/AbilityCompare';
-import AbilityCondition from '~/core/AbilityCondition';
-import AbilityPolicy from '~/core/AbilityPolicy';
-import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
-import AbilityRule, { AbilityRuleConfig } from '~/core/AbilityRule';
-import AbilityRuleSet from '~/core/AbilityRuleSet';
-import { AbilityDSLLexer } from '~/parsers/dsl/AbilityDSLLexer';
-import { AbilityDSLToken, TokenType } from '~/parsers/dsl/AbilityDSLToken';
-import { ResourceObject } from '~/core/AbilityParser';
-import { AbilityDSLSyntaxError } from '~/parsers/dsl/AbilityDSLSyntaxError';
+import AbilityCompare from '../../core/AbilityCompare';
+import AbilityCondition from '../../core/AbilityCondition';
+import AbilityPolicy from '../../core/AbilityPolicy';
+import AbilityPolicyEffect from '../../core/AbilityPolicyEffect';
+import AbilityRule, { AbilityRuleConfig } from '../../core/AbilityRule';
+import AbilityRuleSet from '../../core/AbilityRuleSet';
+import { AbilityDSLLexer } from '../../parsers/dsl/AbilityDSLLexer';
+import { AbilityDSLToken, TokenType } from '../../parsers/dsl/AbilityDSLToken';
+import { ResourceObject } from '../../core/AbilityParser';
+import { AbilityDSLSyntaxError } from '../../parsers/dsl/AbilityDSLSyntaxError';
 
 /**
  * Parser for the Ability DSL.
@@ -29,6 +29,7 @@ export class AbilityDSLParser<
   Resource extends ResourceObject = Record<string, unknown>,
   Environment = unknown,
 > {
+  private dsl: string;
   private tokens: AbilityDSLToken[] = [];
   private pos = 0;
   private annotationBuffer: Record<'name' | 'description', string | null> = {
@@ -36,13 +37,15 @@ export class AbilityDSLParser<
     description: null,
   };
 
-  constructor(private readonly dsl: string) {}
+  constructor(dsl: string) {
+    this.dsl = dsl;
+  }
 
   /**
    * Main entry point: tokenize the input and parse all policies.
    * @returns Array of AbilityPolicy instances.
    */
-  public parse(): AbilityPolicy<Resource, Environment>[] {
+  public parse(): readonly AbilityPolicy<Resource, Environment>[] {
     // Tokenize the entire DSL string.
     this.tokens = new AbilityDSLLexer(this.dsl).tokenize();
     this.pos = 0;
@@ -522,7 +525,7 @@ export class AbilityDSLParser<
   private matchSymbol(symbol: string): boolean {
     if (this.isAtEnd()) return false;
     const token = this.peek();
-    if (token.code === AbilityDSLToken.SYMBOL &&token.value === symbol) {
+    if (token.code === AbilityDSLToken.SYMBOL && token.value === symbol) {
       this.advance();
       return true;
     }

@@ -1,4 +1,4 @@
-import { AbilityDSLParser } from '~/parsers/dsl/AbilityDSLParser';
+import { AbilityDSLParser } from '../../parsers/dsl/AbilityDSLParser';
 import AbilityResolver from '../../core/AbilityResolver';
 
 describe('DSL isAllowed/isDenied test', () => {

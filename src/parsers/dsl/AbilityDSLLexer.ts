@@ -1,4 +1,4 @@
-import { AbilityDSLToken } from '~/parsers/dsl/AbilityDSLToken';
+import { AbilityDSLToken } from '../../parsers/dsl/AbilityDSLToken';
 
 export class AbilityDSLLexer {
   private readonly input: string;

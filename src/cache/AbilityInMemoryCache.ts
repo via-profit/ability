@@ -1,4 +1,4 @@
-import { AbilityCacheAdapter } from '~/cache/AbilityCacheAdapter';
+import { AbilityCacheAdapter } from '../cache/AbilityCacheAdapter';
 
 export class AbilityInMemoryCache implements AbilityCacheAdapter {
   private store = new Map<string, { value: unknown; expires: number }>();
