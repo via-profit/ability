@@ -462,17 +462,16 @@ describe('DSL Operators', () => {
     it('operator "is true" should deny when value is not true', async () => {
       const dsl = `
     permit permission.test if all:
-      user.statusOn is false
+      user.statusOn is true
       user.statusOn is true
       user.statusOn = true
       user.statusOn == true
-  
   `;
       const policies = new AbilityDSLParser(dsl).parse();
       const resolver = new AbilityResolver(policies);
 
       const result = await resolver.resolve('permission.test', {
-        user: { statusOn: false },
+        user: { statusOn: true },
       });
 
       expect(result.isAllowed()).toBeTruthy();

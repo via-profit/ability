@@ -4,422 +4,175 @@
 > принцип [Attribute Based Access Control](https://en.wikipedia.org/wiki/Attribute-based_access_control)
 > Пакет позволяет описывать правила, объединять их в группы, формировать политики и применять их к данным для определения разрешений.
 
----
+## Для чего
+
+Пакет задуман как **лёгкая и предельно простая альтернатива** тяжёлым системам управления доступом.  
+Без сложных конфигураций, без зависимостей — только минимальный набор инструментов, который позволяет описывать правила и политики в максимально простом DSL.
 
 ## Содержание
 
-- [Установка](#установка)
 - [Быстрый старт](#быстрый-старт)
-  - [Состав пакета](#состав-пакета)
-  - [Основные принципы](#основные-принципы)
+- [Основные положения](#основные-положения)
 - [DSL](#dsl)
-- [Правила](#правила)
-  - [Создание правила](#создание-правила)
-  - [Проверка правила](#проверка-правила)
-  - [Типичные ошибки при работе с правилами](#типичные-ошибки-при-работе-с-правилами)
-- [Группы правил](#группы-правил)
-  - [Создание группы правил](#создание-группы-правил)
-  - [Проверка группы правил](#проверка-группы-правил)
-  - [Типичные ошибки при работе с группами](#типичные-ошибки-при-работе-с-группами)
-- [Политики](#политики)
-  - [Создание политики](#создание-политики)
-  - [Проверка политики](#проверка-политики)
-  - [Как формируется итоговый эффект](#как-формируется-итоговый-эффект)
-- [Управление политиками](#управление-политиками)
-  - [Зачем нужен AbilityResolver](#зачем-нужен-abilityresolver)
-  - [Wildcard в экшенах](#wildcard-в-экшенах)
-  - [Приоритет и множественные совпадения](#приоритет-и-множественные-совпадения)
-  - [Комбинирование точных действий и wildcard](#комбинирование-точных-действий-и-wildcard)
-  - [Интеграция с TypeScript](#интеграция-с-typescript)
-- [Environment (контекст выполнения)](#environment-контекст-выполнения)
-- [Кэш](#кэш)
-- [AbilityResult и Explain](#abilityresult-и-explain)
-  - [AbilityResult](#abilityresult)
-  - [AbilityExplain](#abilityexplain)
+- [Объединение политик](#объединение-политик)
+- [Environment политик](#environment-политик)
+- [Генератор типов для TypeScript](#генератор-типов-для-typescript)
+- [Отладка политик](#отладка-политик)
+- [Решение проблем](#решение-проблем)
 - [Рекомендации по проектированию](#рекомендации-по-проектированию)
-  - [Именование действий](#именование-действий)
-  - [Структура данных](#структура-данных)
-  - [Проектирование политик](#проектирование-политик)
-  - [Типичные ошибки](#типичные-ошибки)
-- [API Reference](#api-reference)
-  - [AbilityRule](#abilityrule)
-  - [AbilityRuleSet](#abilityruleset)
-  - [AbilityPolicy](#abilitypolicy)
-  - [AbilityResolver](#abilityresolver)
-  - [AbilityResult](#abilityresult-api)
-  - [AbilityExplain](#abilityexplain-api)
-  - [AbilityParser](#abilityparser)
-  - [AbilityMatch](#abilitymatch)
-  - [AbilityCompare](#abilitycompare)
-  - [AbilityCondition](#abilitycondition)
-  - [AbilityPolicyEffect](#abilitypolicyeffect)
-  - [AbilityError](#abilityerror)
-  - [AbilityCache](#abilitycache)
-  - [AbilityJSONParser](abilityjsonparser)
+- [Api-Reference](./docs/ru/api.md)
+
+
+## Быстрый старт
+
+Установить пакет, написать DSL, вызвать парсер, запустить резолвер.
+
+### Установка
+
+```bash
+npm install @via-profit/ability
+```
+
+```bash
+yarn add @via-profit/ability
+```
+
+```bash
+pnpm add @via-profit/ability
+```
+
+
+### Пример: запретить доступ к `passwordHash` всем, кроме владельца
+
+Допустим, у нас есть пользовательские данные:
+
+```ts
+const user = {
+  id: '1',
+  login: 'user-001',
+  passwordHash: '...',
+};
+```
+
+Нужно запретить чтение `passwordHash` всем, кроме самого пользователя.
+
+#### DSL‑политика
+
+На языке политик это выглядит так:
+
+```
+deny permission.user.passwordHash if any:
+  viewer.id is not equals owner.id
+```
+
+**Пояснение:**
+
+- `deny` — эффект политики (запретить доступ)
+- `permission.user.passwordHash` — ключ разрешения.
+- `if any:` — начало блока условий
+- `viewer.id is not equals owner.id` — правило: если идентификатор запрашивающего не равен идентификатору владельца
+
+
+Если `viewer.id` не равен `owner.id`, правило считается выполненным, и политика возвращает `deny` — доступ запрещён. Если же идентификаторы совпадают (т.е. пользователь запрашивает свои собственные данные), правило не срабатывает, и доступ разрешается.
+
+_Замечание: Ключ разрешения формируется по принципу: `permission.` + ваш кастомный ключ в формате **dot notation**, например, ключ `foo.bar.baz` в DSL будет иметь вид `permission.foo.bar.baz`_
+
+#### Проверка в коде
+
+```ts
+import { AbilityDSLParser, AbilityResolver } from '@via-profit/ability';
+
+const dsl = `
+deny permission.user.passwordHash if any:
+  viewer.id is not equals owner.id
+`;
+
+const policies = new AbilityDSLParser(dsl).parse(); // получение политик
+const resolver = new AbilityResolver(policies); // создание резолвера
+
+resolver.enforce('user.passwordHash', {
+  viewer: { id: '1' },
+  owner: { id: '2' },
+}); // выбросит ошибку — доступ запрещён
+```
+В `enforce` передаётся ключ без префикса `permission.` — он автоматически удаляется парсером.
+
+## Основные положения
+
+Тезисно перечислим основные положения, которые необходимо знать перед тем как начать пользоваться пакетом:
+
+1. Резолвер (`AbilityResolver`) настроен по принципу `Default Deny`. Это значит, что если ни одна политика не сработала, то результат будет `deny` ([подробнее здесь](#решение-проблем)). Чтобы избежать неожиданного `deny`, убедитесь, что существует хотя бы одна `permit`‑политика, которая может совпасть. Только после этого добавляйте `deny`‑политики.
+2. Политики применяются последовательно. Если несколько политик совпали, результат определяется последней совпавшей политикой.
+3. Правила выполняются последовательно.
+4. В группе правил (`RuleSet`) с оператором сравнения `all` дальнейшее выполнение правил прекращается как только первое же правило вернёт `mismatch`.
+5. Для составления политик используйте [DSL](#dsl) — это проще и удобнее
+6. Для хранения политик на сервере используйте JSON. Политики возможно экспортировать в JSON и импортировать из JSON
 
 ---
 
+## DSL
 
+> DSL - Domain-Specific Language
 
-### Состав пакета
+Ability DSL — это декларативный язык для описания политик доступа.  
+Он позволяет определять правила в человекочитаемой форме, используя простые конструкции: *политики*, *группы*, *правила* и *аннотации*.
 
-#### Ядро (Core)
+### Структура политики
 
-- **AbilityRule** — класс отдельного правила
-- **AbilityRuleSet** — класс группы правил
-- **AbilityPolicy** — класс политики
-- **AbilityResolver** — управление политиками и вычисление итогового решения
-- **AbilityResult** — результат работы политик для конкретного действия
-- **AbilityMatch** — константы состояния проверки (`pending`, `match`, `mismatch`)
-- **AbilityCompare** — способы сравнения (`or`, `and`)
-- **AbilityCondition** — операции сравнения (`equal`, `not_equal`, `more_than`, `less_than`, `in`, `not_in` и др.)
-- **AbilityPolicyEffect** — эффекты политики (`deny`, `permit`)
-- **AbilityParser** — парсер конфигурационных правил (JSON) и генератор TypeScript-типов
-- **AbilityError** — класс ошибок
-- **AbilityExplain** — вспомогательный инструмент для человекочитаемых объяснений результата
-
-#### Кэш (Cache)
-
-- `AbilityCacheAdapter` — интерфейс адаптера кэша
-- `AbilityInMemoryCache` — встроенный кэш в памяти (используется по умолчанию)
-
-### Основные принципы
-
-Система строится на трёх уровнях:
-
-1. **Правила (AbilityRule)** — минимальные условия сравнения.
-2. **Группы правил (AbilityRuleSet)** — объединение правил с логикой `and` или `or`.
-3. **Политики (AbilityPolicy)** — набор групп правил + ключ разрешения (`permission`) + эффект (`effect`).
-
-Политики применяются через **AbilityResolver**, который:
-
-- отбирает подходящие политики по `permission` (с учётом wildcard),
-- выполняет их проверку,
-- формирует итоговый результат в виде **AbilityResult**.
-
----
-
-
-
-## Правила
-
-Правило выполняет одно сравнение над ресурсом: сравнивает значение поля субъекта и ресурса с использованием заданного оператора.
-
-### Создание правила
-
-Создать правило можно:
-
-1. Через конструктор.
-2. Через парсинг JSON-конфига.
-
-```ts
-import { AbilityRule, AbilityCondition } from '@via-profit/ability';
-
-const rule = new AbilityRule({
-  id: 'rule-department-managers',
-  name: 'Пользователь из отдела managers',
-  subject: 'user.department', // <-- subject - это всегда строка dot.notation
-  resource: 'managers',  // <-- resource может быть dot.notation строкой, либо значением примитива
-  condition: AbilityCondition.equals,
-});
-
-// Сокращённая запись через статический конструктор
-const rule2 = AbilityRule.equals(
-  'user.department', // subject
-  'managers',        // resource
-);
-```
-
-Через JSON:
-
-```ts
-import { AbilityRule } from '@via-profit/ability';
-
-const rule = AbilityRule.fromJSON({
-  id: 'rule-department-managers',
-  name: 'Пользователь из отдела managers',
-  subject: 'user.department',
-  resource: 'managers',
-  condition: '=',
-});
-```
-
-### Проверка правила
-
-```ts
-import { AbilityMatch } from '@via-profit/ability';
-
-const match = await rule.check({
-  user: {
-    department: 'managers',
-  },
-});
-
-const isMatch = match.isEqual(AbilityMatch.match); // true
-```
-
-### Типичные ошибки при работе с правилами
-
-- Неверный путь в `subject` или `resource` (опечатки в dot-notation).
-- Использование неподходящего `condition` (например, `in` для числа).
-- Ожидание, что правило само выбросит исключение — оно только возвращает состояние (`match`/`mismatch`).
-
----
-
-## Группы правил
-
-Группа правил (`AbilityRuleSet`) объединяет несколько правил и возвращает один итоговый результат.
-
-### Создание группы правил
-
-```ts
-import { AbilityRuleSet, AbilityCompare } from '@via-profit/ability';
-
-const ruleSet = new AbilityRuleSet({
-  id: 'rs1',
-  name: 'Менеджеры, не администраторы',
-  compareMethod: AbilityCompare.and,
-}).addRules([
-  AbilityRule.equal('user.department', 'managers'),
-  AbilityRule.notIn('user.roles', 'administrator'),
-]);
-
-// Сокращённая запись
-const ruleSet2 = AbilityRuleSet.and([
-  AbilityRule.equal('user.department', 'managers'),
-  AbilityRule.notIn('user.roles', 'administrator'),
-]);
-```
-
-Через JSON:
-
-```ts
-import { AbilityRuleSet } from '@via-profit/ability';
-
-const ruleSet = AbilityRuleSet.parse({
-  id: 'rs1',
-  name: 'Менеджеры',
-  compareMethod: 'and',
-  rules: [
-    {
-      id: 'r1',
-      name: 'Отдел managers',
-      subject: 'user.department',
-      resource: 'managers',
-      condition: '=',
-    },
-  ],
-});
-```
-
-### Проверка группы правил
-
-```ts
-const match = await ruleSet.check({
-  user: {
-    department: 'managers',
-    roles: ['manager'],
-  },
-});
-
-const isMatch = match.isEqual(AbilityMatch.match);
-```
-
-### Типичные ошибки при работе с группами
-
-- Неправильный выбор `compareMethod`:
-  - `and` — все правила должны совпасть.
-  - `or` — достаточно одного совпадения.
-- Пустой список правил: группа всегда будет `mismatch`.
-
----
-
-## Политики
-
-Политика (`AbilityPolicy`) объединяет группы правил и определяет итоговый эффект (`permit` или `deny`) при совпадении.
-
-### Создание политики
-
-```ts
-import {
-  AbilityPolicy,
-  AbilityPolicyEffect,
-  AbilityCompare,
-  AbilityRuleSet,
-  AbilityRule,
-  AbilityCondition,
-} from '@via-profit/ability';
-
-const policy = new AbilityPolicy({
-  id: 'policy-order-update-deny-managers',
-  name: 'Запрет обновления заказа для менеджеров (кроме админов)',
-  permission: 'order.update',
-  effect: AbilityPolicyEffect.deny,
-  compareMethod: AbilityCompare.and,
-  ruleSet: [
-    new AbilityRuleSet({
-      id: 'rs-managers',
-      name: 'Менеджеры',
-      compareMethod: AbilityCompare.or,
-    }).addRules([
-      new AbilityRule({
-        id: 'r-dept',
-        name: 'Отдел managers',
-        subject: 'user.department',
-        resource: 'managers',
-        condition: AbilityCondition.equals,
-      }),
-      new AbilityRule({
-        id: 'r-role-manager',
-        name: 'Роль manager',
-        subject: 'user.roles',
-        resource: 'manager',
-        condition: AbilityCondition.in,
-      }),
-    ]),
-    new AbilityRuleSet({
-      id: 'rs-not-admin',
-      name: 'Не администраторы',
-      compareMethod: AbilityCompare.and,
-    }).addRules([
-      AbilityRule.notIn('user.roles', 'administrator'),
-    ]),
-  ],
-});
-```
-
-Через JSON:
-
-```ts
-import { AbilityPolicy } from '@via-profit/ability';
-
-const policy = AbilityPolicy.parse({
-  id: 'policy-order-update-deny-managers',
-  name: 'Запрет доступа для менеджеров (исключение: администраторы)',
-  permission: 'order.update',
-  effect: 'deny',
-  compareMethod: 'and',
-  ruleSet: [
-    {
-      name: 'Менеджеры',
-      compareMethod: 'or',
-      rules: [
-        {
-          name: 'Отдел managers',
-          subject: 'user.department',
-          resource: 'managers',
-          condition: 'in',
-        },
-        {
-          name: 'Роль manager',
-          subject: 'user.roles',
-          resource: 'manager',
-          condition: 'in',
-        },
-      ],
-    },
-    {
-      name: 'Не администраторы',
-      compareMethod: 'and',
-      rules: [
-        {
-          name: 'Нет роли administrator',
-          subject: 'user.roles',
-          resource: 'administrator',
-          condition: 'not in',
-        },
-      ],
-    },
-  ],
-});
-```
-
-Через DSL:
+Политика состоит из:
 
 ```
-# @name Запрет доступа для менеджеров (исключение: администраторы)
-deny order.update if all:
+<effect> <permission> if <all|any>:
+  <group>...
+```
 
-  # @name Менеджеры
-  any of:
-    # @name Отдел managers
-    user.department in 'managers'
+Где:
 
-    # @name Роль manager
-    user.roles in 'manager'
+- **effect** — `permit` или `deny`
+- **permission** — строка вида `permission.foo.bar`, где суффикс `permission.` обязателен.
+- **if all:** — все группы должны быть истинны
+- **if any:** — хотя бы одна группа должна быть истинна
 
-  # @name Не администраторы
+Политика может содержать одну или несколько групп правил.
+
+Пример:
+
+```dsl
+permit permission.order.update if any:
   all of:
-    # @name Нет роли administrator
-    user.roles not in 'administrator'
+    user.roles contains 'admin'
+    user.token is not null
+
+  any of:
+    user.roles contains 'developer'
+    user.login is equals 'dev'
 ```
 
+> Префикс `permission.` обязателен в DSL, но автоматически удаляется парсером. Внутри системы разрешение хранится как `order.update`.
 
-### Проверка политики
+Пример политики выше гласит - разрешение `permission.order.update` будет разрешено при выполнении одного из двух условий:
+1. user.roles содержит 'admin' **и** user.token не null
+2. user.roles содержит 'developer' **или** user.login равен 'dev'
 
-```ts
-import { AbilityMatch } from '@via-profit/ability';
+### Ключ разрешения (permission key)
 
-const match = await policy.check({
-  user: {
-    department: 'managers',
-    roles: ['manager', 'coach'],
-  },
-});
+Ключ разрешения записываются в `dot notation` виде, но поддерживают возможность использования шаблонов при помощи символа `*`. Это позволяет группировать ключи, а так же переопределять политики с похожими ключами.
 
-const isMatch = match.isEqual(AbilityMatch.match);
-```
+Если под ключ подходит несколько политик, **выполняются все**. Итог определяется **последней совпавшей политикой**:
 
-### Как формируется итоговый эффект
 
-- Политика считается **сработавшей**, если её `matchState` равен `match`.
-- Если политика сработала, её `effect` (`permit` или `deny`) участвует в итоговом решении.
-- При использовании `AbilityResolver` итог определяется **последней сработавшей политикой**.
+**Пример использования шаблонов**
 
----
-
-## Управление политиками
-
-`AbilityResolver` — центральный компонент, который:
-
-1. Отбирает политики по `permission` (с учётом wildcard).
-2. Вызывает `policy.check(resource, environment?)` для каждой.
-3. Формирует итоговый результат в виде `AbilityResult`.
-4. При необходимости выбрасывает `AbilityError` (метод `enforce`).
-
-### Зачем нужен AbilityResolver
-
-Выходя за рамки тестовых примеров мы видим, что в реальных системах количество политик может достигать сотни, а то и больше.
-Для удобства управления всем этим зоопарком и придуман `AbilityResolver`.
-
-`AbilityResolver` позволяет:
-
-- автоматически фильтровать политики по экшенам
-- централизованно вычислять итоговый эффект
-- получать объяснения (Explain), почему доступ разрешён или запрещён
-- кэшировать результат вычислений политик (включается вручную)
-
-### Wildcard в экшенах
-
-Экшены записываются в dot notation виде, но поддерживают возможность задавать общие правила (`order.*`) и/или переопределять их более специфичными (`order.update`), а так же накладывать «вето» на ранее разрешённые действия
-
-Поддерживаются шаблоны с `*`:
-
-| Политика (permission) | Действие | Совпадает |
-|-------------------|----------|-----------|
-| `order.*`         | `order.create` | да |
-| `order.*`         | `order.update` | да |
-| `order.*`         | `user.create`  | нет |
-| `*.create`        | `order.create` | да |
-| `*.create`        | `user.create`  | да |
-| `*.create`        | `order.update` | нет |
-| `user.profile.*`  | `user.profile.update` | да |
+| Политика (permission) | ключ                   | Совпадает |
+|-------------------|------------------------|-----------|
+| `order.*`         | `order.create`         | да |
+| `order.*`         | `order.update`         | да |
+| `order.*`         | `user.create`          | нет |
+| `*.create`        | `order.create`         | да |
+| `*.create`        | `user.create`          | да |
+| `*.create`        | `order.update`         | нет |
+| `user.profile.*`  | `user.profile.update`  | да |
 | `user.profile.*`  | `user.settings.update` | нет |
-
-### Приоритет и множественные совпадения
-
-Если под действие подходит несколько политик, **выполняются все**.  
-Итог определяется **последней совпавшей политикой**:
 
 ```ts
 const policies = [
@@ -440,135 +193,348 @@ const policies = [
 await new AbilityResolver(policies).enforce('order.update', resource);
 ```
 
+### Комментарии
 
-### Комбинирование точных действий и wildcard
+Строки, начинающиеся с символа `#` считаются комментариями и не влияют на результат работы правил и политик.
 
-```ts
-const policies = [
-  {
-    permission: 'order.*',
-    effect: 'deny', // по умолчанию запрещено
-    compareMethod: 'and',
-    ruleSet: [],
-  },
-  {
-    permission: 'order.create',
-    effect: 'permit', // создание разрешено
-    compareMethod: 'and',
-    ruleSet: [],
-  },
-  {
-    permission: 'order.update',
-    effect: 'deny',
-    compareMethod: 'and',
-    ruleSet: [
-      // дополнительные правила
-    ],
-  },
-];
+---
 
-const resolver = new AbilityResolver(AbilityPolicy.parseAll(policies));
+### Аннотации
+
+В настоящий момент поддерживается только одна аннотация ’name’, которая будет использована в качестве имени для политики, либо группы правил, либо правила.
+
+Аннотации задаются через комментарии:
+
+```
+# @name <имя>
 ```
 
-### Интеграция с TypeScript
+Аннотации применяются к **следующей сущности**:
+
+- политике
+- группе
+- правилу
+
+Пример:
+
+```dsl
+# @name can order update
+permit permission.order.update if any:
+  # @name authorized admin
+  all of:
+    # @name contains role admin
+    user.roles contains 'admin'
+```
+
+---
+
+### Группы правил
+
+Группа определяет, как объединяются правила внутри неё:
+
+```
+all of:
+  <rule>
+  <rule>
+
+any of:
+  <rule>
+  <rule>
+```
+
+- `all of:` — логическое AND
+- `any of:` — логическое OR
+
+`all of` - значит, что группа считается выполненной, если все правила внутри группы сработали.
+
+`any of` - значит, что группа считается выполненной, если хотя бы одно правило внутри группы сработало.
+
+Каждая группа внутри политики будет вычисляться независимо от других групп. Итоговая оценка результата будет определена путем сравнения результата вычисления всех групп в политике.
+
+
+Группы могут иметь аннотации:
+
+```dsl
+# @name developer group
+any of:
+  user.roles contains 'developer'
+```
+
+---
+
+### Правила
+
+Правило — это атомарное условие внутри политики. Оно определяет, при каких данных политика будет считаться совпавшей. С помощью правил задаются условия по которым определяется эффективность политики (`permit` или `deny`)
+
+Правило имеет форму:
+
+```
+<subject> <operator> <value?> — значение указывается не для всех операторов (например, is null не требует значения).
+```
+
+#### Subject (субъект)
+
+Идентификатор в dot‑нотации:
+
+```
+user.roles
+env.time.hour
+order.total
+```
+
+#### Operators (операторы)
+
+_Синонимы — это альтернативные формы записи, которые также поддерживаются парсером._
+
+**Базовые операторы сравнения**
+
+| Оператор DSL | Синонимы | Пример | Описание | Типы |
+|--------------|----------|--------|----------|------|
+| **is equals** | `=`, `==`, `equals` | `age is equals 18` | Строгое равенство | number, string, boolean |
+| **is not equals** | `!=`, `<>`, `not equals` | `role is not equals 'admin'` | Строгое неравенство | number, string, boolean |
+| **greater than** | `>`, `gt` | `age greater than 18` | Больше | number, date |
+| **greater than or equal** | `>=`, `gte` | `age greater than or equal 18` | Больше или равно | number, date |
+| **less than** | `<`, `lt` | `age less than 18` | Меньше | number, date |
+| **less than or equal** | `<=`, `lte` | `age less than or equal 18` | Меньше или равно | number, date |
+
+
+**Null‑операторы**
+
+| Оператор DSL | Синонимы | Пример | Описание | Типы |
+|--------------|----------|--------|----------|------|
+| **is null** | `== null`, `= null` | `middleName is null` | Значение отсутствует | any |
+| **is not null** | `!= null` | `middleName is not null` | Значение присутствует | any |
+
+**Операторы для списков (массивов)**
+
+| Оператор DSL | Синонимы                  | Пример | Описание | Типы |
+|--------------|---------------------------|--------|----------|------|
+| **in [...]** | -                         | `role in ['admin', 'manager']` | Значение входит в список | number, string |
+| **not in [...]** | -                         | `role not in ['banned']` | Значение не входит | number, string |
+| **contains** | `includes`, `has`         | `tags contains 'vip'` | Массив содержит элемент | array |
+| **not contains** | `not includes`, `not has` | `tags not contains 'vip'` | Массив не содержит элемент | array |
+
+
+**Строковые операторы**
+
+| Оператор DSL | Синонимы | Пример | Описание | Типы |
+|--------------|----------|--------|----------|------|
+| **starts with** | `begins with` | `email starts with 'admin@'` | Строка начинается с | string |
+| **not starts with** | — | `email not starts with 'test'` | Строка не начинается с | string |
+| **ends with** | — | `email ends with '.ru'` | Строка заканчивается на | string |
+| **not ends with** | — | `email not ends with '.com'` | Строка не заканчивается на | string |
+| **includes** | `contains substring` | `name includes 'lex'` | Строка содержит подстроку | string |
+| **not includes** | — | `name not includes 'test'` | Строка не содержит подстроку | string |
+
+**Булевые операторы**
+
+| Оператор DSL | Синонимы | Пример | Описание | Типы |
+|--------------|----------|--------|----------|------|
+| **is true** | `= true` | `isActive is true` | Значение истинно | boolean |
+| **is false** | `= false` | `isActive is false` | Значение ложно | boolean |
+
+**Операторы длины**
+
+| Оператор DSL | Синонимы | Пример | Описание | Типы |
+|--------------|----------|--------|----------|------|
+| **length equals** | `len =` | `tags length equals 3` | Длина равна | array, string |
+| **length greater than** | `len >` | `tags length greater than 2` | Длина больше | array, string |
+| **length less than** | `len <` | `tags length less than 5` | Длина меньше | array, string |
+
+#### Value (значение)
+
+Поддерживаются:
+
+- строки `'text'`
+- числа `42`
+- булевы `true` / `false`
+- `null`
+- массивы `[1, 2, 3]` / `['foo', false, null, 1, 2, '999']`
+
+Примеры:
+
+```dsl
+# возраст пользователя больше 18
+user.age greater than 18
+
+# массив ролей содержит роль 'admin'
+user.roles contains 'admin'
+
+# тэг заказа либо 'vip', либо 'priority'
+order.tag in ['vip', 'priority']
+
+# токен пользователя не null
+user.token is not null
+
+# логин пользователя длиннее 12 символов
+user.login length greater than 12
+```
+
+
+
+---
+
+### Неявная группа (implicit group)
+
+Если правила идут без `all of:` или `any of:`, они объединяются оператором политики:
+
+```dsl
+permit permission.order.update if all:
+  user.roles contains 'admin'
+  user.token is not null
+```
+
+Эквивалентно:
+
+```dsl
+permit permission.order.update if all:
+  all of:
+    user.roles contains 'admin'
+    user.token is not null
+```
+
+Неявная группа всегда соответствует оператору политики (`if all` или `if any`).
+
+---
+
+### Полный пример
+
+```dsl
+# @name разрешено обновление заказа
+permit permission.order.update if any:
+
+  # @name если это администратор
+  all of:
+    user.roles contains 'admin'
+    user.token is not null
+
+  # @name если это разработчик
+  any of:
+    user.roles contains 'developer'
+    user.login is equals 'dev'
+```
+
+
+
+## Объединение политик
+
+В реальном проекте следует использовать несколько политик сразу
+
+TODO: использование нескольких политик
+
+## Environment политик
+
+**Environment** — это объект, содержащий данные окружения, которые не принадлежат ни пользователю, ни ресурсу.
+Содержимое объекта определяется разработчиком и может быть любым объектом состоящим из примитивов.
+
+- время запроса,
+- IP‑адрес,
+- параметры устройства,
+- заголовки запроса,
+- контекст сессии,
+- любые другие внешние условия.
+
+**Примеры:**
 
 ```ts
-import { AbilityResolver, AbilityPolicy } from '@via-profit/ability';
-
-type Resources = {
-  'order.create': {
-    readonly user: {
-      readonly department: string;
-      readonly roles: readonly string[];
-    };
-    readonly order: {
-      readonly amount: number;
-    };
+type Environment = {
+  time: {
+    hour: number;
   };
-  'order.update': {
-    readonly user: {
-      readonly id: string;
-      readonly roles: readonly string[];
-    };
-    readonly order: {
-      readonly id: string;
-      readonly status: string;
-      readonly ownerId: string;
-    };
+  ip: string;
+  geo: {
+    country: string;
   };
 };
-
-const policies = AbilityPolicy.parseAll<Resources>(configs);
-const resolver = new AbilityResolver<Resources>(policies);
-
-await resolver.enforce('order.create', {
-  user: {
-    department: 'managers',
-    roles: ['manager'],
-  },
-  order: {
-    amount: 5000,
-  },
-});
-
-// Ошибка компиляции — не хватает полей
-await resolver.enforce('order.create', {
-  user: {
-    department: 'managers',
-  },
-});
 ```
 
-### Использование `generateTypeDefs` в AbilityParser
+Environment передаётся в `resolve()` и `enforce()` как третий аргумент:
 
-`AbilityParser.generateTypeDefs()` — это утилита, которая автоматически генерирует **TypeScript‑типы для Resources** на основе ваших JSON‑политик.
-
-#### Как это работает
-
-`generateTypeDefs` принимает список политик и анализирует:
-
-- все `permission`,
-- все `subject` и `resource` пути,
-- строит дерево объектов,
-- генерирует корректный TypeScript‑тип `Resources`.
-
-#### Пример использования
-
-**1. Политики в JSON**
-
-```json
-[
-  {
-    "id": "order-update",
-    "name": "Update order",
-    "permission": "order.update",
-    "effect": "permit",
-    "compareMethod": "and",
-    "ruleSet": [
-      {
-        "name": "Owner check",
-        "compareMethod": "and",
-        "rules": [
-          {
-            "name": "User is owner",
-            "subject": "user.id",
-            "resource": "order.ownerId",
-            "condition": "="
-          }
-        ]
-      }
-    ]
-  }
-]
+```ts
+await resolver.resolve('order.update', resource, environment);
+await resolver.enforce('order.update', resource, environment);
 ```
 
-**Скрипт генерации типов**
+### Использование environment в правилах
+
+В политике можно ссылаться на environment через путь `env.*`.
+
+Пример политики, которая запрещает обновление заказов ночью (22:00–06:00).:
+
+```dsl
+# @name Deny updates at night
+deny permission.order.update if all:
+  env.time.hour less than 6 
+  env.time.hour greater or equal than 22
+```
+
+**Извлечение значений из environment**
+
+Если в правиле указан путь:
+
+- `env.*` → значение берётся из environment
+- `user.*`, `order.*`, `profile.*` → из resource
+- литерал (`18`, `"admin"`, `true`) → используется как есть
+
+Пример:
+
+```ts
+subject: "env.geo.country"
+resource: "user.country"
+condition: "equal"
+```
+
+### Environment в TypeScript
+
+Тип Environment задаётся на уровне `AbilityResolver`:
+
+```ts
+const resolver = new AbilityResolver<Resources, Environment>(policies);
+```
+
+Это позволяет:
+
+- получать автодополнение в IDE,
+- проверять корректность путей `env.*`,
+- избегать ошибок при передаче environment.
+
+> Если правило использует `env.*`, но environment не передан, то значение `env.*` будет `undefined`, и сравнение будет выполнено так, как если бы environment не было вовсе
+
+
+
+## Генератор типов для TypeScript
+
+`AbilityParser.generateTypeDefs()` генерирует типы для TypeScript на основе политик, что позволяет не беспокоиться о расхождении между типами и данными в политиках.
+
+**Пример использования**
+
+Сначала необходимо подготовить массив политик. Политики можно хранить в DSL или в JSON и парсить их в массив готовых политик. В данном примере, для наглядности, политики хранятся в DSL.
+
+```ts
+// scripts/policies.ts
+
+import { AbilityDSLParser } from './AbilityDSLParser';
+
+const dsl = `
+# @name Update order
+permit permission.order.update if all:
+
+  # @name Owner check
+  all of:
+    # @name User is owner
+    user.id = order.ownerId
+`;
+
+const policies = new AbilityDSLParser(dsl).parse();
+
+export default policies;
+```
 
 ```ts
 // scripts/generate-types.ts
+import { writeFileSync } from 'node:fs';
 import { AbilityParser } from '@via-profit/ability';
-import policies from '../policies.json';
-import { writeFileSync } from 'fs';
+import policies from './policies.json';
 
 const typedefs = AbilityParser.generateTypeDefs(policies);
 
@@ -610,227 +576,17 @@ await resolver.enforce('order.update', {
 });
 ```
 
-#### Рекомендации по использованию
+## Отладка политик
 
-- Генерируйте типы **автоматически при сборке**.
-- Не редактируйте `types.generated.ts` вручную.
-- Храните политики в JSON — это облегчает анализ.
-- Используйте `generateTypeDefs` как единственный источник истины для структуры ресурсов.
+### Объяснения
 
----
+Для упрощения отладки политик применяется специальный класс `AbilityResult`, который уже включён в итоговый результат вычислений. `AbilityResult` инкапсулирует итог применения всех подходящих политик к ключу разрешений и ресурсу.
 
-## Environment (контекст выполнения)
-
-Пакет имеет поддержку полноценных **environment‑атрибутов**, что позволяет использовать в политиках данные окружения, например:
-
-- время запроса,
-- IP‑адрес,
-- геолокацию,
-- параметры устройства,
-- заголовки запроса,
-- контекст сессии,
-- любые другие внешние условия.
-
-### Что такое Environment
-
-**Environment** — это объект, содержащий данные окружения, которые не принадлежат ни пользователю, ни ресурсу.
-Содержимое объекта определяется разработчиком и может быть любым объектом состоящим из примитивов.
-
-Примеры:
-
-```ts
-type Environment = {
-  time: {
-    hour: number;
-  };
-  ip: string;
-  geo: {
-    country: string;
-  };
-};
-```
-
-Environment передаётся в `resolve()` и `enforce()` как третий аргумент:
-
-```ts
-await resolver.resolve('order.update', resource, environment);
-await resolver.enforce('order.update', resource, environment);
-```
-
-### Использование environment в правилах
-
-В политике можно ссылаться на environment через путь `env.*`.
-
-Пример:
-
-```json
-{
-  "subject": "env.time.hour",
-  "resource": 9,
-  "condition": "more_or_equal"
-}
-```
-
-Это правило означает:
-
-> Разрешить действие, если текущий час ≥ 9.
-
-### Пример политики с environment
-
-```json
-{
-  "id": "deny-night-updates",
-  "name": "Deny updates at night",
-  "permission": "order.update",
-  "effect": "deny",
-  "compareMethod": "and",
-  "ruleSet": [
-    {
-      "compareMethod": "and",
-      "rules": [
-        {
-          "subject": "env.time.hour",
-          "resource": 22,
-          "condition": "more_or_equal"
-        },
-        {
-          "subject": "env.time.hour",
-          "resource": 6,
-          "condition": "less_than"
-        }
-      ]
-    }
-  ]
-}
-```
-
-Эта политика запрещает обновление заказов ночью (22:00–06:00).
-
-### Как работает извлечение значений
-
-Если в правиле указан путь:
-
-- `env.*` → значение берётся из environment
-- `user.*`, `order.*`, `profile.*` → из resource
-- литерал (`18`, `"admin"`, `true`) → используется как есть
-
-Пример:
-
-```ts
-subject: "env.geo.country"
-resource: "user.country"
-condition: "equal"
-```
-
-### Типизация Environment
-
-Тип Environment задаётся на уровне `AbilityResolver`:
-
-```ts
-const resolver = new AbilityResolver<Resources, Environment>(policies);
-```
-
-Это позволяет:
-
-- получать автодополнение в IDE,
-- проверять корректность путей `env.*`,
-- избегать ошибок при передаче environment.
-
-### Поведение при отсутствии environment
-
-Если правило использует `env.*`, но environment не передан:
-
-```ts
-await rule.check(resource, undefined);
-```
-
-то значение `env.*` будет `undefined`, и сравнение будет выполнено так, как если бы environment не было вовсе:
-
-- `undefined >= 10` → `false`
-- `undefined === true` → `false`
-
----
-
-## Кэш
-
-`AbilityResolver` имеет встроенный кэш для оптимизации производительности. По умолчанию используется `AbilityInMemoryCache` с TTL 60 секунд.
-
-### Конфигурация кэша
-
-```ts
-import { AbilityResolver, AbilityInMemoryCache } from '@via-profit/ability';
-
-// Использовать in-memory кэш (по умолчанию)
-const resolver = new AbilityResolver(policies);
-
-// Отключить кэш
-const resolverNoCache = new AbilityResolver(policies, { cache: null });
-
-// Кастомный TTL
-const resolverCustom = new AbilityResolver(policies, {
-  cache: new AbilityInMemoryCache({ ttl: 30000 }) // 30 секунд
-});
-```
-
-### Redis адаптер
-
-```ts
-import { AbilityResolver, AbilityRedisCache } from '@via-profit/ability';
-import Redis from 'ioredis';
-
-const redis = new Redis();
-const resolver = new AbilityResolver(policies, {
-  cache: new AbilityRedisCache(redis, { ttl: 60000 })
-});
-```
-
-### Создание собственного адаптера
-
-```ts
-import { AbilityCacheAdapter } from '@via-profit/ability';
-
-class MyCustomCache implements AbilityCacheAdapter {
-  async get<T>(key: string): Promise<T | undefined> {
-    // ваша логика
-  }
-  
-  async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
-    // ваша логика
-  }
-  
-  async delete?(key: string): Promise<void> {
-    // опционально
-  }
-  
-  async clear?(): Promise<void> {
-    // опционально
-  }
-}
-```
-
-### Инвалидация кэша
-
-```ts
-// Инвалидация конкретной политики
-await resolver.invalidatePolicy('order-policy-id');
-
-// Полная очистка кэша
-await resolver.invalidateCache();
-```
-
----
-
-## AbilityResult и Explain
-
-### AbilityResult
-
-`AbilityResult` — объект, инкапсулирующий итог применения всех подходящих политик к действию и ресурсу.
-
-Он содержит:
+`AbilityResult` содержит:
 
 - список проверенных политик,
 - методы для определения итогового эффекта,
-- методы для получения объяснений.
+- методы для получения объяснений в текстовом представлении.
 
 Пример:
 
@@ -841,7 +597,9 @@ if (result.isDenied()) {
   console.log('Access denied');
 }
 
-const explanations = result.explain();
+const explanations = result.explain(); // AbilityExplain
+
+// console.log(explanations.toString());
 ```
 
 ### AbilityExplain
@@ -859,9 +617,7 @@ const explanations = result.explain();
 const result = await resolver.resolve('order.update', resource);
 const explanations = result.explain();
 
-explanations.forEach(explain => {
-  console.log(explain.toString());
-});
+console.log(explanations.toString());
 ```
 
 Пример вывода:
@@ -875,7 +631,84 @@ explanations.forEach(explain => {
     ✓ rule «Нет роли administrator» is match
 ```
 
----
+### Формат вывода
+
+В настоящий момент поддерживается только один формат вывода - текстовый.
+
+Вывод строится по принципу: <policy | ruleSet | rule > <название> <is match | is mismatch>
+
+
+## Решение проблем
+
+### Модель принятия решений (Default Deny)
+
+> Почему политика `deny` не превращается в `permit`, если её условия не выполнены?
+
+Рассмотрим политику, которая **запрещает** доступ пользователю с возрастом 16 лет:
+
+```ts
+const dsl = `
+deny permission.test if all:
+  user.age is equals 16
+`;
+
+const policies = new AbilityDSLParser(dsl).parse();
+const resolver = new AbilityResolver(policies);
+
+const result = await resolver.resolve('test', {
+  user: { age: 16 },
+});
+
+console.log(result.isDenied());  // true  ✔
+console.log(result.isAllowed()); // false ✔
+```
+
+В этом случае всё очевидно:  
+условие выполнено → политика совпала → эффект `deny` → доступ запрещён.
+
+**Что происходит, если условия `не выполнены`?**
+
+```ts
+const result = await resolver.resolve('test', {
+  user: { age: 12 },
+});
+
+console.log(result.isDenied());  // true  ✔
+console.log(result.isAllowed()); // false ✔
+```
+
+На первый взгляд может показаться, что если условие не выполнено, то политика должна «разрешить» доступ.  
+Но это **не так**.
+
+**Модель принятия решений: `Default Deny`**
+
+`AbilityResolver` использует классическую модель безопасности:
+
+> **Если нет ни одной совпавшей permit‑политики → доступ запрещён.**
+
+**Что происходит в данном примере:**
+
+1. Политика `deny` существует, но её условие **не выполнено**  
+   → политика получает статус `mismatch`.
+
+2. Политика `deny` **не применяется**, потому что условия не совпали.
+
+3. Политики `permit` **нет**.
+
+4. Раз нет ни одной разрешающей политики → итоговое решение:  
+   **deny (по умолчанию)**.
+
+
+**Итог**
+
+- `deny` с совпавшими условиями → **deny**
+- `deny` с несовпавшими условиями → **deny (default deny)**
+- `permit` с совпавшими условиями → **allow**
+- `permit` с несовпавшими условиями → **deny (default deny)**
+
+**Заключение**
+
+**Доступ разрешается только при наличии явного permit.**
 
 ## Рекомендации по проектированию
 
@@ -883,7 +716,7 @@ explanations.forEach(explain => {
 
 - Используйте иерархические ключи: `permission.order.create`, `permission.order.update.status`, `permission.user.profile.update`.
 - Группируйте по доменам: `permission.user.*`, `permission.order.*`, `permission.product.*`.
-- Не смешивайте разные домены в одном действии.
+- Не смешивайте разные домены в одном ключе.
 
 ### Структура данных
 
@@ -900,7 +733,7 @@ explanations.forEach(explain => {
 
 ### Типичные ошибки
 
-- Ожидание, что отсутствие совпавших политик означает deny — это зависит от вашей модели. Обычно отсутствие deny трактуется как deny.
+- Ожидание, что отсутствие совпавших политик означает deny.
 - Смешивание бизнес-логики и политик доступа.
 - Слишком крупные политики с десятками правил — лучше разбивать.
 
@@ -969,11 +802,6 @@ function OrderUpdateButton({ order, user }) {
 ```
 
 
-### Рекомендации
+## Лицензия
 
-- Используйте кэш для часто вызываемых политик.
-- Устанавливайте разумный TTL в зависимости от частоты изменения данных.
-- При изменении бизнес-логики не забывайте инвалидировать кэш.
-- Для high-load систем используйте Redis вместо in-memory кэша.
-
----
+Этот проект лицензирован под лицензией MIT. Подробности в файле [LICENSE](LICENSE).

@@ -14,20 +14,29 @@
 |----------|-----|----------|
 | `id` | `string` | Идентификатор правила |
 | `name` | `string` | Название |
-| `subject` | `string` | Путь к полю субъекта |
-| `resource` | `string \| number \| boolean \| (string \| number)[]` | Путь или значение ресурса |
+| `subject` | `string` | Путь к полю субъекта (dot‑notation) |
+| `resource` | `string \| number \| boolean \| null \| (string \| number \| boolean \| null)[]` | Значение или путь к ресурсу |
 | `condition` | `AbilityCondition` | Оператор сравнения |
+| `state` | `AbilityMatch` | Текущее состояние после проверки |
 
 ### Методы
 
 | Метод | Аргументы | Возвращает | Описание |
 |-------|-----------|------------|----------|
 | `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Проверяет правило |
-| `explain()` | — | `AbilityExplainRule` | Объяснение проверки |
-| `toJSON()` | — | `AbilityRuleConfig` | Экспорт в JSON |
-| `static fromJSON(config)` | `AbilityRuleConfig` | `AbilityRule` | Создание из JSON |
-| `static equal(subject, resource)` | `string, any` | `AbilityRule` | Упрощённый конструктор |
-| `static notEqual(...)` и др. | | | Аналогично |
+| `static fromJSON(config)` | `AbilityRuleConfig` | `AbilityRule` | Создаёт правило из JSON-конфигурации |
+| `static equals(subject, resource)` | `string, any` | `AbilityRule` | Правило равенства |
+| `static notEquals(subject, resource)` | `string, any` | `AbilityRule` | Правило неравенства |
+| `static contains(subject, resource)` | `string, any` | `AbilityRule` | Проверка вхождения |
+| `static notContains(subject, resource)` | `string, any` | `AbilityRule` | Проверка отсутствия вхождения |
+| `static in(subject, resource)` | `string, any` | `AbilityRule` | Проверка принадлежности массиву |
+| `static notIn(subject, resource)` | `string, any` | `AbilityRule` | Проверка отсутствия в массиве |
+| `static lessThan(subject, resource)` | `string, any` | `AbilityRule` | Меньше |
+| `static lessOrEqual(subject, resource)` | `string, any` | `AbilityRule` | Меньше или равно |
+| `static moreThan(subject, resource)` | `string, any` | `AbilityRule` | Больше |
+| `static moreOrEqual(subject, resource)` | `string, any` | `AbilityRule` | Больше или равно |
+
+> **Примечание:** Для сериализации правила в JSON используйте `AbilityJSONParser.ruleToJSON(rule)`.
 
 ---
 
@@ -45,19 +54,20 @@
 | `name` | `string` | Название |
 | `compareMethod` | `AbilityCompare` | Логика сравнения |
 | `rules` | `AbilityRule[]` | Список правил |
+| `state` | `AbilityMatch` | Результат проверки группы |
 
 ### Методы
 
 | Метод | Аргументы | Возвращает | Описание |
 |-------|-----------|------------|----------|
 | `addRule(rule)` | `AbilityRule` | `this` | Добавляет правило |
-| `addRules(list)` | `AbilityRule[]` | `this` | Добавляет несколько |
+| `addRules(list)` | `AbilityRule[]` | `this` | Добавляет несколько правил |
 | `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Проверяет группу |
-| `explain()` | — | `AbilityExplainRuleSet` | Объяснение |
-| `toJSON()` | — | `AbilityRuleSetConfig` | Экспорт |
-| `static fromJSON(config)` | `AbilityRuleSetConfig` | `AbilityRuleSet` | Из JSON |
+| `static fromJSON(config)` | `AbilityRuleSetConfig` | `AbilityRuleSet` | Создаёт группу из JSON |
 | `static and(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Группа с `and` |
 | `static or(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Группа с `or` |
+
+> **Примечание:** Для сериализации группы используйте `AbilityJSONParser.ruleSetToJSON(ruleSet)`.
 
 ---
 
@@ -69,25 +79,28 @@
 
 ### Свойства
 
-| Свойство | Тип | Описание                           |
-|----------|-----|------------------------------------|
-| `id` | `string` | Идентификатор                      |
-| `name` | `string` | Название                           |
-| `permission` | `string` | Ключ разрешения (с поддержкой `*`) |
-| `effect` | `AbilityPolicyEffect` | `permit` или `deny`                |
-| `compareMethod` | `AbilityCompare` | Логика сравнения групп             |
-| `ruleSet` | `AbilityRuleSet[]` | Группы правил                      |
-| `matchState` | `AbilityMatch` | Результат проверки                 |
+| Свойство | Тип | Описание |
+|----------|-----|----------|
+| `id` | `string` | Идентификатор |
+| `name` | `string` | Название |
+| `permission` | `string` | Ключ разрешения (поддерживает `*`) |
+| `effect` | `AbilityPolicyEffect` | `permit` или `deny` |
+| `compareMethod` | `AbilityCompare` | Логика сравнения групп |
+| `ruleSet` | `AbilityRuleSet[]` | Группы правил |
+| `matchState` | `AbilityMatch` | Результат проверки политики |
 
 ### Методы
 
 | Метод | Аргументы | Возвращает | Описание |
 |-------|-----------|------------|----------|
 | `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Проверяет политику |
-| `explain()` | — | `AbilityExplainPolicy` | Объяснение |
-| `toJSON()` | — | `AbilityPolicyConfig` | Экспорт |
-| `static fromJSON(config)` | `AbilityPolicyConfig` | `AbilityPolicy` | Из JSON |
-| `static fromJSONAll(configs)` | `AbilityPolicyConfig[]` | `AbilityPolicy[]` | Массовый парсинг |
+| `explain()` | — | `AbilityExplainPolicy` | Объяснение результата (после `check`) |
+| `addRuleSet(ruleSet)` | `AbilityRuleSet` | `this` | Добавляет группу правил |
+| `addRuleSets(ruleSets)` | `AbilityRuleSet[]` | `this` | Добавляет несколько групп |
+| `toJSON()` | — | `AbilityPolicyConfig` | Экспорт в JSON |
+| `static fromJSON(config)` | `AbilityPolicyConfig` | `AbilityPolicy` | Создаёт политику из JSON |
+| `static fromJSONAll(configs)` | `AbilityPolicyConfig[]` | `AbilityPolicy[]` | Массовое создание из JSON |
+| `static fromDSL(dsl)` | `string` | `AbilityPolicy` | Создаёт политику из DSL |
 
 ---
 
@@ -101,21 +114,21 @@
 
 | Свойство | Тип | Описание |
 |----------|-----|----------|
-| `policies` | `AbilityPolicy[]` | Список политик |
+| `policies` | `readonly AbilityPolicy[]` | Список политик |
 
 ### Методы
 
-| Метод                                         | Аргументы | Возвращает | Описание |
-|-----------------------------------------------|-----------|------------|----------|
+| Метод | Аргументы | Возвращает | Описание |
+|-------|-----------|------------|----------|
 | `resolve(permission, resource, environment?)` | `string, any, object?` | `Promise<AbilityResult>` | Мягкая проверка |
 | `enforce(permission, resource, environment?)` | `string, any, object?` | `Promise<void>` | Строгая проверка, выбрасывает `AbilityError` при deny |
-| `invalidatePolicy(policyId)`                  | `string` | `Promise<void>` | Инвалидация кэша политики |
-| `invalidateCache()`                           | — | `Promise<void>` | Полная очистка кэша |
-| `static isInPermissionContain(a, b)`          | `string, string` | `boolean` | Проверка соответствия действия шаблону |
+| `invalidatePolicy(policyId)` | `string` | `Promise<void>` | Инвалидация кэша для указанной политики |
+| `invalidateCache()` | — | `Promise<void>` | Полная очистка кэша |
+| `static isInPermissionContain(permissionA, permissionB)` | `string, string` | `boolean` | Проверка соответствия шаблону (с `*`) |
 
 ---
 
-## AbilityResult (API)
+## AbilityResult
 
 ### Назначение
 
@@ -133,13 +146,13 @@
 |-------|-----------|------------|----------|
 | `explain()` | — | `readonly AbilityExplain[]` | Объяснения по всем политикам |
 | `getLastMatchedPolicy()` | — | `AbilityPolicy \| null` | Последняя сработавшая политика |
-| `isAllowed()` | — | `boolean` | Итог не deny |
-| `isDenied()` | — | `boolean` | Итог deny |
-| `getLastEffect()` | — | `AbilityPolicyEffect \| null` | Эффект последней совпавшей политики |
+| `isAllowed()` | — | `boolean` | Доступ разрешён (нет deny или разрешён по умолчанию) |
+| `isDenied()` | — | `boolean` | Доступ запрещён |
+| `getLastEffectOfMatchedPolicy()` | — | `AbilityPolicyEffect \| null` | Эффект последней совпавшей политики |
 
 ---
 
-## AbilityExplain (API)
+## AbilityExplain
 
 ### Назначение
 
@@ -155,7 +168,7 @@
 
 | Метод | Описание |
 |-------|----------|
-| `toString()` | Возвращает человекочитаемое описание |
+| `toString(indent = 0)` | Возвращает человекочитаемое описание с отступами |
 
 ---
 
@@ -163,11 +176,30 @@
 
 ### Назначение
 
-Утилита для работы с конфигурациями и типами.
+Утилита для генерации TypeScript-типов на основе политик.
 
 | Метод | Аргументы | Возвращает | Описание |
 |-------|-----------|------------|----------|
-| `static generateTypeDefs(policies)` | `AbilityPolicy[]` | `string` | Генерация TypeScript-типов `Resources` |
+| `static generateTypeDefs(policies)` | `AbilityPolicy[]` | `string` | Генерирует тип `Resources` на основе всех политик |
+
+---
+
+## AbilityJSONParser
+
+### Назначение
+
+Парсер и сериализатор для JSON-представления политик, групп и правил.
+
+| Метод | Аргументы | Возвращает | Описание |
+|-------|-----------|------------|----------|
+| `parse(configs)` | `AbilityPolicyConfig[]` | `AbilityPolicy[]` | Создаёт массив политик из JSON |
+| `parsePolicy(config)` | `AbilityPolicyConfig` | `AbilityPolicy` | Создаёт политику из JSON |
+| `parseRuleSet(config)` | `AbilityRuleSetConfig` | `AbilityRuleSet` | Создаёт группу из JSON |
+| `parseRule(config)` | `AbilityRuleConfig` | `AbilityRule` | Создаёт правило из JSON |
+| `ruleToJSON(rule)` | `AbilityRule` | `AbilityRuleConfig` | Экспорт правила в JSON |
+| `ruleSetToJSON(ruleSet)` | `AbilityRuleSet` | `AbilityRuleSetConfig` | Экспорт группы в JSON |
+| `policyToJSON(policy)` | `AbilityPolicy` | `AbilityPolicyConfig` | Экспорт политики в JSON |
+| `toJSON(policies)` | `AbilityPolicy[]` | `AbilityPolicyConfig[]` | Экспорт массива политик в JSON |
 
 ---
 
@@ -198,16 +230,23 @@
 
 ## AbilityCondition
 
-Основные операции:
+Основные операции (код и литеральное имя):
 
-- `equal` (`=`)
-- `not_equal` (`<>`)
-- `more_than` (`>`)
-- `less_than` (`<`)
-- `more_or_equal` (`>=`)
-- `less_or_equal` (`<=`)
-- `in`
-- `not_in`
+| Код | Литерал | Описание |
+|-----|---------|----------|
+| `=` | `equals` | Равно |
+| `<>` | `not_equals` | Не равно |
+| `>` | `greater_than` | Больше |
+| `<` | `less_than` | Меньше |
+| `>=` | `greater_or_equal` | Больше или равно |
+| `<=` | `less_or_equal` | Меньше или равно |
+| `in` | `in` | Входит в массив |
+| `not in` | `not_in` | Не входит в массив |
+| `contains` | `contains` | Содержит (для массивов) |
+| `not contains` | `not_contains` | Не содержит (для массивов) |
+| `length greater than` | `length_greater_than` | Длина больше |
+| `length less than` | `length_less_than` | Длина меньше |
+| `length equals` | `length_equals` | Длина равна |
 
 ---
 
@@ -281,23 +320,3 @@ const cache = new AbilityRedisCache(redis, {
   prefix: 'ability:', // префикс для ключей
 });
 ```
-
-### AbilityJSONParser
-
-JSON парсер, который позволяет создавать правила, группы и политики из JSON и наоборот, преобразовывать из в JSON
-
-```ts
-import { AbilityJSONParser } from '@via-profit/ability';
-
-const rule = AbilityRule.fromJSON({
-  id: 'test-id',
-  name: 'Test Rule',
-  subject: 'user.age',
-  resource: 18,
-  condition: '>' as const,
-});
-
-const json = AbilityJSONParser.ruleToJSON(rule); // {"id": "test-id", "name": "Test Rule", "subject": "user.age", "resource": 18, "condition": ">"}
-
-```
-
