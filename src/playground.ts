@@ -1,8 +1,126 @@
 import http from 'node:http';
-import { AbilityPolicyConfig } from './core/AbilityPolicy';
+import AbilityPolicy, { AbilityPolicyConfig } from './core/AbilityPolicy';
 import { AbilityDSLParser } from './parsers/dsl/AbilityDSLParser';
 import AbilityResolver from './core/AbilityResolver';
 import { AbilityDSLSyntaxError } from './parsers/dsl/AbilityDSLSyntaxError';
+import AbilityCompare from './core/AbilityCompare';
+import AbilityPolicyEffect from './core/AbilityPolicyEffect';
+import AbilityRuleSet from './core/AbilityRuleSet';
+import AbilityRule from './core/AbilityRule';
+import { AbilityJSONParser } from './parsers/json/AbilityJSONParser';
+
+
+async function exampleB() {
+// Определяем типы ресурсов для TypeScript
+// Типы можно генерировать автоматически (об этом позже), либо описывать вручную
+// В данном примере, для простоты, типы описываются вручную
+type Resources = {
+  ['order.action.create']: {
+    user: {
+      age: number;
+    }
+  }
+  ['order.data.price']: {
+    user: {
+      roles: string[];
+    }
+  }
+}
+
+const policies = AbilityJSONParser.parse<Resources>([
+  {
+    id: '1',
+    name: 'Создание заказа доступно только лицам старше 18 лет',
+    effect: 'permit',
+    permission: 'order.action.create',
+    compareMethod: 'and',
+    ruleSet: [
+      {
+        compareMethod: 'and',
+        rules: [
+          {
+            subject: 'user.age',
+            resource: 18,
+            condition: '>',
+          }
+        ]
+      }
+    ],
+  },
+  {
+    id: '2',
+    name: 'Редактирование стоимости доступно только администратору',
+    effect: 'permit',
+    permission: 'order.data.price',
+    compareMethod: 'and',
+    ruleSet: [
+      {
+        compareMethod: 'and',
+        rules: [
+          {
+            subject: 'user.roles',
+            resource: 'administrator',
+            condition: 'contains',
+          }
+        ]
+      }
+    ]
+  }
+]);
+
+}
+
+async function exampleA() {
+
+// Определяем типы ресурсов для TypeScript
+// Типы можно генерировать автоматически (об этом позже), либо описывать вручную
+// В данном примере, для простоты, типы описываются вручную
+type Resources = {
+  ['order.action.create']: {
+    user: {
+      age: number;
+    }
+  }
+  ['order.data.price']: {
+    user: {
+      roles: string[];
+    }
+  }
+}
+
+const policies = [
+  // первая политика
+  new AbilityPolicy<Resources>({
+    id: '1',
+    name: 'Создание заказа доступно только лицам старше 18 лет',
+    compareMethod: AbilityCompare.and,
+    effect: AbilityPolicyEffect.permit,
+    permission: 'order.action.create',
+  }).addRuleSet(
+    AbilityRuleSet.and([
+      // правило
+      AbilityRule.moreOrEqual('user.age', 18),
+    ]),
+  ),
+
+  // вторая политика
+  new AbilityPolicy<Resources>({
+    id: '2',
+    name: 'Редактирование стоимости доступно только администратору',
+    compareMethod: AbilityCompare.and,
+    effect: AbilityPolicyEffect.permit,
+    permission: 'order.data.price',
+  }).addRuleSet(
+    AbilityRuleSet.and([
+      // правило
+      AbilityRule.contains('user.roles', 'administrator'),
+    ])
+  ),
+];
+
+console.log(policies); // [AbilityPolicy, AbilityPolicy, ...]
+}
+
 
 const server = http.createServer();
 

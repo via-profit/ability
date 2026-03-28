@@ -116,7 +116,195 @@ resolver.enforce('user.passwordHash', {
 7. Чаще всего следует опираться на утверждение если разрешение не выдано явно → доступ запрещён.
 8. Используйте встроенный кэш только в случаях, если ваши политики неимоверно сложны и содержат большое количество правил
 
+### Модель взаимодействия
+
+Сначала вы описываете "сырые" политики (SDL, JSON или при помощи классов). Затем из "сырых" данных вы формируете готовые политики (массив политик). Это делается один раз и позволяет иметь единый источник данных. Далее вы можете запускать проверку разрешений в нужных вам участках кода используя уже готовые политики и резолвер.
+
+Политики, группы и правила можно создавать при помощи:
+
+- DSL (Domain-Specific Language)
+- Классов (классический подход)
+- JSON
+
+**Создание политик при помощи DSL**
+
+```ts
+import { AbilityDSLParser } from '@via-profit/ability';
+
+// Описываем политики на языке Ability-DSL
+const dsl = `
+  # @name Создание заказа доступно только лицам старше 18 лет
+  permit permission.order.action.create if all:
+    all of:
+      user.age gte 18
+
+  # @name Редактирование стоимости доступно только администратору
+  permit permission.order.data.price if all:
+    all of:
+      user.roles contains 'administrator'
+`;
+
+// Определяем типы ресурсов для TypeScript
+// Типы можно генерировать автоматически (об этом позже), либо описывать вручную
+// В данном примере, для простоты, типы описываются вручную
+type Resources = {
+  ['order.action.create']: {
+    user: {
+      age: number;
+    }
+  }
+  ['order.data.price']: {
+    user: {
+      roles: string[];
+    }
+  }
+}
+
+// Для создания политик используем парсер
+// В качестве дженерика передаем тип ресурсов
+const policies = new AbilityDSLParser<Resources>(dsl).parse(); // AbilityPolicy[]
+
+// Парсер вернёт массив политик даже
+// если в DSL описана всего одна политика
+console.log(policies); // [AbilityPolicy, AbilityPolicy, ...]
+
+// экспортируем готовые политики
+export default policies;
+```
+
+Более подробно про DSL смотри в разделе (DSL)[#dsl]
+
+**Создание политик при помощи классаов (классический подход)**
+
+Данный подход достаточно неповоротливый, но позволяет получить полный контроль над политиками
+
+```ts
+import { AbilityPolicy, AbilityRuleSet, AbilityRule, AbilityCompare, AbilityPolicyEffect } from '@via-profit/ability';
+
+// Определяем типы ресурсов для TypeScript
+// Типы можно генерировать автоматически (об этом позже), либо описывать вручную
+// В данном примере, для простоты, типы описываются вручную
+type Resources = {
+  ['order.action.create']: {
+    user: {
+      age: number;
+    }
+  }
+  ['order.data.price']: {
+    user: {
+      roles: string[];
+    }
+  }
+}
+
+const policies = [
+  // первая политика
+  new AbilityPolicy<Resources>({
+    id: '1',
+    name: 'Создание заказа доступно только лицам старше 18 лет',
+    compareMethod: AbilityCompare.and,
+    effect: AbilityPolicyEffect.permit,
+    permission: 'order.action.create',
+  }).addRuleSet(
+    AbilityRuleSet.and([
+      // правило
+      AbilityRule.moreOrEqual('user.age', 18),
+    ]),
+  ),
+
+  // вторая политика
+  new AbilityPolicy<Resources>({
+    id: '2',
+    name: 'Редактирование стоимости доступно только администратору',
+    compareMethod: AbilityCompare.and,
+    effect: AbilityPolicyEffect.permit,
+    permission: 'order.data.price',
+  }).addRuleSet(
+    AbilityRuleSet.and([
+      // правило
+      AbilityRule.contains('user.roles', 'administrator'),
+    ])
+  ),
+];
+
+// экспортируем готовые политики
+export default policies;
+
+```
+
+**Создание политик при помощи JSON**
+
+JSON позволяет хранить политики в файле или базе данных, например, в PostgreSQL, которая поддерживает работу с JSON-данными.
+
+Классы политик, групп и правил имеют методы экспорта в JSON, таким образом, вы можете формировать политики любым способом и экспортировать их в JSON в любой момент когда вам это потребуется 
+
+```ts
+import { AbilityJSONParser } from '@via-profit/ability';
+
+// Определяем типы ресурсов для TypeScript
+// Типы можно генерировать автоматически (об этом позже), либо описывать вручную
+// В данном примере, для простоты, типы описываются вручную
+type Resources = {
+  ['order.action.create']: {
+    user: {
+      age: number;
+    }
+  }
+  ['order.data.price']: {
+    user: {
+      roles: string[];
+    }
+  }
+}
+
+// Парсим JSON используя AbilityJSONParser
+// В качестве дженерика передаем типы ресурсов
+const policies = AbilityJSONParser.parse<Resources>([
+  {
+    id: '1',
+    name: 'Создание заказа доступно только лицам старше 18 лет',
+    effect: 'permit',
+    permission: 'order.action.create',
+    compareMethod: 'and',
+    ruleSet: [
+      {
+        compareMethod: 'and',
+        rules: [
+          {
+            subject: 'user.age',
+            resource: 18,
+            condition: '>',
+          }
+        ]
+      }
+    ],
+  },
+  {
+    id: '2',
+    name: 'Редактирование стоимости доступно только администратору',
+    effect: 'permit',
+    permission: 'order.data.price',
+    compareMethod: 'and',
+    ruleSet: [
+      {
+        compareMethod: 'and',
+        rules: [
+          {
+            subject: 'user.roles',
+            resource: 'administrator',
+            condition: 'contains',
+          }
+        ]
+      }
+    ]
+  }
+]);
+
+export default policies;
+```
+
 ---
+
 
 ## DSL
 

@@ -113,6 +113,191 @@ Let’s briefly list the key points you need to know before starting to use the 
 7. Generally, rely on the principle: if permission is not explicitly granted → access is denied.
 8. Use the built-in cache only if your policies are incredibly complex and contain a large number of rules.
 
+### Interaction Model
+
+First, you define "raw" policies (using DSL, JSON, or classes). Then, you transform the raw data into ready-to-use policies (an array of policies). This is done once and provides a single source of truth. After that, you can perform permission checks in any part of your code using the prepared policies and the resolver.
+
+Policies, rule sets, and rules can be created using:
+
+- DSL (Domain-Specific Language)
+- Classes (classic approach)
+- JSON
+
+**Creating policies with DSL**
+
+```ts
+import { AbilityDSLParser } from '@via-profit/ability';
+
+// Describe policies using Ability-DSL
+const dsl = `
+  # @name Order creation is only available to persons over 18 years old
+  permit permission.order.action.create if all:
+    all of:
+      user.age gte 18
+
+  # @name Price editing is only available to administrators
+  permit permission.order.data.price if all:
+    all of:
+      user.roles contains 'administrator'
+`;
+
+// Define resource types for TypeScript
+// Types can be generated automatically (more on this later) or defined manually
+// In this example, for simplicity, types are defined manually
+type Resources = {
+  ['order.action.create']: {
+    user: {
+      age: number;
+    }
+  }
+  ['order.data.price']: {
+    user: {
+      roles: string[];
+    }
+  }
+}
+
+// Use the parser to create policies
+// Pass the resource type as a generic parameter
+const policies = new AbilityDSLParser<Resources>(dsl).parse(); // AbilityPolicy[]
+
+// The parser returns an array of policies even
+// if only one policy is described in the DSL
+console.log(policies); // [AbilityPolicy, AbilityPolicy, ...]
+
+// Export the ready-to-use policies
+export default policies;
+```
+
+For more details about DSL, see the [DSL](#dsl) section.
+
+**Creating policies using classes (classic approach)**
+
+This approach is quite verbose but gives you full control over the policies.
+
+```ts
+import { AbilityPolicy, AbilityRuleSet, AbilityRule, AbilityCompare, AbilityPolicyEffect } from '@via-profit/ability';
+
+// Define resource types for TypeScript
+// Types can be generated automatically (more on this later) or defined manually
+// In this example, for simplicity, types are defined manually
+type Resources = {
+  ['order.action.create']: {
+    user: {
+      age: number;
+    }
+  }
+  ['order.data.price']: {
+    user: {
+      roles: string[];
+    }
+  }
+}
+
+const policies = [
+  // first policy
+  new AbilityPolicy<Resources>({
+    id: '1',
+    name: 'Order creation is only available to persons over 18 years old',
+    compareMethod: AbilityCompare.and,
+    effect: AbilityPolicyEffect.permit,
+    permission: 'order.action.create',
+  }).addRuleSet(
+    AbilityRuleSet.and([
+      // rule
+      AbilityRule.moreOrEqual('user.age', 18),
+    ]),
+  ),
+
+  // second policy
+  new AbilityPolicy<Resources>({
+    id: '2',
+    name: 'Price editing is only available to administrators',
+    compareMethod: AbilityCompare.and,
+    effect: AbilityPolicyEffect.permit,
+    permission: 'order.data.price',
+  }).addRuleSet(
+    AbilityRuleSet.and([
+      // rule
+      AbilityRule.contains('user.roles', 'administrator'),
+    ])
+  ),
+];
+
+// Export the ready-to-use policies
+export default policies;
+```
+
+**Creating policies with JSON**
+
+JSON allows you to store policies in a file or database, for example, in PostgreSQL, which supports working with JSON data.
+
+Policy, rule set, and rule classes have JSON export methods, so you can create policies in any way and export them to JSON whenever needed.
+
+```ts
+import { AbilityJSONParser } from '@via-profit/ability';
+
+// Define resource types for TypeScript
+// Types can be generated automatically (more on this later) or defined manually
+// In this example, for simplicity, types are defined manually
+type Resources = {
+  ['order.action.create']: {
+    user: {
+      age: number;
+    }
+  }
+  ['order.data.price']: {
+    user: {
+      roles: string[];
+    }
+  }
+}
+
+// Parse JSON using AbilityJSONParser
+// Pass the resource types as a generic parameter
+const policies = AbilityJSONParser.parse<Resources>([
+  {
+    id: '1',
+    name: 'Order creation is only available to persons over 18 years old',
+    effect: 'permit',
+    permission: 'order.action.create',
+    compareMethod: 'and',
+    ruleSet: [
+      {
+        compareMethod: 'and',
+        rules: [
+          {
+            subject: 'user.age',
+            resource: 18,
+            condition: '>',
+          }
+        ]
+      }
+    ],
+  },
+  {
+    id: '2',
+    name: 'Price editing is only available to administrators',
+    effect: 'permit',
+    permission: 'order.data.price',
+    compareMethod: 'and',
+    ruleSet: [
+      {
+        compareMethod: 'and',
+        rules: [
+          {
+            subject: 'user.roles',
+            resource: 'administrator',
+            condition: 'contains',
+          }
+        ]
+      }
+    ]
+  }
+]);
+
+export default policies;
+```
 ---
 
 ## DSL
