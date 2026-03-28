@@ -447,24 +447,17 @@ The content of the object is defined by the developer and can be any object cons
 - session context,
 - any other external conditions.
 
-**Examples:**
-
-```ts
-type Environment = {
-  time: {
-    hour: number;
-  };
-  ip: string;
-  geo: {
-    country: string;
-  };
-};
-```
 
 Environment is passed to `resolve()` and `enforce()` as the third argument:
 
 ```ts
-await resolver.resolve('order.update', resource, environment);
+const environment = {
+  time: {
+    hour: new Date().getHours(),
+  },
+  ip: req.ip,
+}
+
 await resolver.enforce('order.update', resource, environment);
 ```
 

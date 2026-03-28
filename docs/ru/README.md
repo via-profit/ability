@@ -461,24 +461,16 @@ TODO: использование нескольких политик
 - контекст сессии,
 - любые другие внешние условия.
 
-**Примеры:**
-
-```ts
-type Environment = {
-  time: {
-    hour: number;
-  };
-  ip: string;
-  geo: {
-    country: string;
-  };
-};
-```
-
 Environment передаётся в `resolve()` и `enforce()` как третий аргумент:
 
 ```ts
-await resolver.resolve('order.update', resource, environment);
+const environment = {
+  time: {
+    hour: new Date().getHours(),
+  },
+  ip: req.ip,
+}
+
 await resolver.enforce('order.update', resource, environment);
 ```
 
