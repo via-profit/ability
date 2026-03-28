@@ -540,7 +540,7 @@ const resolver = new AbilityResolver<Resources, Environment>(policies);
 ```ts
 // scripts/policies.ts
 
-import { AbilityDSLParser } from './AbilityDSLParser';
+import { AbilityDSLParser } from '@via-profit/ability';
 
 const dsl = `
 # @name Update order

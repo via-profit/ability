@@ -524,7 +524,7 @@ First, you need to prepare an array of policies. Policies can be stored in DSL o
 ```ts
 // scripts/policies.ts
 
-import { AbilityDSLParser } from './AbilityDSLParser';
+import { AbilityDSLParser } from '@via-profit/ability';
 
 const dsl = `
 # @name Update order
