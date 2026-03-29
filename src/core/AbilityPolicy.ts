@@ -143,6 +143,33 @@ export class AbilityPolicy<
 
     return new AbilityExplainPolicy(this);
   }
+
+  public copyWith(
+    props: Partial<{
+      id: string;
+      name: string;
+      permission: string;
+      effect: AbilityPolicyEffect;
+      compareMethod: AbilityCompare;
+      ruleSet: AbilityRuleSet<Resource, Environment>[];
+    }>,
+  ): AbilityPolicy<Resource, Environment> {
+    const policy = new AbilityPolicy<Resource, Environment>({
+      id: props.id ?? this.id,
+      name: props.name ?? this.name,
+      permission: props.permission ?? this.permission,
+      effect: props.effect ?? this.effect,
+      compareMethod: props.compareMethod ?? this.compareMethod,
+    });
+
+    const nextRuleSet = props.ruleSet ?? this.ruleSet;
+
+    for (const rule of nextRuleSet) {
+      policy.addRuleSet(rule);
+    }
+
+    return policy;
+  }
 }
 
 export default AbilityPolicy;

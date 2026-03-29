@@ -109,6 +109,29 @@ export class AbilityRuleSet<
     return `AbilityRuleSet: ${this.name} compareMethod: ${this.compareMethod.code}, rules: ${this.rules.map(rule => rule.toString()).join('\n')}`;
   }
 
+  public copyWith(
+    props: Partial<{
+      id: string | null;
+      name: string | null;
+      compareMethod: AbilityCompare;
+      rules: AbilityRule<Resources, Environment>[];
+    }>,
+  ): AbilityRuleSet<Resources, Environment> {
+    const next = new AbilityRuleSet<Resources, Environment>({
+      id: props.id ?? this.id,
+      name: props.name ?? this.name,
+      compareMethod: props.compareMethod ?? this.compareMethod,
+    });
+
+    const nextRules = props.rules ?? this.rules;
+
+    for (const rule of nextRules) {
+      next.addRule(rule);
+    }
+
+    return next;
+  }
+
   static and(rules: AbilityRule[]) {
     return new AbilityRuleSet({
       compareMethod: AbilityCompare.and,

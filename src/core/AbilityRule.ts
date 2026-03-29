@@ -310,6 +310,24 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     return `AbilityRule: ${this.name} condition: ${this.condition.code} subject: "${this.subject?.toString()}" resource: "${this.resource?.toString()}"`;
   }
 
+  public copyWith(
+    props: Partial<{
+      id: string | null;
+      name: string | null;
+      subject: string;
+      resource: AbilityRuleConfig['resource'];
+      condition: AbilityCondition;
+    }>,
+  ): AbilityRule<Resources, Environment> {
+    return new AbilityRule<Resources, Environment>({
+      id: props.id ?? this.id,
+      name: props.name ?? this.name,
+      subject: props.subject ?? this.subject,
+      resource: props.resource ?? this.resource,
+      condition: props.condition ?? this.condition,
+    });
+  }
+
   static equals<Resources extends object = object, Environment = unknown>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
