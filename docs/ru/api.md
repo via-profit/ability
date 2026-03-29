@@ -30,6 +30,7 @@
 | Метод | Аргументы | Возвращает | Описание |
 |-------|-----------|------------|----------|
 | `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Проверяет правило |
+| `copyWith(props)` | `Partial<AbilityRuleConfig>` | `AbilityRule` | Копирует правило с новыми аргументами |
 | `static equals(subject, resource)` | `string, any` | `AbilityRule` | Правило равенства |
 | `static notEquals(subject, resource)` | `string, any` | `AbilityRule` | Правило неравенства |
 | `static contains(subject, resource)` | `string, any` | `AbilityRule` | Проверка вхождения |
@@ -68,6 +69,7 @@
 | `addRule(rule)` | `AbilityRule` | `this` | Добавляет правило |
 | `addRules(list)` | `AbilityRule[]` | `this` | Добавляет несколько правил |
 | `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Проверяет группу |
+| `copyWith(props)` | `Partial<AbilityRuleSetConfig>` | `AbilityRuleSet` | Копирует RuleSet с новыми аргументами |
 | `static and(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Группа с `and` |
 | `static or(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Группа с `or` |
 
@@ -101,6 +103,7 @@
 | `explain()` | — | `AbilityExplainPolicy` | Объяснение результата (после `check`) |
 | `addRuleSet(ruleSet)` | `AbilityRuleSet` | `this` | Добавляет группу правил |
 | `addRuleSets(ruleSets)` | `AbilityRuleSet[]` | `this` | Добавляет несколько групп |
+| `coptyWith(props)` | `Partial<AbilityPolicyConfig>` | `AbilityPolicy` | Копирует полиниту с новыми аршументами |
 
 ---
 

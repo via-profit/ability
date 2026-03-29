@@ -30,6 +30,7 @@ The smallest unit of logic — a single comparison condition.
 | Method | Arguments | Returns | Description |
 |--------|-----------|---------|-------------|
 | `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Checks the rule |
+| `copyWith(props)` | `Partial<AbilityRuleConfig>` | `AbilityRule` | Copies the rule with new arguments |
 | `static equals(subject, resource)` | `string, any` | `AbilityRule` | Equality rule |
 | `static notEquals(subject, resource)` | `string, any` | `AbilityRule` | Inequality rule |
 | `static contains(subject, resource)` | `string, any` | `AbilityRule` | Checks for inclusion |
@@ -68,6 +69,7 @@ A group of rules with `and` or `or` logic.
 | `addRule(rule)` | `AbilityRule` | `this` | Adds a rule |
 | `addRules(list)` | `AbilityRule[]` | `this` | Adds multiple rules |
 | `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Checks the group |
+| `copyWith(props)` | `Partial<AbilityRuleSetConfig>` | `AbilityRuleSet` | Copies the rule set with new arguments |
 | `static and(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Group with `and` logic |
 | `static or(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Group with `or` logic |
 
@@ -101,6 +103,7 @@ Combines rule groups and defines the effect when a match occurs.
 | `explain()` | — | `AbilityExplainPolicy` | Explanation of the result (after `check`) |
 | `addRuleSet(ruleSet)` | `AbilityRuleSet` | `this` | Adds a rule group |
 | `addRuleSets(ruleSets)` | `AbilityRuleSet[]` | `this` | Adds multiple rule groups |
+| `copyWith(props)` | `Partial<AbilityPolicytConfig>` | `AbilityPolicy` | Copies the policy with new arguments |
 
 ---
 
