@@ -73,8 +73,7 @@ const environment = {
 const [policy] = new AbilityDSLParser(dsl).parse();
 const policies = Array.from({ length: 50 }, (_, i) => {
 
-  return AbilityPolicy.fromJSON({
-    ...policy.toJSON(),
+  return policy.copyWith({
     id: `policy-${i}`,
     name: `policy-${i}`
   });
