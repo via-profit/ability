@@ -30,7 +30,6 @@ The smallest unit of logic — a single comparison condition.
 | Method | Arguments | Returns | Description |
 |--------|-----------|---------|-------------|
 | `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Checks the rule |
-| `static fromJSON(config)` | `AbilityRuleConfig` | `AbilityRule` | Creates a rule from a JSON configuration |
 | `static equals(subject, resource)` | `string, any` | `AbilityRule` | Equality rule |
 | `static notEquals(subject, resource)` | `string, any` | `AbilityRule` | Inequality rule |
 | `static contains(subject, resource)` | `string, any` | `AbilityRule` | Checks for inclusion |
@@ -69,7 +68,6 @@ A group of rules with `and` or `or` logic.
 | `addRule(rule)` | `AbilityRule` | `this` | Adds a rule |
 | `addRules(list)` | `AbilityRule[]` | `this` | Adds multiple rules |
 | `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Checks the group |
-| `static fromJSON(config)` | `AbilityRuleSetConfig` | `AbilityRuleSet` | Creates a group from JSON |
 | `static and(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Group with `and` logic |
 | `static or(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Group with `or` logic |
 
@@ -103,10 +101,6 @@ Combines rule groups and defines the effect when a match occurs.
 | `explain()` | — | `AbilityExplainPolicy` | Explanation of the result (after `check`) |
 | `addRuleSet(ruleSet)` | `AbilityRuleSet` | `this` | Adds a rule group |
 | `addRuleSets(ruleSets)` | `AbilityRuleSet[]` | `this` | Adds multiple rule groups |
-| `toJSON()` | — | `AbilityPolicyConfig` | Exports to JSON |
-| `static fromJSON(config)` | `AbilityPolicyConfig` | `AbilityPolicy` | Creates a policy from JSON |
-| `static fromJSONAll(configs)` | `AbilityPolicyConfig[]` | `AbilityPolicy[]` | Bulk creation from JSON |
-| `static fromDSL(dsl)` | `string` | `AbilityPolicy` | Creates a policy from DSL |
 
 ---
 

@@ -35,7 +35,7 @@ export class AbilityJSONParser {
     policy.compareMethod = new AbilityCompare(compareMethod);
 
     ruleSet.forEach(ruleSetConfig => {
-      policy.addRuleSet(AbilityRuleSet.fromJSON<Resource, Environment>(ruleSetConfig));
+      policy.addRuleSet(AbilityJSONParser.parseRuleSet<Resource, Environment>(ruleSetConfig));
     });
 
     return policy;
@@ -73,7 +73,7 @@ export class AbilityJSONParser {
     // Adding rules if exists
     if (rules && rules.length > 0) {
       const abilityRules = rules.map(ruleConfig =>
-        AbilityRule.fromJSON<Resource, Environment>(ruleConfig),
+       AbilityJSONParser.parseRule(ruleConfig),
       );
 
       ruleSet.addRules(abilityRules);

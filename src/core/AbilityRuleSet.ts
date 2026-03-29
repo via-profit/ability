@@ -2,7 +2,6 @@ import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
 import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
 import AbilityMatch from './AbilityMatch';
 import { ResourceObject } from './AbilityParser';
-import { AbilityJSONParser } from '../parsers/json/AbilityJSONParser';
 
 export type AbilityRuleSetConfig = {
   readonly id?: string | null;
@@ -108,16 +107,6 @@ export class AbilityRuleSet<
 
   public toString(): string {
     return `AbilityRuleSet: ${this.name} compareMethod: ${this.compareMethod.code}, rules: ${this.rules.map(rule => rule.toString()).join('\n')}`;
-  }
-
-  /**
-   * Parse the config JSON format to Group class instance
-   */
-  public static fromJSON<
-    Resource extends ResourceObject = Record<string, unknown>,
-    Environment = unknown,
-  >(config: AbilityRuleSetConfig): AbilityRuleSet<Resource, Environment> {
-    return AbilityJSONParser.parseRuleSet(config);
   }
 
   static and(rules: AbilityRule[]) {

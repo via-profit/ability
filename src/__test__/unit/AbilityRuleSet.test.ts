@@ -2,7 +2,6 @@ import AbilityRule from '../../core/AbilityRule';
 import AbilityRuleSet from '../../core/AbilityRuleSet';
 import AbilityMatch from '../../core/AbilityMatch';
 import AbilityCompare from '../../core/AbilityCompare';
-import { AbilityJSONParser } from '../../parsers/json/AbilityJSONParser';
 
 describe('AbilityRuleSet', () => {
   describe('constructor', () => {
@@ -190,47 +189,6 @@ describe('AbilityRuleSet', () => {
       const result = await ruleSet.check({ any: 'data' });
 
       expect(result).toBe(AbilityMatch.mismatch);
-    });
-  });
-
-  describe('parse and export', () => {
-    it('should parse config to rule set', () => {
-      const config = {
-        id: 'test-id',
-        name: 'Test RuleSet',
-        compareMethod: 'or' as const,
-        rules: [
-          {
-            subject: 'user.name',
-            resource: 'John',
-            condition: '=' as const,
-          },
-          {
-            subject: 'user.age',
-            resource: 18,
-            condition: '>' as const,
-          },
-        ],
-      };
-
-      const ruleSet = AbilityRuleSet.fromJSON(config);
-
-      expect(ruleSet.id).toBe('test-id');
-      expect(ruleSet.name).toBe('Test RuleSet');
-      expect(ruleSet.compareMethod.code).toBe('or');
-      expect(ruleSet.rules).toHaveLength(2);
-    });
-
-    it('should export rule set to config', () => {
-      const ruleSet = AbilityRuleSet.and([
-        AbilityRule.equals('user.name', 'John'),
-        AbilityRule.moreThan('user.age', 18),
-      ]);
-
-      const config = AbilityJSONParser.ruleSetToJSON(ruleSet);
-
-      expect(config.compareMethod).toBe('and');
-      expect(config.rules).toHaveLength(2);
     });
   });
 

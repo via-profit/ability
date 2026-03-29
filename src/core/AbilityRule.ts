@@ -1,6 +1,5 @@
 import AbilityMatch from './AbilityMatch';
 import AbilityCondition, { AbilityConditionCodeType } from './AbilityCondition';
-import { AbilityJSONParser } from '../parsers/json/AbilityJSONParser';
 
 export type AbilityRuleConfig = {
   readonly id?: string | null;
@@ -309,12 +308,6 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
 
   public toString(): string {
     return `AbilityRule: ${this.name} condition: ${this.condition.code} subject: "${this.subject?.toString()}" resource: "${this.resource?.toString()}"`;
-  }
-
-  public static fromJSON<Resources extends object, Environment = unknown>(
-    config: AbilityRuleConfig,
-  ): AbilityRule<Resources, Environment> {
-    return AbilityJSONParser.parseRule(config);
   }
 
   static equals<Resources extends object = object, Environment = unknown>(

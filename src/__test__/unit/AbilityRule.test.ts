@@ -1,7 +1,6 @@
 import AbilityRule from '../../core/AbilityRule';
 import AbilityCondition from '../../core/AbilityCondition';
 import AbilityMatch from '../../core/AbilityMatch';
-import { AbilityJSONParser } from '../../parsers/json/AbilityJSONParser';
 
 describe('AbilityRule', () => {
   describe('constructor', () => {
@@ -269,35 +268,6 @@ describe('AbilityRule', () => {
       expect(AbilityRule.moreOrEqual('user.age', 18).condition).toBe(
         AbilityCondition.greater_or_equal,
       );
-    });
-  });
-
-  describe('parse and export', () => {
-    it('should parse config to rule', () => {
-      const config = {
-        id: 'test-id',
-        name: 'Test Rule',
-        subject: 'user.age',
-        resource: 18,
-        condition: '>' as const,
-      };
-
-      const rule = AbilityRule.fromJSON(config);
-
-      expect(rule.id).toBe('test-id');
-      expect(rule.name).toBe('Test Rule');
-      expect(rule.subject).toBe('user.age');
-      expect(rule.resource).toBe(18);
-      expect(rule.condition.code).toBe('>');
-    });
-
-    it('should export rule to config', () => {
-      const rule = AbilityRule.equals('user.name', 'John');
-      const config = AbilityJSONParser.ruleToJSON(rule);
-
-      expect(config.subject).toBe('user.name');
-      expect(config.resource).toBe('John');
-      expect(config.condition).toBe('=');
     });
   });
 });

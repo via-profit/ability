@@ -22,15 +22,12 @@
     "SECURITY.md"
   ],
   "scripts": {
-    "lint": "tsc --noEmit && eslint --fix .",
-    "pretty": "prettier --write ./src",
-    "build": "npm run build:dist",
-    "build:dev": "cross-env NODE_ENV=development webpack --config ./webpack/webpack-config.ts --color --progress",
-    "build:dist": "cross-env NODE_ENV=production webpack --config ./webpack/webpack-config.ts --color --progress",
-    "build:playground": "cross-env NODE_ENV=development webpack --config ./webpack/webpack-config-playground.ts --color --progress",
-    "playground": "npm run build:playground -- --watch",
+    "build": "rollup -c",
+    "build:dev": "cross-env NODE_ENV=development rollup -c -w",
+    "bench": "npm run build && node ./bench/benchmark.js",
     "test": "jest",
-    "bench": "npm run build && node ./bench/benchmark.js"
+    "lint": "tsc --noEmit && eslint --fix .",
+    "pretty": "prettier --write ./src"
   },
   "repository": {
     "type": "git",
@@ -49,28 +46,28 @@
     "@eslint/js": "^9.13.0",
     "@jagi/jest-transform-graphql": "^1.0.2",
     "@jest/types": "^29.6.3",
+    "@rollup/plugin-alias": "^6.0.0",
+    "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-typescript": "^12.3.0",
     "@types/jest": "^29.5.13",
     "@types/node": "^22.7.7",
     "@types/nodemon": "^1.19.6",
-    "@types/webpack": "^5.28.5",
-    "@types/webpack-bundle-analyzer": "^4.7.0",
     "concurrently": "^9.0.1",
     "cross-env": "^7.0.3",
     "eslint": "^9.13.0",
     "globals": "^15.11.0",
     "jest": "^29.7.0",
     "jest-transform-graphql": "^2.1.0",
-    "node-loader": "^2.0.0",
     "nodemon": "^3.1.7",
-    "nodemon-webpack-plugin": "^4.8.2",
     "prettier": "^3.3.3",
+    "rollup": "^4.60.0",
+    "rollup-plugin-copy": "^3.5.0",
     "tinybench": "^6.0.0",
     "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3",
-    "typescript-eslint": "^8.10.0",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "typescript-eslint": "^8.10.0"
   }
 }

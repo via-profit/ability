@@ -1,4 +1,4 @@
-import http from 'node:http';
+import {createServer} from 'node:http';
 import AbilityPolicy, { AbilityPolicyConfig } from './core/AbilityPolicy';
 import { AbilityDSLParser } from './parsers/dsl/AbilityDSLParser';
 import AbilityResolver from './core/AbilityResolver';
@@ -122,7 +122,7 @@ console.log(policies); // [AbilityPolicy, AbilityPolicy, ...]
 }
 
 
-const server = http.createServer();
+const server = createServer();
 
 server.on('request', async  (_req, res) => {
   type MyResources = {
@@ -209,13 +209,13 @@ server.on('request', async  (_req, res) => {
     // passwordHash: '...'
   };
 
-  const result = await resolver.resolve('order.status', {
-    order: {
-      amount: 200
-    }
-  });
+  // const result = await resolver.resolve('order.status', {
+  //   order: {
+  //     amount: 200
+  //   }
+  // });
 
-  console.log(result.isDenied()); // true
+  // console.log(result.isDenied()); // true
   res.end();
 });
 

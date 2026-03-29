@@ -4,6 +4,10 @@ import tseslint from 'typescript-eslint';
 
 export default [
   {
+
+  "env": {
+    "node": true
+  },
     ignores: [
       'src/@types/*',
       'dist/*',
