@@ -2,6 +2,22 @@ import { AbilityDSLParser } from '../../parsers/dsl/AbilityDSLParser';
 import AbilityResolver from '../../core/AbilityResolver';
 
 describe('DSL isAllowed/isDenied test', () => {
+  it('should return a message with policy name', async () => {
+    const dsl = `
+      # @name Very yong
+      deny permission.test if all:
+        user.age lt 21
+    `;
+    const policies = new AbilityDSLParser(dsl).parse();
+    const resolver = new AbilityResolver(policies);
+
+    await expect(
+      resolver.enforce('permission.test', {
+        user: { age: 16 },
+      }),
+    ).rejects.toThrow();
+  });
+
   it('should isAllowed be true, isDenied be false', async () => {
     const dsl = `
       permit permission.test if all:
