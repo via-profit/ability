@@ -7,7 +7,6 @@
 ![npm downloads](https://img.shields.io/npm/dm/%40via-profit/ability)
 ![license](https://img.shields.io/github/license/via-profit/ability)
 ![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)
-![bundle size](https://deno.bundlejs.com/badge?q=@via-profit/ability)
 ![status](https://img.shields.io/badge/status-active-success)
 ![issues](https://img.shields.io/github/issues/via-profit/ability)
 ![stars](https://img.shields.io/github/stars/via-profit/ability?style=social)
