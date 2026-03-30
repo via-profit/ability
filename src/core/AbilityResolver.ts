@@ -81,8 +81,14 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
     const result = await this.resolve(permission, resource, environment);
 
     if (result.isDenied()) {
-      const policyName = result.getLastMatchedPolicy()?.name?.toString() || 'unknown';
-      throw new AbilityError(`Permission denied by policy "${policyName}"`);
+      const lastPolicy = result.getLastMatchedPolicy();
+
+      if (lastPolicy) {
+        throw new AbilityError(`Permission denied by policy "${lastPolicy.name.toString()}"`);
+      }
+
+      // No policy matched → implicit deny
+      throw new AbilityError(`Permission denied: no matching policy found (implicit deny)`);
     }
   }
 
