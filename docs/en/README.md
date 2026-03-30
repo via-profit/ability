@@ -552,6 +552,34 @@ order.total
 | **length greater than** | `len >` | `tags length greater than 2` | Length greater than | array, string |
 | **length less than** | `len <` | `tags length less than 5` | Length less than | array, string |
 
+Here is the English version, keeping the structure and tone consistent with your documentation style.
+
+**Special Operators**
+
+| DSL Operator | Synonyms | Example | Description | Types |
+|--------------|----------|---------|-------------|--------|
+| **always** | — | `always` | The condition is always true. Used for global allow rules or simplifying logic. | special operator |
+| **never** | — | `never` | The condition is always false. Used for global deny rules or disabling a rule. | special operator |
+
+
+**always**
+An operator that always returns `true`.  
+Used for:
+
+- global allow (`permit permission.* if all: always`)
+- testing
+- disabling complex conditions
+- creating fallback rules
+
+**never**
+An operator that always returns `false`.  
+Used for:
+
+- global deny (`deny permission.* if all: never`)
+- temporarily disabling a rule
+- explicit unconditional rejection
+
+
 #### Value
 
 Supported values:
