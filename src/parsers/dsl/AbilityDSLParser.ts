@@ -6,7 +6,7 @@ import AbilityRule, { AbilityRuleConfig } from '../../core/AbilityRule';
 import AbilityRuleSet from '../../core/AbilityRuleSet';
 import { AbilityDSLLexer } from '../../parsers/dsl/AbilityDSLLexer';
 import { AbilityDSLToken, TokenType } from '../../parsers/dsl/AbilityDSLToken';
-import { ResourceObject } from '../../core/AbilityParser';
+import { ResourceObject } from '../../core/AbilityTypeGenerator';
 import { AbilityDSLSyntaxError } from '../../parsers/dsl/AbilityDSLSyntaxError';
 
 /**

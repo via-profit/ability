@@ -1,6 +1,6 @@
 import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
 import AbilityMatch from './AbilityMatch';
-import { ResourceObject } from './AbilityParser';
+import { ResourceObject } from './AbilityTypeGenerator';
 import AbilityPolicy from './AbilityPolicy';
 import AbilityPolicyEffect from './AbilityPolicyEffect';
 

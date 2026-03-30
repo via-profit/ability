@@ -1,7 +1,7 @@
 import AbilityCondition from '../../core/AbilityCondition';
 import { AbilityRule, AbilityRuleConfig } from '../../core/AbilityRule';
 import { AbilityRuleSet, AbilityRuleSetConfig } from '../../core/AbilityRuleSet';
-import { ResourceObject } from '../../core/AbilityParser';
+import { ResourceObject } from '../../core/AbilityTypeGenerator';
 import AbilityCompare from '../../core/AbilityCompare';
 import AbilityPolicyEffect from '../../core/AbilityPolicyEffect';
 import { AbilityPolicy, AbilityPolicyConfig } from '../../core/AbilityPolicy';

@@ -2,7 +2,7 @@ import AbilityPolicy from './AbilityPolicy';
 import { AbilityError } from './AbilityError';
 import { AbilityResult } from './AbilityResult';
 import AbilityMatch from './AbilityMatch';
-import { ResourcesMap } from './AbilityParser';
+import { ResourcesMap } from './AbilityTypeGenerator';
 import { AbilityCacheAdapter } from '../cache/AbilityCacheAdapter';
 
 

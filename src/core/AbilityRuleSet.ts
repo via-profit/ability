@@ -1,7 +1,7 @@
 import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
 import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
 import AbilityMatch from './AbilityMatch';
-import { ResourceObject } from './AbilityParser';
+import { ResourceObject } from './AbilityTypeGenerator';
 
 export type AbilityRuleSetConfig = {
   readonly id?: string | null;

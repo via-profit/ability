@@ -4,7 +4,7 @@ import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
 import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from './AbilityPolicyEffect';
 import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
 import { AbilityError } from './AbilityError';
-import { ResourceObject } from './AbilityParser';
+import { ResourceObject } from './AbilityTypeGenerator';
 
 export type AbilityPolicyConfig = {
   readonly permission: string;

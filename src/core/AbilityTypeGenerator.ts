@@ -1,4 +1,3 @@
-import { AbilityParserError } from './AbilityError';
 import AbilityPolicy from './AbilityPolicy';
 import AbilityCondition from './AbilityCondition';
 import AbilityRule from './AbilityRule';
@@ -8,82 +7,25 @@ export type NestedDict<T = Primitive> = {
   [key: string]: NestedDict<T> | T;
 };
 
-
 export type ResourceObject = Record<string, unknown>;
 export type ResourcesMap = Record<string, ResourceObject>;
 
+export class AbilityTypeGenerator {
+  readonly policies: readonly AbilityPolicy[];
 
-
-export class AbilityParser {
-  /**
-   * Sets a value in a nested object structure based on a dot/bracket notation path.
-   * @param object - The target object to modify.
-   * @param path - The path to the property in dot/bracket notation.
-   * @param value - The value to set at the specified path.
-   */
-  public static setValueDotValue<T extends Primitive>(
-    object: NestedDict<T>,
-    path: string,
-    value: T,
-  ): void {
-    if (!path || path.trim().length === 0) {
-      throw new AbilityParserError(`Invalid path provided on a [${path}]`);
-    }
-
-    const way = path.replace(/\[/g, '.').replace(/]/g, '').split('.');
-    const last = way.pop();
-
-    if (!last) {
-      throw new AbilityParserError(`Invalid path provided on a [${path}]`);
-    }
-
-    const lastObj = way.reduce<Record<string, unknown>>((acc, key, index, array) => {
-      const currentValue = acc[key];
-      const nextKey = array[index + 1];
-      const shouldBeArray = nextKey !== undefined && isFinite(Number(nextKey));
-
-      if (currentValue === undefined || currentValue === null) {
-        // Create missing property
-        const newValue = shouldBeArray ? [] : {};
-        acc[key] = newValue;
-        return newValue as Record<string, unknown>;
-      }
-
-      if (typeof currentValue !== 'object') {
-        throw new AbilityParserError(
-          `Cannot set property '${key}' on non-object value at path: ${path}`,
-        );
-      }
-
-      return currentValue as Record<string, unknown>;
-    }, object);
-
-    const existingValue = lastObj[last];
-    if (
-      existingValue !== undefined &&
-      typeof existingValue === 'object' &&
-      existingValue !== null &&
-      !Array.isArray(existingValue)
-    ) {
-      throw new AbilityParserError(
-        `Cannot set primitive value on existing object at path: ${path}`,
-      );
-    }
-
-    lastObj[last] = value;
+  constructor(policies: readonly AbilityPolicy[]) {
+    this.policies = policies;
   }
-
   /**
    * Generates TypeScript type definitions based on the provided policies.
-   * @param policies - An array of AbilityPolicy instances.
    * @returns A generated type definitions.
    */
-  public static generateTypeDefs(policies: readonly AbilityPolicy[]): string {
+  public generateTypeDefs(): string {
     // Structure to store types: { [action]: { [subjectPath]: type } }
     const typeStructure: Record<string, Record<string, string>> = {};
 
     // Iterate through all policies
-    policies.forEach(policy => {
+    this.policies.forEach(policy => {
       const action = policy.permission;
 
       // Initialize object for action if it doesn't exist
@@ -120,7 +62,7 @@ export class AbilityParser {
    * @param rule - The rule to analyze
    * @returns TypeScript type as string
    */
-  private static determineTypeFromRule(rule: AbilityRule): string {
+  private determineTypeFromRule(rule: AbilityRule): string {
     // Numeric comparisons - always number
     if (
       rule.condition.isEqual(AbilityCondition.greater_than) ||
@@ -155,7 +97,7 @@ export class AbilityParser {
    * @param resource - The resource value to analyze
    * @returns TypeScript array type as string
    */
-  private static getArrayType(resource: unknown): string {
+  private getArrayType(resource: unknown): string {
     if (Array.isArray(resource)) {
       if (resource.length === 0) return 'any[]';
 
@@ -166,12 +108,12 @@ export class AbilityParser {
           ? Array.from(elementTypes)[0]
           : `(${Array.from(elementTypes).join(' | ')})`;
 
-      return `${elementType}[]`;
+      return `readonly ${elementType}[]`;
     }
 
     // If resource is not an array but condition is in/not_in,
     // it expects an array of such elements
-    return `${this.getPrimitiveType(resource)}[]`;
+    return `readonly ${this.getPrimitiveType(resource)}[]`;
   }
 
   /**
@@ -179,7 +121,7 @@ export class AbilityParser {
    * @param value - The value to analyze
    * @returns TypeScript primitive type as string
    */
-  private static getPrimitiveType(value: unknown): string {
+  private getPrimitiveType(value: unknown): string {
     if (value === null) return 'null';
     if (value === undefined) return 'undefined';
 
@@ -206,7 +148,7 @@ export class AbilityParser {
    * @param flatStructure - Flat structure with dot notation paths
    * @returns Nested object structure
    */
-  private static buildNestedStructure(
+  private buildNestedStructure(
     flatStructure: Record<string, Record<string, string>>,
   ): Record<string, NestedDict<string>> {
     const result: Record<string, NestedDict<string>> = {};
@@ -246,10 +188,9 @@ export class AbilityParser {
    * @param structure - Nested type structure
    * @returns Formatted TypeScript type definition string
    */
-  private static formatTypeDefinitions(structure: Record<string, NestedDict<string>>): string {
+  private formatTypeDefinitions(structure: Record<string, NestedDict<string>>): string {
     let output = '// Automatically generated by via-profit/ability\n';
     output += '// Do not edit manually\n';
-    output += '\n/* eslint-disable */\n\n';
     output += 'export type Resources = {\n';
 
     // Sort actions for stable output
@@ -271,7 +212,7 @@ export class AbilityParser {
    * @param indent - Current indentation level
    * @returns Formatted string
    */
-  private static formatNestedObject(obj: NestedDict<string>, indent: number): string {
+  private formatNestedObject(obj: NestedDict<string>, indent: number): string {
     const spaces = ' '.repeat(indent);
     let output = '';
 
@@ -296,4 +237,4 @@ export class AbilityParser {
   }
 }
 
-export default AbilityParser;
+export default AbilityTypeGenerator;

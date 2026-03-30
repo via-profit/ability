@@ -2,7 +2,6 @@ import { AbilityDSLParser } from '../../parsers/dsl/AbilityDSLParser';
 import AbilityCondition from '../../core/AbilityCondition';
 import AbilityCompare from '../../core/AbilityCompare';
 import AbilityPolicyEffect from '../../core/AbilityPolicyEffect';
-import { AbilityDSLLexer } from '../../parsers/dsl/AbilityDSLLexer';
 
 describe('AbilityDSLParser', () => {
   it('should parse a policy with two rule sets (all of and any of)', () => {
@@ -109,7 +108,6 @@ deny permission.order.view if all:
 `;
 
     const parser = new AbilityDSLParser(dsl);
-    const tokens = new AbilityDSLLexer(dsl).tokenize();
     const policies = parser.parse();
 
     expect(policies).toHaveLength(1);

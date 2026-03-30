@@ -3,7 +3,7 @@ export * from './core/AbilityCompare';
 export * from './core/AbilityCondition';
 export * from './core/AbilityError';
 export * from './core/AbilityMatch';
-export * from './core/AbilityParser';
+export * from './core/AbilityTypeGenerator';
 export * from './core/AbilityPolicy';
 export * from './core/AbilityPolicyEffect';
 export * from './core/AbilityResolver';
