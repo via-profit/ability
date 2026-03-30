@@ -36,6 +36,8 @@ export class AbilityDSLLexer {
     'is',
     'or',
     'than',
+    'always',
+    'never',
   ]);
 
   constructor(input: string) {
@@ -204,6 +206,14 @@ export class AbilityDSLLexer {
 
     const word = this.input.slice(start, this.pos);
 
+    if (word === 'always') {
+      return new AbilityDSLToken(AbilityDSLToken.ALWAYS, word, startLine, startColumn);
+    }
+
+    if (word === 'never') {
+      return new AbilityDSLToken(AbilityDSLToken.NEVER, word, startLine, startColumn);
+    }
+
     // Если есть точка — это путь (identifier или permission)
     if (word.includes('.')) {
       const last = this.tokens[this.tokens.length - 1];
@@ -228,6 +238,7 @@ export class AbilityDSLLexer {
       if (word === 'all') {
         return new AbilityDSLToken(AbilityDSLToken.ALL, word, startLine, startColumn);
       }
+      
       if (word === 'any') {
         return new AbilityDSLToken(AbilityDSLToken.ANY, word, startLine, startColumn);
       }

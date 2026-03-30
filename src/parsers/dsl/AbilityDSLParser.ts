@@ -156,7 +156,11 @@ export class AbilityDSLParser<
           break;
         }
 
-        if (this.check(AbilityDSLToken.IDENTIFIER)) {
+        if (
+          this.check(AbilityDSLToken.IDENTIFIER) ||
+          this.check(AbilityDSLToken.ALWAYS) ||
+          this.check(AbilityDSLToken.NEVER)
+        ) {
           group.addRule(this.parseRule());
         } else {
           this.syntaxError(`Unexpected token in implicit group: ${this.peek().code}`, this.peek());
@@ -177,8 +181,8 @@ export class AbilityDSLParser<
     const meta = this.takeAnnotations();
 
     const compareToken = this.consumeOneOf(
-      [AbilityDSLToken.ALL, AbilityDSLToken.ANY],
-      'Expected "all" or "any"',
+      [AbilityDSLToken.ALL, AbilityDSLToken.ANY, AbilityDSLToken.ALWAYS, AbilityDSLToken.NEVER],
+      'Expected "all" or "any" or "always" or "never"',
     );
 
     const compareMethod =
@@ -219,12 +223,30 @@ export class AbilityDSLParser<
   private parseRule(): AbilityRule {
     this.consumeLeadingComments();
     const meta = this.takeAnnotations();
-    if (!this.check(AbilityDSLToken.IDENTIFIER)) {
-      this.syntaxError(`Expected identifier, got ${this.peek().code}`, this.peek());
+
+    // if (this.check(AbilityDSLToken.ALWAYS) || this.check(AbilityDSLToken.NEVER)) {
+    //   // Checking that there are no extra tokens after the value
+    //   // (skip comments)
+    //   this.consumeLeadingComments();
+    //   const specOperator = this.consume();
+    //   // return new AbilityRule({
+    //   //   subject: '',
+    //   //   resource,
+    //   //   condition,
+    //   //   name: meta.name,
+    //   // });
+    // }
+
+    const isNeverAlways = this.check(AbilityDSLToken.ALWAYS) || this.check(AbilityDSLToken.NEVER);
+
+    if (!isNeverAlways && !this.check(AbilityDSLToken.IDENTIFIER)) {
+      this.syntaxError(`Expected identifier, but got ${this.peek().code}`, this.peek());
     }
 
     // Subject (e.g., "user.roles")
-    const subject = this.consume(AbilityDSLToken.IDENTIFIER, 'Expected field').value;
+    const subject = isNeverAlways
+      ? ''
+      : this.consume(AbilityDSLToken.IDENTIFIER, 'Expected field').value;
 
     // Operator (e.g., "contains", "equals", "is not null")
     const { condition, operator } = this.parseConditionOperator();
@@ -236,7 +258,9 @@ export class AbilityDSLParser<
     if (
       operator === AbilityDSLToken.EQ_NULL ||
       operator === AbilityDSLToken.NOT_EQ_NULL ||
-      operator === AbilityDSLToken.NULL
+      operator === AbilityDSLToken.NULL || 
+      operator === AbilityDSLToken.ALWAYS || 
+      operator === AbilityDSLToken.NEVER
     ) {
       resource = null;
     } else {
@@ -280,6 +304,18 @@ export class AbilityDSLParser<
    */
   private parseConditionOperator(): { condition: AbilityCondition; operator: TokenType } {
     const savedPos = this.pos;
+
+    // "always"
+    if (this.matchWord('always')) {
+      return { condition: AbilityCondition.always, operator: AbilityDSLToken.ALWAYS };
+    }
+    this.pos = savedPos;
+
+    // "never"
+    if (this.matchWord('never')) {
+      return { condition: AbilityCondition.never, operator: AbilityDSLToken.NEVER };
+    }
+    this.pos = savedPos;
 
     // "length equals"
     if (this.matchWord('length') && this.matchWord('equals')) {
@@ -513,7 +549,10 @@ export class AbilityDSLParser<
 
     const token = this.peek();
     if (
-      (token.code === AbilityDSLToken.KEYWORD || token.code === AbilityDSLToken.IDENTIFIER) &&
+      (token.code === AbilityDSLToken.KEYWORD ||
+        token.code === AbilityDSLToken.IDENTIFIER ||
+        token.code === AbilityDSLToken.ALWAYS ||
+        token.code === AbilityDSLToken.NEVER) &&
       token.value === word
     ) {
       this.advance();
@@ -687,10 +726,6 @@ export class AbilityDSLParser<
     }
 
     throw new AbilityDSLSyntaxError(token.line, token.column, context + '\n', finalDetails);
-  }
-
-  private getLine(lineNumber: number): string {
-    return this.dsl.split(/\r?\n/)[lineNumber - 1] ?? '';
   }
 
   private suggest(actual: string, expectedTypes: TokenType[]): string | null {

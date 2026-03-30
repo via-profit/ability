@@ -67,8 +67,14 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     let is: boolean = false;
 
     const [subjectValue, resourceValue] = this.extractValues(resource, environment);
-    const isValue = (v: unknown) =>
+    const isValue = (v: unknown): v is string | number | boolean | null =>
       typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' || v === null;
+
+
+    // always
+    if(AbilityCondition.always.isEqual(this.condition)) {
+      is = true;
+    }
 
     // equals
     if (AbilityCondition.equals.isEqual(this.condition)) {

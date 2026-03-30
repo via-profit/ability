@@ -14,7 +14,9 @@ export type AbilityConditionCodeType =
   | 'not contains'
   | 'length greater than'
   | 'length less than'
-  | 'length equals';
+  | 'length equals'
+  | 'always'
+  | 'never';
 export type AbilityConditionLiteralType =
   // plain values
   | 'equals'
@@ -32,7 +34,9 @@ export type AbilityConditionLiteralType =
   | 'greater_or_equal'
   | 'length_greater_than'
   | 'length_less_than'
-  | 'length_equals';
+  | 'length_equals'
+  | 'always'
+  | 'never';
 
 export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
   public static equals = new AbilityCondition('=');
@@ -48,6 +52,8 @@ export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
   public static length_greater_than = new AbilityCondition('length greater than');
   public static length_less_than = new AbilityCondition('length less than');
   public static length_equals = new AbilityCondition('length equals');
+  public static always = new AbilityCondition('always');
+  public static never = new AbilityCondition('never');
 
   public static fromLiteral(literal: AbilityConditionLiteralType): AbilityCondition {
     switch (literal) {
@@ -75,6 +81,10 @@ export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
         return this.length_greater_than;
       case 'length_equals':
         return this.length_equals;
+      case 'always':
+        return this.always;
+      case 'never':
+        return this.never;
       default:
         throw new AbilityParserError(`Literal ${literal} does not found in AbilityCondition class`);
     }

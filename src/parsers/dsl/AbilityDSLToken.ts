@@ -38,6 +38,8 @@ export type TokenType =
   | 'LEN_GT' // length greater
   | 'LEN_LT' // length less
   | 'LEN_EQ' // length equals
+  | 'ALWAYS' // always
+  | 'NEVER' // never
 
   // -------------------------------------------------------------------------
   // #region Literal values
@@ -116,6 +118,8 @@ export class AbilityDSLToken<Code extends TokenType = TokenType> extends Ability
   public static readonly LEN_LT: TokenType = 'LEN_LT';
   public static readonly LEN_EQ: TokenType = 'LEN_EQ';
   public static readonly NOT_EQ: TokenType = 'NOT_EQ';
+  public static readonly ALWAYS: TokenType = 'ALWAYS';
+  public static readonly NEVER: TokenType = 'NEVER';
   public static readonly STRING: TokenType = 'STRING';
   public static readonly NUMBER: TokenType = 'NUMBER';
   public static readonly BOOLEAN: TokenType = 'BOOLEAN';
