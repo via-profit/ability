@@ -571,4 +571,112 @@ describe('DSL Operators', () => {
       expect(result.isAllowed()).toBeTruthy();
     });
   });
+
+  // -----------------------------
+  // #region Operator "always"
+  // -----------------------------
+  describe('Operator "always"', () => {
+    it('Operator "always" should permit', async () => {
+      const dsl = `
+        allow permission.* if all:
+          always
+      `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies);
+
+      const result = await resolver.resolve('permission.test', {
+        foo: 'bar',
+      });
+
+      expect(result.isAllowed()).toBeTruthy();
+      expect(result.isDenied()).toBeFalsy();
+    });
+
+    it('Operator "always" should permit, but deny fo next', async () => {
+      const dsl = `
+        allow permission.* if all:
+          always
+
+        deny permission.test if any:
+          env.hour >= 16
+      `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies);
+
+      const result = await resolver.resolve('permission.test', {
+        env: {
+          hour: 16,
+        },
+      });
+      expect(result.isAllowed()).toBeFalsy();
+      expect(result.isDenied()).toBeTruthy();
+    });
+
+    it('Operator "always" should permit, but deny fo next', async () => {
+      const dsl = `
+
+        deny permission.test if any:
+          env.hour >= 16
+
+        allow permission.* if all:
+          always
+
+
+      `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies);
+
+      const result = await resolver.resolve('permission.test', {
+        env: {
+          hour: 16,
+        },
+      });
+      expect(result.isAllowed()).toBeTruthy();
+      expect(result.isDenied()).toBeFalsy();
+    });
+  });
+
+  // -----------------------------
+  // #region Operator "never"
+  // -----------------------------
+  describe('Operator "never"', () => {
+    it('Operator "never" should deny', async () => {
+      const dsl = `
+        permit permission.* if all:
+          never
+      `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies);
+
+      const result = await resolver.resolve('permission.test', {
+        foo: 'bar',
+      });
+
+      expect(result.isAllowed()).toBeFalsy();
+      expect(result.isDenied()).toBeTruthy();
+    });
+
+    it('Operator "never" should deny', async () => {
+      const dsl = `
+        deny permission.* if all:
+          never
+
+        permit permission.* if any:
+          never
+
+        permit permission.* if any:
+          always
+        
+      `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies);
+
+      const result = await resolver.resolve('permission.test', {
+        foo: 'bar',
+      });
+
+      expect(result.isAllowed()).toBeTruthy();
+      expect(result.isDenied()).toBeFalsy();
+    });
+  });
 });
