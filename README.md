@@ -702,18 +702,14 @@ This allows:
 
 ## TypeScript Type Generator
 
-`AbilityParser.generateTypeDefs()` generates TypeScript types based on policies, allowing you to avoid discrepancies between types and data in policies.
+`AbilityTypeGenerator.generateTypeDefs(policies)` generates TypeScript types based on policies, allowing you to avoid inconsistencies between types and the data in the policies.
 
-**Usage Example**
+**Example usage**
 
-First, you need to prepare an array of policies. Policies can be stored in DSL or JSON and parsed into an array of ready-made policies. In this example, for clarity, policies are stored in DSL.
+Policies can be stored in DSL or JSON. This example uses a DSL file.
 
-```ts
-// scripts/policies.ts
-
-import { AbilityDSLParser } from '@via-profit/ability';
-
-const dsl = `
+_policies/policies.dsl_
+```
 # @name Update order
 permit permission.order.update if all:
 
@@ -721,25 +717,46 @@ permit permission.order.update if all:
   all of:
     # @name User is owner
     user.id = order.ownerId
-`;
+```
 
+_scripts/policies.js_
+```js
+const fs = require('node:fs');
+const path = require('node:path');
+const { AbilityTypeGenerator, AbilityDSLParser } = require('@via-profit/ability');
+
+// Prepare paths
+const dslPath = path.resolve(__dirname, '../src/policies/policies.dsl');
+const typeDefsPath = path.join(path.dirname(dslPath), 'policies.types.ts');
+
+// Read DSL as a string
+const dsl = fs.readFileSync(dslPath, {encoding: 'utf-8'});
+
+// Create policies
 const policies = new AbilityDSLParser(dsl).parse();
 
-export default policies;
+// Generate TypeScript types
+const typeDefs = new AbilityTypeGenerator(policies).generateTypeDefs();
+
+// Save TypeScript types to file
+fs.writeFileSync(typeDefsPath, typeDefs, {encoding: 'utf-8'});
 ```
 
+_policies/index.ts_
 ```ts
-// scripts/generate-types.ts
-import { writeFileSync } from 'node:fs';
-import { AbilityParser } from '@via-profit/ability';
-import policies from './policies.json';
+import { AbilityDSLParser, AbilityResolver } from '@via-profit/ability';
+import type { Resources } from './policies.types';
+import dsl from './policies.dsl';
 
-const typedefs = AbilityParser.generateTypeDefs(policies);
+const policies = new AbilityDSLParser<Resources>(dsl).parse();
 
-writeFileSync('./src/ability/types.generated.ts', typedefs, 'utf8');
+export const policyResolver = new AbilityResolver(new AbilityDSLParser<Resources>(dsl).parse());
+
+export default policyResolver;
+
 ```
 
-**Generated File (example)**
+**Generated file (example)**
 
 ```ts
 // src/ability/types.generated.ts
@@ -761,12 +778,7 @@ export type Resources = {
 **Usage in code**
 
 ```ts
-import { AbilityResolver, AbilityPolicy } from '@via-profit/ability';
-import type { Resources } from './ability/types.generated';
-
-const resolver = new AbilityResolver<Resources>(
-  AbilityPolicy.parseAll(policies),
-);
+import { policyResolver } from './policies';
 
 await resolver.enforce('order.update', {
   user: { id: 'u1' },

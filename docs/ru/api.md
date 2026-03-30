@@ -175,7 +175,7 @@
 
 ---
 
-## AbilityParser
+## AbilityTypeGenerator
 
 ### Назначение
 

@@ -175,7 +175,7 @@ Common method:
 
 ---
 
-## AbilityParser
+## AbilityTypeGenerator
 
 ### Purpose
 
