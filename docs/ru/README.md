@@ -3,6 +3,15 @@
 > Набор сервисов, частично реализующих принцип [Attribute Based Access Control](https://en.wikipedia.org/wiki/Attribute-based_access_control)
 > Пакет позволяет описывать правила, объединять их в группы, формировать политики и применять их к данным для определения разрешений.
 
+![npm version](https://img.shields.io/npm/v/%40via-profit/ability)
+![npm downloads](https://img.shields.io/npm/dm/%40via-profit/ability)
+![license](https://img.shields.io/github/license/via-profit/ability)
+![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)
+![status](https://img.shields.io/badge/status-active-success)
+![issues](https://img.shields.io/github/issues/via-profit/ability)
+![stars](https://img.shields.io/github/stars/via-profit/ability?style=social)
+
+
 ## Language / Язык
 
 - [🇬🇧 English](/docs/en/README.md)

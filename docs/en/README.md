@@ -3,6 +3,15 @@
 > A set of services that partially implement the [Attribute Based Access Control](https://en.wikipedia.org/wiki/Attribute-based_access_control) principle.
 > The package allows you to describe rules, combine them into groups, form policies, and apply them to data to determine permissions.
 
+![npm version](https://img.shields.io/npm/v/%40via-profit/ability)
+![npm downloads](https://img.shields.io/npm/dm/%40via-profit/ability)
+![license](https://img.shields.io/github/license/via-profit/ability)
+![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)
+![status](https://img.shields.io/badge/status-active-success)
+![issues](https://img.shields.io/github/issues/via-profit/ability)
+![stars](https://img.shields.io/github/stars/via-profit/ability?style=social)
+
+
 ## Language / Язык
 
 - [🇬🇧 English](/docs/en/README.md)
