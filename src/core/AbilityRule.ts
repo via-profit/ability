@@ -76,6 +76,13 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
       is = true;
     }
 
+    
+    // never
+    if(AbilityCondition.never.isEqual(this.condition)) {
+      is = false;
+    }
+
+
     // equals
     if (AbilityCondition.equals.isEqual(this.condition)) {
       is = subjectValue === resourceValue;
