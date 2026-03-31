@@ -526,17 +526,6 @@ order.total
 | **contains** | `includes`, `has`         | `tags contains 'vip'` | Array contains the element | array |
 | **not contains** | `not includes`, `not has` | `tags not contains 'vip'` | Array does not contain the element | array |
 
-**String Operators**
-
-| DSL Operator | Synonyms | Example | Description | Types |
-|--------------|----------|---------|-------------|-------|
-| **starts with** | `begins with` | `email starts with 'admin@'` | String starts with | string |
-| **not starts with** | — | `email not starts with 'test'` | String does not start with | string |
-| **ends with** | — | `email ends with '.ru'` | String ends with | string |
-| **not ends with** | — | `email not ends with '.com'` | String does not end with | string |
-| **includes** | `contains substring` | `name includes 'lex'` | String contains substring | string |
-| **not includes** | — | `name not includes 'test'` | String does not contain substring | string |
-
 **Boolean Operators**
 
 | DSL Operator | Synonyms | Example | Description | Types |
