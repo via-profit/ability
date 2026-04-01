@@ -1,5 +1,9 @@
 import AbilityMatch from './AbilityMatch';
-import AbilityCondition, { AbilityConditionCodeType } from './AbilityCondition';
+import {
+  AbilityCondition,
+  AbilityConditionCodeType,
+  AbilityConditionLiteralType,
+} from './AbilityCondition';
 
 export type AbilityRuleConfig = {
   readonly id?: string | null;
@@ -58,172 +62,136 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     this.condition = condition;
   }
 
+  private isPrimitive(v: unknown): v is string | number | boolean | null {
+    return typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' || v === null;
+  }
+
+  private isNumber(v: unknown): v is number {
+    return typeof v === 'number';
+  }
+
+  private isString(v: unknown): v is string {
+    return typeof v === 'string';
+  }
+
+  private valueLen = (v: unknown): number | null =>
+    this.isString(v) || Array.isArray(v) ? v.length : null;
+
+  private operatorHandlers = {
+    [AbilityCondition.always.literal]: () => true,
+    [AbilityCondition.never.literal]: () => false,
+    [AbilityCondition.equals.literal]: (a: unknown, b: unknown) => a === b,
+    [AbilityCondition.not_equals.literal]: (a: unknown, b: unknown) => a !== b,
+    [AbilityCondition.contains.literal]: (a: unknown, b: unknown) => {
+      if (Array.isArray(a) && this.isPrimitive(b)) {
+        return a.includes(b);
+      }
+      if (Array.isArray(a) && Array.isArray(b)) {
+        return a.some(v => b.includes(v));
+      }
+      return false;
+    },
+    [AbilityCondition.not_contains.literal]: (a: unknown, b: unknown) => {
+      if (Array.isArray(a) && this.isPrimitive(b)) {
+        return !a.includes(b);
+      }
+      if (Array.isArray(a) && Array.isArray(b)) {
+        return !a.some(v => b.includes(v));
+      }
+      return false;
+    },
+    [AbilityCondition.in.literal]: (a: unknown, b: unknown) => {
+      if (this.isPrimitive(a) && Array.isArray(b)) {
+        return b.includes(a);
+      }
+      if (Array.isArray(a) && Array.isArray(b)) {
+        return a.some(v => b.includes(v));
+      }
+      return false;
+    },
+    [AbilityCondition.not_in.literal]: (a: unknown, b: unknown) => {
+      if (this.isPrimitive(a) && Array.isArray(b)) {
+        return !b.includes(a);
+      }
+      if (Array.isArray(a) && Array.isArray(b)) {
+        return !a.some(v => b.includes(v));
+      }
+      return false;
+    },
+    [AbilityCondition.greater_than.literal]: (a: unknown, b: unknown) => {
+      return this.isNumber(a) && this.isNumber(b) ? a > b : false;
+    },
+    [AbilityCondition.less_than.literal]: (a: unknown, b: unknown) => {
+      return this.isNumber(a) && this.isNumber(b) ? a < b : false;
+    },
+    [AbilityCondition.greater_or_equal.literal]: (a: unknown, b: unknown) => {
+      return this.isNumber(a) && this.isNumber(b) ? a >= b : false;
+    },
+    [AbilityCondition.less_or_equal.literal]: (a: unknown, b: unknown) => {
+      return this.isNumber(a) && this.isNumber(b) ? a <= b : false;
+    },
+    [AbilityCondition.length_greater_than.literal]: (a: unknown, b: unknown) => {
+      const alen = this.valueLen(a);
+      if (alen === null) {
+        return false;
+      }
+
+      if (this.isNumber(b)) {
+        return alen > b;
+      }
+
+      const bLen = this.valueLen(b);
+      if (bLen !== null) {
+        return alen > bLen;
+      }
+
+      return false;
+    },
+    [AbilityCondition.length_less_than.literal]: (a: unknown, b: unknown) => {
+      const alen = this.valueLen(a);
+      if (alen === null) {
+        return false;
+      }
+
+      if (this.isNumber(b)) {
+        return alen < b;
+      }
+
+      const bLen = this.valueLen(b);
+      if (bLen !== null) {
+        return alen < bLen;
+      }
+      return false;
+    },
+    [AbilityCondition.length_equals.literal]: (a: unknown, b: unknown) => {
+      const alen = this.valueLen(a);
+      if (alen === null) {
+        return false;
+      }
+      if (this.isNumber(b)) {
+        return alen === b;
+      }
+      const bLen = this.valueLen(b);
+      if (bLen !== null) {
+        return alen === bLen;
+      }
+      return false;
+    },
+  } as {
+    [K in AbilityConditionLiteralType]: (a: unknown, b: unknown) => boolean;
+  };
+
   /**
    * Check if the rule is matched
    * @param resource - The resource to check
    * @param environment
    */
   public async check(resource: Resources | null, environment?: Environment): Promise<AbilityMatch> {
-    let is: boolean = false;
-
     const [subjectValue, resourceValue] = this.extractValues(resource, environment);
-    const isValue = (v: unknown): v is string | number | boolean | null =>
-      typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' || v === null;
+    const handler = this.operatorHandlers[this.condition.literal];
+    const result = handler(subjectValue, resourceValue);
 
-
-    // always
-    if(AbilityCondition.always.isEqual(this.condition)) {
-      is = true;
-    }
-
-    
-    // never
-    if(AbilityCondition.never.isEqual(this.condition)) {
-      is = false;
-    }
-
-
-    // equals
-    if (AbilityCondition.equals.isEqual(this.condition)) {
-      is = subjectValue === resourceValue;
-    }
-
-    // not equals
-    if (AbilityCondition.not_equals.isEqual(this.condition)) {
-      is = subjectValue !== resourceValue;
-    }
-
-    // less than
-    if (AbilityCondition.less_than.isEqual(this.condition)) {
-      if (typeof subjectValue === 'number' && typeof resourceValue === 'number') {
-        is = subjectValue < resourceValue;
-      }
-    }
-
-    // less or equal
-    if (AbilityCondition.less_or_equal.isEqual(this.condition)) {
-      if (typeof subjectValue === 'number' && typeof resourceValue === 'number') {
-        is = subjectValue <= resourceValue;
-      }
-    }
-
-    // more than
-    if (AbilityCondition.greater_than.isEqual(this.condition)) {
-      if (typeof subjectValue === 'number' && typeof resourceValue === 'number') {
-        is = subjectValue > resourceValue;
-      }
-    }
-
-    // more or equal
-    if (AbilityCondition.greater_or_equal.isEqual(this.condition)) {
-      if (typeof subjectValue === 'number' && typeof resourceValue === 'number') {
-        is = subjectValue >= resourceValue;
-      }
-    }
-
-    // in
-    if (AbilityCondition.in.isEqual(this.condition)) {
-      // value in array
-      if (isValue(subjectValue) && Array.isArray(resourceValue)) {
-        is = resourceValue.includes(subjectValue);
-      }
-      // array intersects array
-      else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
-        is = subjectValue.some(v => resourceValue.includes(v));
-      }
-    }
-
-    // not in
-    if (AbilityCondition.not_in.isEqual(this.condition)) {
-      if (isValue(subjectValue) && Array.isArray(resourceValue)) {
-        is = !resourceValue.includes(subjectValue);
-      } else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
-        is = !subjectValue.some(v => resourceValue.includes(v));
-      }
-    }
-
-    // contains
-    if (AbilityCondition.contains.isEqual(this.condition)) {
-      // array contains value
-      if (Array.isArray(subjectValue) && isValue(resourceValue)) {
-        is = subjectValue.includes(resourceValue);
-      }
-      // array intersects array
-      else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
-        is = subjectValue.some(v => resourceValue.includes(v));
-      }
-    }
-
-    // not contains
-    if (AbilityCondition.not_contains.isEqual(this.condition)) {
-      if (Array.isArray(subjectValue) && isValue(resourceValue)) {
-        is = !subjectValue.includes(resourceValue);
-      } else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
-        is = !subjectValue.some(v => resourceValue.includes(v));
-      }
-    }
-
-    // length equals
-    if (AbilityCondition.length_equals.isEqual(this.condition)) {
-      // foo.bar == n
-      if (isValue(subjectValue) && typeof resourceValue === 'number') {
-        is = String(subjectValue).length === resourceValue;
-      }
-      // ['foo', 'bar'] = n
-      else if (Array.isArray(subjectValue) && typeof resourceValue === 'number') {
-        is = subjectValue.length === resourceValue;
-      }
-      // ['foo', 'bar'] = ['baz', 'taz']
-      else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
-        is = subjectValue.length === resourceValue.length;
-      }
-      // 'foo' = 'bar'
-      else if (typeof subjectValue === 'string' && typeof resourceValue === 'string') {
-        is = subjectValue.length === resourceValue.length;
-      }
-    }
-
-    // length greater than
-    if (AbilityCondition.length_greater_than.isEqual(this.condition)) {
-      // foo.bar > n
-      if (isValue(subjectValue) && typeof resourceValue === 'number') {
-        is = String(subjectValue).length > resourceValue;
-      }
-      // ['foo', 'bar'] > n
-      else if (Array.isArray(subjectValue) && typeof resourceValue === 'number') {
-        is = subjectValue.length > resourceValue;
-      }
-      // ['foo', 'bar'] > ['baz', 'taz']
-      else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
-        is = subjectValue.length > resourceValue.length;
-      }
-      // 'foo' > 'bar'
-      else if (typeof subjectValue === 'string' && typeof resourceValue === 'string') {
-        is = subjectValue.length > resourceValue.length;
-      }
-    }
-
-    // length greater than
-    if (AbilityCondition.length_less_than.isEqual(this.condition)) {
-      // foo.bar < n
-      if (isValue(subjectValue) && typeof resourceValue === 'number') {
-        is = String(subjectValue).length < resourceValue;
-      }
-      // ['foo', 'bar'] < n
-      else if (Array.isArray(subjectValue) && typeof resourceValue === 'number') {
-        is = subjectValue.length < resourceValue;
-      }
-      // ['foo', 'bar'] < ['baz', 'taz']
-      else if (Array.isArray(subjectValue) && Array.isArray(resourceValue)) {
-        is = subjectValue.length < resourceValue.length;
-      }
-      // 'foo' < 'bar'
-      else if (typeof subjectValue === 'string' && typeof resourceValue === 'string') {
-        is = subjectValue.length < resourceValue.length;
-      }
-    }
-
-    this.state = is ? AbilityMatch.match : AbilityMatch.mismatch;
+    this.state = result ? AbilityMatch.match : AbilityMatch.mismatch;
 
     return this.state;
   }

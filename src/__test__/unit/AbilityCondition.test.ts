@@ -155,7 +155,7 @@ describe('AbilityCondition', () => {
       expect(() => AbilityCondition.fromLiteral('invalid' as any)).toThrow(AbilityParserError);
 
       expect(() => AbilityCondition.fromLiteral('invalid' as any)).toThrow(
-        'Literal invalid does not found in AbilityCondition class',
+        'Literal "invalid" does not found in AbilityCondition class',
       );
     });
 
