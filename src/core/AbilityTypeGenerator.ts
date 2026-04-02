@@ -54,8 +54,15 @@ export class AbilityTypeGenerator {
       });
     });
 
+    const filteredStructure: Record<string, Record<string, string>> = {};
+    Object.entries(typeStructure).forEach(([action, fields]) => {
+      if (!action.endsWith('.*')) {
+        filteredStructure[action] = fields;
+      }
+    });
+
     // Transform flat structure into nested structure for easier use
-    const nestedStructure = this.buildNestedStructure(typeStructure);
+    const nestedStructure = this.buildNestedStructure(filteredStructure);
 
     return this.formatTypeDefinitions(nestedStructure);
   }
