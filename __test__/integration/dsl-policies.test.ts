@@ -1,4 +1,4 @@
-import { AbilityDSLParser, AbilityResolver } from '../../index';
+import { AbilityDSLParser, AbilityResolver } from '../../src';
 
 const dsl = `
 # ---------------------------------------------------------------------------------------- #
@@ -85,16 +85,16 @@ describe('Cinema complex policies', () => {
   const policies = new AbilityDSLParser(dsl).parse();
   const resolver = new AbilityResolver(policies);
 
-  test('Admin can edit ticket price', async () => {
-    const result = await resolver.resolve('ticket.price.edit', {
+  test('Admin can edit ticket price', () => {
+    const result = resolver.resolve('ticket.price.edit', {
       user: { role: 'admin' },
       env: { time: { hour: 12 } },
     });
     expect(result.isAllowed()).toBe(true);
   });
 
-  test('Seller can sell tickets during working hours', async () => {
-    const result = await resolver.resolve('ticket.sell', {
+  test('Seller can sell tickets during working hours', () => {
+    const result = resolver.resolve('ticket.sell', {
       user: { role: 'seller' },
       env: { time: { hour: 15 } },
       ticket: { status: 'available' },
@@ -102,8 +102,8 @@ describe('Cinema complex policies', () => {
     expect(result.isAllowed()).toBe(true);
   });
 
-  test('Seller cannot sell tickets at night', async () => {
-    const result = await resolver.resolve('ticket.sell', {
+  test('Seller cannot sell tickets at night', () => {
+    const result = resolver.resolve('ticket.sell', {
       user: { role: 'seller' },
       env: { time: { hour: 2 } },
       ticket: { status: 'available' },
@@ -111,40 +111,40 @@ describe('Cinema complex policies', () => {
     expect(result.isDenied()).toBe(true);
   });
 
-  test('User older than 21 can buy tickets', async () => {
-    const result = await resolver.resolve('ticket.buy', {
+  test('User older than 21 can buy tickets', () => {
+    const result = resolver.resolve('ticket.buy', {
       user: { age: 25, ticketsCount: 0 },
       env: { time: { hour: 18 } },
     });
     expect(result.isAllowed()).toBe(true);
   });
 
-  test('VIP can buy tickets anytime', async () => {
-    const result = await resolver.resolve('ticket.buy', {
+  test('VIP can buy tickets anytime', () => {
+    const result = resolver.resolve('ticket.buy', {
       user: { isVIP: true, ticketsCount: 0 },
       env: { time: { hour: 3 } },
     });
     expect(result.isAllowed()).toBe(true);
   });
 
-  test('Banned user cannot buy tickets', async () => {
-    const result = await resolver.resolve('ticket.buy', {
+  test('Banned user cannot buy tickets', () => {
+    const result = resolver.resolve('ticket.buy', {
       user: { status: 'banned', age: 30, ticketsCount: 0 },
       env: { time: { hour: 12 } },
     });
     expect(result.isDenied()).toBe(true);
   });
 
-  test('User cannot buy more than 6 tickets', async () => {
-    const result = await resolver.resolve('ticket.buy', {
+  test('User cannot buy more than 6 tickets', () => {
+    const result = resolver.resolve('ticket.buy', {
       user: { age: 30, ticketsCount: 6 },
       env: { time: { hour: 12 } },
     });
     expect(result.isDenied()).toBe(true);
   });
 
-  test('Cannot sell already sold ticket', async () => {
-    const result = await resolver.resolve('ticket.sell', {
+  test('Cannot sell already sold ticket', () => {
+    const result = resolver.resolve('ticket.sell', {
       user: { role: 'seller' },
       env: { time: { hour: 12 } },
       ticket: { status: 'sold' },
@@ -152,8 +152,8 @@ describe('Cinema complex policies', () => {
     expect(result.isDenied()).toBe(true);
   });
 
-  test('Manager can sell tickets', async () => {
-    const result = await resolver.resolve('ticket.sell', {
+  test('Manager can sell tickets', () => {
+    const result = resolver.resolve('ticket.sell', {
       user: { role: 'manager' },
       env: { time: { hour: 12 } },
       ticket: { status: 'available' },
@@ -161,8 +161,8 @@ describe('Cinema complex policies', () => {
     expect(result.isAllowed()).toBe(true);
   });
 
-  test('Admin wildcard: admin can sell tickets even at night', async () => {
-    const result = await resolver.resolve('ticket.sell', {
+  test('Admin wildcard: admin can sell tickets even at night', () => {
+    const result = resolver.resolve('ticket.sell', {
       user: { role: 'admin' },
       env: { time: { hour: 3 } },
       ticket: { status: 'available' },

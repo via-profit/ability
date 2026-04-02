@@ -1,8 +1,8 @@
-import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
-import AbilityMatch from './AbilityMatch';
-import { ResourceObject } from './AbilityTypeGenerator';
-import AbilityPolicy from './AbilityPolicy';
-import AbilityPolicyEffect from './AbilityPolicyEffect';
+import { AbilityExplain, AbilityExplainPolicy } from '~/core/AbilityExplain';
+import AbilityMatch from '~/core/AbilityMatch';
+import { ResourceObject } from '~/core/AbilityTypeGenerator';
+import AbilityPolicy from '~/core/AbilityPolicy';
+import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
 
 export class AbilityResult<Resource extends ResourceObject = Record<string, unknown>> {
   /**

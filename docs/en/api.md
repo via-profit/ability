@@ -29,7 +29,7 @@ The smallest unit of logic — a single comparison condition.
 
 | Method | Arguments | Returns | Description |
 |--------|-----------|---------|-------------|
-| `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Checks the rule |
+| `check(resource, environment?)` | `object, object?` | `AbilityMatch` | Checks the rule |
 | `copyWith(props)` | `Partial<AbilityRuleConfig>` | `AbilityRule` | Copies the rule with new arguments |
 | `static equals(subject, resource)` | `string, any` | `AbilityRule` | Equality rule |
 | `static notEquals(subject, resource)` | `string, any` | `AbilityRule` | Inequality rule |
@@ -68,7 +68,7 @@ A group of rules with `and` or `or` logic.
 |--------|-----------|---------|-------------|
 | `addRule(rule)` | `AbilityRule` | `this` | Adds a rule |
 | `addRules(list)` | `AbilityRule[]` | `this` | Adds multiple rules |
-| `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Checks the group |
+| `check(resource, environment?)` | `object, object?` | `AbilityMatch` | Checks the group |
 | `copyWith(props)` | `Partial<AbilityRuleSetConfig>` | `AbilityRuleSet` | Copies the rule set with new arguments |
 | `static and(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Group with `and` logic |
 | `static or(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Group with `or` logic |
@@ -99,7 +99,7 @@ Combines rule groups and defines the effect when a match occurs.
 
 | Method | Arguments | Returns | Description |
 |--------|-----------|---------|-------------|
-| `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Checks the policy |
+| `check(resource, environment?)` | `object, object?` | `AbilityMatch` | Checks the policy |
 | `explain()` | — | `AbilityExplainPolicy` | Explanation of the result (after `check`) |
 | `addRuleSet(ruleSet)` | `AbilityRuleSet` | `this` | Adds a rule group |
 | `addRuleSets(ruleSets)` | `AbilityRuleSet[]` | `this` | Adds multiple rule groups |
@@ -123,10 +123,8 @@ Applies policies to a permission key and a resource, producing the final result.
 
 | Method | Arguments | Returns | Description |
 |--------|-----------|---------|-------------|
-| `resolve(permission, resource, environment?)` | `string, any, object?` | `Promise<AbilityResult>` | Soft check |
-| `enforce(permission, resource, environment?)` | `string, any, object?` | `Promise<void>` | Strict check, throws `AbilityError` on deny |
-| `invalidatePolicy(policyId)` | `string` | `Promise<void>` | Invalidates cache for the specified policy |
-| `invalidateCache()` | — | `Promise<void>` | Completely clears the cache |
+| `resolve(permission, resource, environment?)` | `string, any, object?` | `AbilityResult` | Soft check |
+| `enforce(permission, resource, environment?)` | `string, any, object?` | `void` | Strict check, throws `AbilityError` on deny |
 | `static isInPermissionContain(permissionA, permissionB)` | `string, string` | `boolean` | Checks pattern match (with `*`) |
 
 ---
@@ -270,7 +268,7 @@ Example:
 
 ```ts
 try {
-  await resolver.enforce('order.update', resource);
+  resolver.enforce('order.update', resource);
 } catch (error) {
   if (error instanceof AbilityError) {
     console.error('Access denied by policy:', error.message);
@@ -278,48 +276,4 @@ try {
     throw error;
   }
 }
-```
-
----
-
-## AbilityCache
-
-### AbilityCacheAdapter
-
-Cache adapter interface. Allows connecting any storage: Redis, Memcached, KeyDB, in-memory, etc.
-
-```ts
-export interface AbilityCacheAdapter {
-  get<T = unknown>(key: string): Promise<T | undefined>;
-  set<T = unknown>(key: string, value: T, ttlSeconds?: number): Promise<void>;
-  delete?(key: string): Promise<void>;
-  clear?(): Promise<void>;
-}
-```
-
-### AbilityInMemoryCache
-
-Built-in in-memory cache implementation.
-
-```ts
-import { AbilityInMemoryCache } from '@via-profit/ability';
-
-const cache = new AbilityInMemoryCache({
-  ttl: 60000, // time to live in milliseconds (default 60000)
-});
-```
-
-### AbilityRedisCache
-
-Redis adapter.
-
-```ts
-import { AbilityRedisCache } from '@via-profit/ability';
-import Redis from 'ioredis';
-
-const redis = new Redis();
-const cache = new AbilityRedisCache(redis, {
-  ttl: 60000, // time to live in milliseconds
-  prefix: 'ability:', // key prefix
-});
 ```

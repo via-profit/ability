@@ -1,13 +1,13 @@
-import AbilityCompare from '../../core/AbilityCompare';
-import AbilityCondition from '../../core/AbilityCondition';
-import AbilityPolicy from '../../core/AbilityPolicy';
-import AbilityPolicyEffect from '../../core/AbilityPolicyEffect';
-import AbilityRule, { AbilityRuleConfig } from '../../core/AbilityRule';
-import AbilityRuleSet from '../../core/AbilityRuleSet';
-import { AbilityDSLLexer } from '../../parsers/dsl/AbilityDSLLexer';
-import { AbilityDSLToken, TokenType } from '../../parsers/dsl/AbilityDSLToken';
-import { ResourceObject } from '../../core/AbilityTypeGenerator';
-import { AbilityDSLSyntaxError } from '../../parsers/dsl/AbilityDSLSyntaxError';
+import AbilityCompare from '~/core/AbilityCompare';
+import AbilityCondition from '~/core/AbilityCondition';
+import AbilityPolicy from '~/core/AbilityPolicy';
+import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
+import AbilityRule, { AbilityRuleConfig } from '~/core/AbilityRule';
+import AbilityRuleSet from '~/core/AbilityRuleSet';
+import { AbilityDSLLexer } from '~/parsers/dsl/AbilityDSLLexer';
+import { AbilityDSLToken, TokenType } from '~/parsers/dsl/AbilityDSLToken';
+import { ResourceObject } from '~/core/AbilityTypeGenerator';
+import { AbilityDSLSyntaxError } from '~/parsers/dsl/AbilityDSLSyntaxError';
 
 /**
  * Parser for the Ability DSL.
@@ -258,8 +258,8 @@ export class AbilityDSLParser<
     if (
       operator === AbilityDSLToken.EQ_NULL ||
       operator === AbilityDSLToken.NOT_EQ_NULL ||
-      operator === AbilityDSLToken.NULL || 
-      operator === AbilityDSLToken.ALWAYS || 
+      operator === AbilityDSLToken.NULL ||
+      operator === AbilityDSLToken.ALWAYS ||
       operator === AbilityDSLToken.NEVER
     ) {
       resource = null;
@@ -747,14 +747,17 @@ export class AbilityDSLParser<
   }
 
   private levenshteinDistance(a: string, b: string): number {
-    const matrix = Array(b.length + 1)
-      .fill(null)
-      .map(() => Array(a.length + 1).fill(null));
+    const matrix: number[][] = Array.from({ length: b.length + 1 }, () =>
+      Array.from({ length: a.length + 1 }, () => 0),
+    );
+
     for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
     for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
+
     for (let j = 1; j <= b.length; j++) {
       for (let i = 1; i <= a.length; i++) {
         const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+
         matrix[j][i] = Math.min(
           matrix[j][i - 1] + 1,
           matrix[j - 1][i] + 1,
@@ -762,6 +765,7 @@ export class AbilityDSLParser<
         );
       }
     }
+
     return matrix[b.length][a.length];
   }
 

@@ -393,7 +393,7 @@ deny permission.order.update
 const policies = new AbilityDSLParser(dsl).parse();
 const resolver = new AbilityResolver(policies);
 
-await resolver.enforce('order.update', resource); // выбросит AbilityError
+resolver.enforce('order.update', resource); // выбросит AbilityError
 
 ```
 
@@ -684,7 +684,7 @@ const environment = {
   ip: req.ip,
 }
 
-await resolver.enforce('order.update', resource, environment);
+resolver.enforce('order.update', resource, environment);
 ```
 
 ### Использование environment в правилах
@@ -814,7 +814,7 @@ export type Resources = {
 ```ts
 import { policyResolver } from './policies';
 
-await resolver.enforce('order.update', {
+resolver.enforce('order.update', {
   user: { id: 'u1' },
   order: { ownerId: 'u1' },
 });
@@ -835,7 +835,7 @@ await resolver.enforce('order.update', {
 Пример:
 
 ```ts
-const result = await resolver.resolve('order.update', resource);
+const result = resolver.resolve('order.update', resource);
 
 if (result.isDenied()) {
   console.log('Access denied');
@@ -858,7 +858,7 @@ const explanations = result.explain(); // AbilityExplain
 Пример использования:
 
 ```ts
-const result = await resolver.resolve('order.update', resource);
+const result = resolver.resolve('order.update', resource);
 const explanations = result.explain();
 
 console.log(explanations.toString());
@@ -899,7 +899,7 @@ deny permission.test if all:
 const policies = new AbilityDSLParser(dsl).parse();
 const resolver = new AbilityResolver(policies);
 
-const result = await resolver.resolve('test', {
+const result = resolver.resolve('test', {
   user: { age: 16 },
 });
 
@@ -913,7 +913,7 @@ console.log(result.isAllowed()); // false ✔
 **Что происходит, если условия `не выполнены`?**
 
 ```ts
-const result = await resolver.resolve('test', {
+const result = resolver.resolve('test', {
   user: { age: 12 },
 });
 
@@ -1003,7 +1003,7 @@ export function useAbility<Permission extends keyof Resources>(
 
     async function check() {
       try {
-        const result = await resolver.resolve(permission, resource);
+        const result = resolver.resolve(permission, resource);
         if (!cancelled) {
           setAllowed(result.isAllowed());
         }
@@ -1250,7 +1250,7 @@ const resolver = new AbilityResolver(policies);
 Метод enforce выбрасывает исключение `AbilityError`, если доступ запрещён.
 
 ```ts
-await resolver.enforce('ticket.buy', {
+resolver.enforce('ticket.buy', {
   user: { age: 25, ticketsCount: 1 },
   env: { time: { hour: 18 } },
 });
@@ -1266,7 +1266,7 @@ await resolver.enforce('ticket.buy', {
 `resolve` возвращает объект результата:
 
 ```ts
-const result = await resolver.resolve('ticket.buy', {
+const result = resolver.resolve('ticket.buy', {
   user: { age: 25, ticketsCount: 1 },
   env: { time: { hour: 18 } },
 });
@@ -1282,7 +1282,7 @@ if (result.isAllowed()) {
 **Продавец может продавать только в рабочие часы***
 
 ```ts
-await resolver.enforce('ticket.sell', {
+resolver.enforce('ticket.sell', {
   user: { role: 'seller' },
   env: { time: { hour: 15 } },
   ticket: { status: 'available' },

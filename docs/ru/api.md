@@ -27,20 +27,20 @@
 
 ### Методы
 
-| Метод | Аргументы | Возвращает | Описание |
-|-------|-----------|------------|----------|
-| `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Проверяет правило |
-| `copyWith(props)` | `Partial<AbilityRuleConfig>` | `AbilityRule` | Копирует правило с новыми аргументами |
-| `static equals(subject, resource)` | `string, any` | `AbilityRule` | Правило равенства |
-| `static notEquals(subject, resource)` | `string, any` | `AbilityRule` | Правило неравенства |
-| `static contains(subject, resource)` | `string, any` | `AbilityRule` | Проверка вхождения |
-| `static notContains(subject, resource)` | `string, any` | `AbilityRule` | Проверка отсутствия вхождения |
-| `static in(subject, resource)` | `string, any` | `AbilityRule` | Проверка принадлежности массиву |
-| `static notIn(subject, resource)` | `string, any` | `AbilityRule` | Проверка отсутствия в массиве |
-| `static lessThan(subject, resource)` | `string, any` | `AbilityRule` | Меньше |
-| `static lessOrEqual(subject, resource)` | `string, any` | `AbilityRule` | Меньше или равно |
-| `static moreThan(subject, resource)` | `string, any` | `AbilityRule` | Больше |
-| `static moreOrEqual(subject, resource)` | `string, any` | `AbilityRule` | Больше или равно |
+| Метод                                   | Аргументы                    | Возвращает     | Описание                              |
+|-----------------------------------------|------------------------------|----------------|---------------------------------------|
+| `check(resource, environment?)`         | `object, object?`            | `AbilityMatch` | Проверяет правило                     |
+| `copyWith(props)`                       | `Partial<AbilityRuleConfig>` | `AbilityRule`  | Копирует правило с новыми аргументами |
+| `static equals(subject, resource)`      | `string, any`                | `AbilityRule`  | Правило равенства                     |
+| `static notEquals(subject, resource)`   | `string, any`                | `AbilityRule`  | Правило неравенства                   |
+| `static contains(subject, resource)`    | `string, any`                | `AbilityRule`  | Проверка вхождения                    |
+| `static notContains(subject, resource)` | `string, any`                | `AbilityRule`  | Проверка отсутствия вхождения         |
+| `static in(subject, resource)`          | `string, any`                | `AbilityRule`  | Проверка принадлежности массиву       |
+| `static notIn(subject, resource)`       | `string, any`                | `AbilityRule`  | Проверка отсутствия в массиве         |
+| `static lessThan(subject, resource)`    | `string, any`                | `AbilityRule`  | Меньше                                |
+| `static lessOrEqual(subject, resource)` | `string, any`                | `AbilityRule`  | Меньше или равно                      |
+| `static moreThan(subject, resource)`    | `string, any`                | `AbilityRule`  | Больше                                |
+| `static moreOrEqual(subject, resource)` | `string, any`                | `AbilityRule`  | Больше или равно                      |
 
 > **Примечание:** Для сериализации правила в JSON используйте `AbilityJSONParser.ruleToJSON(rule)`.
 
@@ -64,14 +64,14 @@
 
 ### Методы
 
-| Метод | Аргументы | Возвращает | Описание |
-|-------|-----------|------------|----------|
-| `addRule(rule)` | `AbilityRule` | `this` | Добавляет правило |
-| `addRules(list)` | `AbilityRule[]` | `this` | Добавляет несколько правил |
-| `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Проверяет группу |
-| `copyWith(props)` | `Partial<AbilityRuleSetConfig>` | `AbilityRuleSet` | Копирует RuleSet с новыми аргументами |
-| `static and(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Группа с `and` |
-| `static or(rules)` | `AbilityRule[]` | `AbilityRuleSet` | Группа с `or` |
+| Метод                           | Аргументы                       | Возвращает       | Описание                              |
+|---------------------------------|---------------------------------|------------------|---------------------------------------|
+| `addRule(rule)`                 | `AbilityRule`                   | `this`           | Добавляет правило                     |
+| `addRules(list)`                | `AbilityRule[]`                 | `this`           | Добавляет несколько правил            |
+| `check(resource, environment?)` | `object, object?`               | `AbilityMatch`   | Проверяет группу                      |
+| `copyWith(props)`               | `Partial<AbilityRuleSetConfig>` | `AbilityRuleSet` | Копирует RuleSet с новыми аргументами |
+| `static and(rules)`             | `AbilityRule[]`                 | `AbilityRuleSet` | Группа с `and`                        |
+| `static or(rules)`              | `AbilityRule[]`                 | `AbilityRuleSet` | Группа с `or`                         |
 
 > **Примечание:** Для сериализации группы используйте `AbilityJSONParser.ruleSetToJSON(ruleSet)`.
 
@@ -97,13 +97,13 @@
 
 ### Методы
 
-| Метод | Аргументы | Возвращает | Описание |
-|-------|-----------|------------|----------|
-| `check(resource, environment?)` | `object, object?` | `Promise<AbilityMatch>` | Проверяет политику |
-| `explain()` | — | `AbilityExplainPolicy` | Объяснение результата (после `check`) |
-| `addRuleSet(ruleSet)` | `AbilityRuleSet` | `this` | Добавляет группу правил |
-| `addRuleSets(ruleSets)` | `AbilityRuleSet[]` | `this` | Добавляет несколько групп |
-| `coptyWith(props)` | `Partial<AbilityPolicyConfig>` | `AbilityPolicy` | Копирует полиниту с новыми аршументами |
+| Метод                           | Аргументы                      | Возвращает             | Описание                               |
+|---------------------------------|--------------------------------|------------------------|----------------------------------------|
+| `check(resource, environment?)` | `object, object?`              | `AbilityMatch`         | Проверяет политику                     |
+| `explain()`                     | —                              | `AbilityExplainPolicy` | Объяснение результата (после `check`)  |
+| `addRuleSet(ruleSet)`           | `AbilityRuleSet`               | `this`                 | Добавляет группу правил                |
+| `addRuleSets(ruleSets)`         | `AbilityRuleSet[]`             | `this`                 | Добавляет несколько групп              |
+| `coptyWith(props)`              | `Partial<AbilityPolicyConfig>` | `AbilityPolicy`        | Копирует полиниту с новыми аршументами |
 
 ---
 
@@ -121,13 +121,11 @@
 
 ### Методы
 
-| Метод | Аргументы | Возвращает | Описание |
-|-------|-----------|------------|----------|
-| `resolve(permission, resource, environment?)` | `string, any, object?` | `Promise<AbilityResult>` | Мягкая проверка |
-| `enforce(permission, resource, environment?)` | `string, any, object?` | `Promise<void>` | Строгая проверка, выбрасывает `AbilityError` при deny |
-| `invalidatePolicy(policyId)` | `string` | `Promise<void>` | Инвалидация кэша для указанной политики |
-| `invalidateCache()` | — | `Promise<void>` | Полная очистка кэша |
-| `static isInPermissionContain(permissionA, permissionB)` | `string, string` | `boolean` | Проверка соответствия шаблону (с `*`) |
+| Метод                                                    | Аргументы              | Возвращает      | Описание                                              |
+|----------------------------------------------------------|------------------------|-----------------|-------------------------------------------------------|
+| `resolve(permission, resource, environment?)`            | `string, any, object?` | `AbilityResult` | Мягкая проверка                                       |
+| `enforce(permission, resource, environment?)`            | `string, any, object?` | `void`          | Строгая проверка, выбрасывает `AbilityError` при deny |
+| `static isInPermissionContain(permissionA, permissionB)` | `string, string`       | `boolean`       | Проверка соответствия шаблону (с `*`)                 |
 
 ---
 
@@ -270,7 +268,7 @@
 
 ```ts
 try {
-  await resolver.enforce('order.update', resource);
+  resolver.enforce('order.update', resource);
 } catch (error) {
   if (error instanceof AbilityError) {
     console.error('Доступ запрещён политикой:', error.message);
@@ -278,48 +276,4 @@ try {
     throw error;
   }
 }
-```
-
----
-
-## AbilityCache
-
-### AbilityCacheAdapter
-
-Интерфейс адаптера кэша. Позволяет подключить любое хранилище: Redis, Memcached, KeyDB, in-memory и т.д.
-
-```ts
-export interface AbilityCacheAdapter {
-  get<T = unknown>(key: string): Promise<T | undefined>;
-  set<T = unknown>(key: string, value: T, ttlSeconds?: number): Promise<void>;
-  delete?(key: string): Promise<void>;
-  clear?(): Promise<void>;
-}
-```
-
-### AbilityInMemoryCache
-
-Встроенная реализация кэша в памяти.
-
-```ts
-import { AbilityInMemoryCache } from '@via-profit/ability';
-
-const cache = new AbilityInMemoryCache({
-  ttl: 60000, // время жизни в миллисекундах (по умолчанию 60000)
-});
-```
-
-### AbilityRedisCache
-
-Адаптер для Redis.
-
-```ts
-import { AbilityRedisCache } from '@via-profit/ability';
-import Redis from 'ioredis';
-
-const redis = new Redis();
-const cache = new AbilityRedisCache(redis, {
-  ttl: 60000, // время жизни в миллисекундах
-  prefix: 'ability:', // префикс для ключей
-});
 ```

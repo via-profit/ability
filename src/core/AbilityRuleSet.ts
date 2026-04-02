@@ -1,7 +1,7 @@
-import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
-import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
-import AbilityMatch from './AbilityMatch';
-import { ResourceObject } from './AbilityTypeGenerator';
+import AbilityRule, { AbilityRuleConfig } from '~/core/AbilityRule';
+import AbilityCompare, { AbilityCompareCodeType } from '~/core/AbilityCompare';
+import AbilityMatch from '~/core/AbilityMatch';
+import { ResourceObject } from '~/core/AbilityTypeGenerator';
 
 export type AbilityRuleSetConfig = {
   readonly id?: string | null;
@@ -64,10 +64,7 @@ export class AbilityRuleSet<
     return this;
   }
 
-  public async check(
-    resources: Resources | null,
-    environment?: Environment,
-  ): Promise<AbilityMatch> {
+  public check(resources: Resources | null, environment?: Environment): AbilityMatch {
     this.state = AbilityMatch.mismatch;
 
     if (!this.rules.length) {
@@ -77,7 +74,7 @@ export class AbilityRuleSet<
     const ruleCheckStates: AbilityMatch[] = [];
 
     for (const rule of this.rules) {
-      const state = await rule.check(resources, environment);
+      const state = rule.check(resources, environment);
       ruleCheckStates.push(state);
 
       if (AbilityCompare.and.isEqual(this.compareMethod) && AbilityMatch.mismatch.isEqual(state)) {

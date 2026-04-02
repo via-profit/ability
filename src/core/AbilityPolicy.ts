@@ -1,10 +1,10 @@
-import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
-import AbilityMatch from './AbilityMatch';
-import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
-import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from './AbilityPolicyEffect';
-import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
-import { AbilityError } from './AbilityError';
-import { ResourceObject } from './AbilityTypeGenerator';
+import AbilityRuleSet, { AbilityRuleSetConfig } from '~/core/AbilityRuleSet';
+import AbilityMatch from '~/core/AbilityMatch';
+import AbilityCompare, { AbilityCompareCodeType } from '~/core/AbilityCompare';
+import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from '~/core/AbilityPolicyEffect';
+import { AbilityExplain, AbilityExplainPolicy } from '~/core/AbilityExplain';
+import { AbilityError } from '~/core/AbilityError';
+import { ResourceObject } from '~/core/AbilityTypeGenerator';
 
 export type AbilityPolicyConfig = {
   readonly permission: string;
@@ -98,7 +98,7 @@ export class AbilityPolicy<
    * @param resource - The resource to check
    * @param environment - The user environment object
    */
-  public async check(resource: Resource, environment?: Environment): Promise<AbilityMatch> {
+  public check(resource: Resource, environment?: Environment): AbilityMatch {
     this.matchState = AbilityMatch.mismatch;
 
     if (!this.ruleSet.length) {
@@ -108,7 +108,7 @@ export class AbilityPolicy<
     const rulesetCheckStates: AbilityMatch[] = [];
 
     for (const ruleSet of this.ruleSet) {
-      const state = await ruleSet.check(resource, environment);
+      const state = ruleSet.check(resource, environment);
       rulesetCheckStates.push(state);
 
       if (AbilityCompare.and.isEqual(this.compareMethod) && AbilityMatch.mismatch.isEqual(state)) {

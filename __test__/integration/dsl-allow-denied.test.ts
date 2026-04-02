@@ -1,8 +1,8 @@
-import { AbilityDSLParser } from '../../parsers/dsl/AbilityDSLParser';
-import AbilityResolver from '../../core/AbilityResolver';
+import { AbilityDSLParser } from '~/parsers/dsl/AbilityDSLParser';
+import AbilityResolver from '~/core/AbilityResolver';
 
 describe('DSL isAllowed/isDenied test', () => {
-  it('should return a message with policy name', async () => {
+  it('should return a message with policy name', () => {
     const dsl = `
       # @name Very yong
       deny permission.test if all:
@@ -11,14 +11,14 @@ describe('DSL isAllowed/isDenied test', () => {
     const policies = new AbilityDSLParser(dsl).parse();
     const resolver = new AbilityResolver(policies);
 
-    await expect(
+    expect(() => {
       resolver.enforce('permission.test', {
-        user: { age: 16 },
-      }),
-    ).rejects.toThrow();
+        user: { age: 20 },
+      });
+    }).toThrow();
   });
 
-  it('should isAllowed be true, isDenied be false', async () => {
+  it('should isAllowed be true, isDenied be false', () => {
     const dsl = `
       permit permission.test if all:
         user.age is equals 21
@@ -26,7 +26,7 @@ describe('DSL isAllowed/isDenied test', () => {
     const policies = new AbilityDSLParser(dsl).parse();
     const resolver = new AbilityResolver(policies);
 
-    const result = await resolver.resolve('permission.test', {
+    const result = resolver.resolve('permission.test', {
       user: { age: 21 },
     });
 
@@ -34,7 +34,7 @@ describe('DSL isAllowed/isDenied test', () => {
     expect(result.isDenied()).toBeFalsy();
   });
 
-  it('should isAllowed be false, isDenied be true', async () => {
+  it('should isAllowed be false, isDenied be true', () => {
     const dsl = `
       permit permission.test if all:
         user.age is equals 21
@@ -42,7 +42,7 @@ describe('DSL isAllowed/isDenied test', () => {
     const policies = new AbilityDSLParser(dsl).parse();
     const resolver = new AbilityResolver(policies);
 
-    const result = await resolver.resolve('permission.test', {
+    const result = resolver.resolve('permission.test', {
       user: { age: 0 },
     });
 
@@ -50,7 +50,7 @@ describe('DSL isAllowed/isDenied test', () => {
     expect(result.isDenied()).toBeTruthy();
   });
 
-  it('should isDenied be true, isAllowed be false', async () => {
+  it('should isDenied be true, isAllowed be false', () => {
     const dsl = `
       deny permission.test if all:
         user.age is equals 21
@@ -58,7 +58,7 @@ describe('DSL isAllowed/isDenied test', () => {
     const policies = new AbilityDSLParser(dsl).parse();
     const resolver = new AbilityResolver(policies);
 
-    const result = await resolver.resolve('permission.test', {
+    const result = resolver.resolve('permission.test', {
       user: { age: 21 },
     });
 
@@ -66,7 +66,7 @@ describe('DSL isAllowed/isDenied test', () => {
     expect(result.isAllowed()).toBeFalsy();
   });
 
-  it('should isDenied be false, isAllowed be true', async () => {
+  it('should isDenied be false, isAllowed be true', () => {
     const dsl = `
       deny permission.test if all:
         user.age is equals 16
@@ -74,7 +74,7 @@ describe('DSL isAllowed/isDenied test', () => {
     const policies = new AbilityDSLParser(dsl).parse();
     const resolver = new AbilityResolver(policies);
 
-    const result = await resolver.resolve('permission.test', {
+    const result = resolver.resolve('permission.test', {
       user: { age: 12, token: 'token-value' },
     });
 

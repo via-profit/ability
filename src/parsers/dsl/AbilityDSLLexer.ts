@@ -1,4 +1,4 @@
-import { AbilityDSLToken } from '../../parsers/dsl/AbilityDSLToken';
+import { AbilityDSLToken } from '~/parsers/dsl/AbilityDSLToken';
 
 export class AbilityDSLLexer {
   private readonly input: string;
@@ -238,7 +238,7 @@ export class AbilityDSLLexer {
       if (word === 'all') {
         return new AbilityDSLToken(AbilityDSLToken.ALL, word, startLine, startColumn);
       }
-      
+
       if (word === 'any') {
         return new AbilityDSLToken(AbilityDSLToken.ANY, word, startLine, startColumn);
       }

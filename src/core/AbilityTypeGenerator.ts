@@ -1,6 +1,6 @@
-import AbilityPolicy from './AbilityPolicy';
-import AbilityCondition from './AbilityCondition';
-import AbilityRule from './AbilityRule';
+import AbilityPolicy from '~/core/AbilityPolicy';
+import AbilityCondition from '~/core/AbilityCondition';
+import AbilityRule from '~/core/AbilityRule';
 
 export type Primitive = string | number | boolean | null | undefined;
 export type NestedDict<T = Primitive> = {
@@ -41,8 +41,11 @@ export class AbilityTypeGenerator {
           const existingType = typeStructure[action][subjectPath];
           const ruleType = this.determineTypeFromRule(rule);
 
-          // If a type already exists for this path, create a union
+          if (!ruleType) {
+            return;
+          }
           if (existingType && existingType !== ruleType) {
+            // If a type already exists for this path, create a union
             typeStructure[action][subjectPath] = `${existingType} | ${ruleType}`;
           } else {
             typeStructure[action][subjectPath] = ruleType;
@@ -62,7 +65,13 @@ export class AbilityTypeGenerator {
    * @param rule - The rule to analyze
    * @returns TypeScript type as string
    */
-  private determineTypeFromRule(rule: AbilityRule): string {
+  private determineTypeFromRule(rule: AbilityRule): string | null {
+    if (
+      rule.condition.isEqual(AbilityCondition.never) ||
+      rule.condition.isEqual(AbilityCondition.always)
+    ) {
+      return null;
+    }
     // Numeric comparisons - always number
     if (
       rule.condition.isEqual(AbilityCondition.greater_than) ||
@@ -99,7 +108,9 @@ export class AbilityTypeGenerator {
    */
   private getArrayType(resource: unknown): string {
     if (Array.isArray(resource)) {
-      if (resource.length === 0) return 'any[]';
+      if (resource.length === 0) {
+        return 'any[]';
+      }
 
       // Determine types of array elements
       const elementTypes = new Set(resource.map(item => this.getPrimitiveType(item)));
@@ -122,8 +133,12 @@ export class AbilityTypeGenerator {
    * @returns TypeScript primitive type as string
    */
   private getPrimitiveType(value: unknown): string {
-    if (value === null) return 'null';
-    if (value === undefined) return 'undefined';
+    if (value === null) {
+      return 'null';
+    }
+    if (value === undefined) {
+      return 'undefined';
+    }
 
     switch (typeof value) {
       case 'string':
@@ -158,7 +173,7 @@ export class AbilityTypeGenerator {
 
       Object.entries(paths).forEach(([path, type]) => {
         const parts = path.split('.');
-        let current = result[action] as NestedDict<string>;
+        let current = result[action];
 
         // Iterate through all parts except the last one
         for (let i = 0; i < parts.length - 1; i++) {
@@ -170,7 +185,7 @@ export class AbilityTypeGenerator {
             current[part] = newObj;
             current = newObj;
           } else {
-            current = currentValue as NestedDict<string>;
+            current = currentValue;
           }
         }
 
@@ -193,13 +208,21 @@ export class AbilityTypeGenerator {
     output += '// Do not edit manually\n';
     output += 'export type Resources = {\n';
 
-    // Sort actions for stable output
     const sortedActions = Object.keys(structure).sort();
 
     sortedActions.forEach(action => {
-      output += `  ['${action}']: {\n`;
-      output += this.formatNestedObject(structure[action], 4);
-      output += '  };\n';
+      const actionObj = structure[action];
+      const isEmpty = Object.keys(actionObj).length === 0;
+
+      if (isEmpty) {
+        // Пустой объект → undefined
+        output += `  ['${action}']: undefined;\n`;
+      } else {
+        // Непустой объект → как раньше
+        output += `  ['${action}']: {\n`;
+        output += this.formatNestedObject(actionObj, 4);
+        output += '  };\n';
+      }
     });
 
     output += '}\n';
