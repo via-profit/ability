@@ -1,7 +1,7 @@
-import AbilityRule from './AbilityRule';
-import AbilityRuleSet from '../core/AbilityRuleSet';
-import AbilityPolicy from '../core/AbilityPolicy';
-import AbilityMatch from '../core/AbilityMatch';
+import AbilityRule from '~/core/AbilityRule';
+import AbilityRuleSet from '~/core/AbilityRuleSet';
+import AbilityPolicy from '~/core/AbilityPolicy';
+import AbilityMatch from '~/core/AbilityMatch';
 
 export type AbilityExplainConfig = {
   readonly type: AbilityExplainType;

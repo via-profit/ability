@@ -1,4 +1,4 @@
-import AbilityCode from './AbilityCode';
+import AbilityCode from '~/core/AbilityCode';
 
 export type AbilityPolicyEffectCodeType = 'deny' | 'permit';
 

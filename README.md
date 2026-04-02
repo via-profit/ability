@@ -385,7 +385,7 @@ deny permission.order.update
 const policies = new AbilityDSLParser(dsl).parse();
 const resolver = new AbilityResolver(policies);
 
-await resolver.enforce('order.update', resource); // will throw AbilityError
+resolver.enforce('order.update', resource); // will throw AbilityError
 ```
 
 **Explanation**
@@ -669,7 +669,7 @@ const environment = {
   ip: req.ip,
 }
 
-await resolver.enforce('order.update', resource, environment);
+resolver.enforce('order.update', resource, environment);
 ```
 
 ### Using environment in rules
@@ -797,7 +797,7 @@ export type Resources = {
 ```ts
 import { policyResolver } from './policies';
 
-await resolver.enforce('order.update', {
+resolver.enforce('order.update', {
   user: { id: 'u1' },
   order: { ownerId: 'u1' },
 });
@@ -818,7 +818,7 @@ To simplify policy debugging, a special `AbilityResult` class is used, which is 
 Example:
 
 ```ts
-const result = await resolver.resolve('order.update', resource);
+const result = resolver.resolve('order.update', resource);
 
 if (result.isDenied()) {
   console.log('Access denied');
@@ -841,7 +841,7 @@ const explanations = result.explain(); // AbilityExplain
 Usage example:
 
 ```ts
-const result = await resolver.resolve('order.update', resource);
+const result = resolver.resolve('order.update', resource);
 const explanations = result.explain();
 
 console.log(explanations.toString());
@@ -881,7 +881,7 @@ deny permission.test if all:
 const policies = new AbilityDSLParser(dsl).parse();
 const resolver = new AbilityResolver(policies);
 
-const result = await resolver.resolve('test', {
+const result = resolver.resolve('test', {
   user: { age: 16 },
 });
 
@@ -895,7 +895,7 @@ the condition is met → the policy matches → effect `deny` → access denied.
 **What happens if the conditions are *not met*?**
 
 ```ts
-const result = await resolver.resolve('test', {
+const result = resolver.resolve('test', {
   user: { age: 12 },
 });
 
@@ -984,7 +984,7 @@ export function useAbility<Permission extends keyof Resources>(
 
     async function check() {
       try {
-        const result = await resolver.resolve(permission, resource);
+        const result = resolver.resolve(permission, resource);
         if (!cancelled) {
           setAllowed(result.isAllowed());
         }
@@ -1224,7 +1224,7 @@ Example: buying a ticket.
 The `enforce` method throws an `AbilityError` if access is denied.
 
 ```ts
-await resolver.enforce('ticket.buy', {
+resolver.enforce('ticket.buy', {
   user: { age: 25, ticketsCount: 1 },
   env: { time: { hour: 18 } },
 });
@@ -1237,7 +1237,7 @@ If denied — an `AbilityError` exception is thrown.
 `resolve` returns a result object:
 
 ```ts
-const result = await resolver.resolve('ticket.buy', {
+const result = resolver.resolve('ticket.buy', {
   user: { age: 25, ticketsCount: 1 },
   env: { time: { hour: 18 } },
 });
@@ -1252,7 +1252,7 @@ if (result.isAllowed()) {
 **Seller can only sell during working hours**
 
 ```ts
-await resolver.enforce('ticket.sell', {
+resolver.enforce('ticket.sell', {
   user: { role: 'seller' },
   env: { time: { hour: 15 } },
   ticket: { status: 'available' },

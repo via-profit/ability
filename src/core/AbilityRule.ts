@@ -1,9 +1,9 @@
-import AbilityMatch from './AbilityMatch';
+import AbilityMatch from '~/core/AbilityMatch';
 import {
   AbilityCondition,
   AbilityConditionCodeType,
   AbilityConditionLiteralType,
-} from './AbilityCondition';
+} from '~/core/AbilityCondition';
 
 export type AbilityRuleConfig = {
   readonly id?: string | null;
@@ -186,7 +186,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
    * @param resource - The resource to check
    * @param environment
    */
-  public async check(resource: Resources | null, environment?: Environment): Promise<AbilityMatch> {
+  public check(resource: Resources | null, environment?: Environment): AbilityMatch {
     const [subjectValue, resourceValue] = this.extractValues(resource, environment);
     const handler = this.operatorHandlers[this.condition.literal];
     const result = handler(subjectValue, resourceValue);

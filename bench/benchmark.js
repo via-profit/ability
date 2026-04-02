@@ -3,7 +3,6 @@ import {
   AbilityInMemoryCache,
   AbilityResolver,
   AbilityDSLParser,
-  AbilityPolicy,
 } from '../dist/index.js';
 
 /**

@@ -1,7 +1,7 @@
-import AbilityRule from '../../core/AbilityRule';
-import AbilityRuleSet from '../../core/AbilityRuleSet';
-import AbilityMatch from '../../core/AbilityMatch';
-import AbilityCompare from '../../core/AbilityCompare';
+import AbilityRule from '~/core/AbilityRule';
+import AbilityRuleSet from '~/core/AbilityRuleSet';
+import AbilityMatch from '~/core/AbilityMatch';
+import AbilityCompare from '~/core/AbilityCompare';
 
 describe('AbilityRuleSet', () => {
   describe('constructor', () => {
@@ -59,13 +59,13 @@ describe('AbilityRuleSet', () => {
   });
 
   describe('check method with AND comparison', () => {
-    it('should return match when all rules match', async () => {
+    it('should return match when all rules match', () => {
       const ruleSet = AbilityRuleSet.and([
         AbilityRule.equals('user.name', 'John'),
         AbilityRule.moreThan('user.age', 18),
       ]);
 
-      const result = await ruleSet.check({
+      const result = ruleSet.check({
         user: {
           name: 'John',
           age: 25,
@@ -75,13 +75,13 @@ describe('AbilityRuleSet', () => {
       expect(result).toBe(AbilityMatch.match);
     });
 
-    it('should return mismatch when any rule mismatches', async () => {
+    it('should return mismatch when any rule mismatches', () => {
       const ruleSet = AbilityRuleSet.and([
         AbilityRule.equals('user.name', 'John'),
         AbilityRule.moreThan('user.age', 18),
       ]);
 
-      const result = await ruleSet.check({
+      const result = ruleSet.check({
         user: {
           name: 'John',
           age: 16,
@@ -91,14 +91,14 @@ describe('AbilityRuleSet', () => {
       expect(result).toBe(AbilityMatch.mismatch);
     });
 
-    it('should return mismatch when multiple rules mismatch', async () => {
+    it('should return mismatch when multiple rules mismatch', () => {
       const ruleSet = AbilityRuleSet.and([
         AbilityRule.equals('user.name', 'John'),
         AbilityRule.moreThan('user.age', 18),
         AbilityRule.equals('user.city', 'Moscow'),
       ]);
 
-      const result = await ruleSet.check({
+      const result = ruleSet.check({
         user: {
           name: 'Jane',
           age: 16,
@@ -111,13 +111,13 @@ describe('AbilityRuleSet', () => {
   });
 
   describe('check method with OR comparison', () => {
-    it('should return match when at least one rule matches', async () => {
+    it('should return match when at least one rule matches', () => {
       const ruleSet = AbilityRuleSet.or([
         AbilityRule.equals('user.name', 'John'),
         AbilityRule.moreThan('user.age', 18),
       ]);
 
-      const result = await ruleSet.check({
+      const result = ruleSet.check({
         user: {
           name: 'Jane',
           age: 25,
@@ -127,13 +127,13 @@ describe('AbilityRuleSet', () => {
       expect(result).toBe(AbilityMatch.match);
     });
 
-    it('should return mismatch when no rules match', async () => {
+    it('should return mismatch when no rules match', () => {
       const ruleSet = AbilityRuleSet.or([
         AbilityRule.equals('user.name', 'John'),
         AbilityRule.moreThan('user.age', 18),
       ]);
 
-      const result = await ruleSet.check({
+      const result = ruleSet.check({
         user: {
           name: 'Jane',
           age: 16,
@@ -143,14 +143,14 @@ describe('AbilityRuleSet', () => {
       expect(result).toBe(AbilityMatch.mismatch);
     });
 
-    it('should return match when multiple rules match', async () => {
+    it('should return match when multiple rules match', () => {
       const ruleSet = AbilityRuleSet.or([
         AbilityRule.equals('user.name', 'John'),
         AbilityRule.moreThan('user.age', 18),
         AbilityRule.equals('user.city', 'Moscow'),
       ]);
 
-      const result = await ruleSet.check({
+      const result = ruleSet.check({
         user: {
           name: 'John',
           age: 25,
@@ -163,13 +163,13 @@ describe('AbilityRuleSet', () => {
   });
 
   describe('complex scenarios', () => {
-    it('should handle comparison with dot notation resources', async () => {
+    it('should handle comparison with dot notation resources', () => {
       const ruleSet = AbilityRuleSet.and([
         AbilityRule.equals('user.name', 'opponent.name'),
         AbilityRule.moreThan('user.age', 'opponent.age'),
       ]);
 
-      const result = await ruleSet.check({
+      const result = ruleSet.check({
         user: {
           name: 'Oleg',
           age: 32,
@@ -183,10 +183,10 @@ describe('AbilityRuleSet', () => {
       expect(result).toBe(AbilityMatch.match);
     });
 
-    it('should handle empty rule set', async () => {
+    it('should handle empty rule set', () => {
       const ruleSet = new AbilityRuleSet({ compareMethod: AbilityCompare.and });
 
-      const result = await ruleSet.check({ any: 'data' });
+      const result = ruleSet.check({ any: 'data' });
 
       expect(result).toBe(AbilityMatch.mismatch);
     });

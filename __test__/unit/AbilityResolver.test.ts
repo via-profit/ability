@@ -1,4 +1,4 @@
-import AbilityResolver from '../../core/AbilityResolver';
+import AbilityResolver from '~/core/AbilityResolver';
 
 describe('AbilityResolver', () => {
   describe('isInPermissionContain', () => {

@@ -1,5 +1,5 @@
-import AbilityCode from './AbilityCode';
-import { AbilityParserError } from '../core/AbilityError';
+import AbilityCode from '~/core/AbilityCode';
+import { AbilityParserError } from '~/core/AbilityError';
 
 export type AbilityConditionCodeType =
   | '='
@@ -129,7 +129,7 @@ export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
       case 'never':
         return 'never';
       default:
-        throw new Error(`Unknown condition code: ${this.code}`);
+        throw new Error(`Unknown condition code: ${String(this.code)}`);
     }
   }
 }
