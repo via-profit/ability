@@ -146,10 +146,8 @@
 | Метод | Аргументы | Возвращает | Описание |
 |-------|-----------|------------|----------|
 | `explain()` | — | `readonly AbilityExplain[]` | Объяснения по всем политикам |
-| `getLastMatchedPolicy()` | — | `AbilityPolicy \| null` | Последняя сработавшая политика |
 | `isAllowed()` | — | `boolean` | Доступ разрешён (нет deny или разрешён по умолчанию) |
 | `isDenied()` | — | `boolean` | Доступ запрещён |
-| `getLastEffectOfMatchedPolicy()` | — | `AbilityPolicyEffect \| null` | Эффект последней совпавшей политики |
 
 ---
 

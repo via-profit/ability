@@ -146,10 +146,8 @@ Encapsulates the result of applying policies.
 | Method | Arguments | Returns | Description |
 |--------|-----------|---------|-------------|
 | `explain()` | — | `readonly AbilityExplain[]` | Explanations for all policies |
-| `getLastMatchedPolicy()` | — | `AbilityPolicy \| null` | The last matched policy |
 | `isAllowed()` | — | `boolean` | Access is allowed (no deny or allowed by default) |
 | `isDenied()` | — | `boolean` | Access is denied |
-| `getLastEffectOfMatchedPolicy()` | — | `AbilityPolicyEffect \| null` | Effect of the last matched policy |
 
 ---
 
