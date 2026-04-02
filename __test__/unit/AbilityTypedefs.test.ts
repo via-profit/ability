@@ -26,7 +26,6 @@ allow permission.order.create if any:
     const policies = parser.parse();
 
    const defs= new AbilityTypeGenerator(policies).generateTypeDefs();
-console.log(defs);
   });
 
 
