@@ -169,4 +169,136 @@ describe('Cinema complex policies', () => {
     });
     expect(result.isAllowed()).toBe(true);
   });
+  test('Complex policy chain with state resets', () => {
+    const dsl = `
+    # 1. Разрешаем всё mut.* если токен валиден
+    allow permission.mut.* if all:
+      token.id not equals 'INVALID'
+
+    # 2. Но если роль не админ — отменяем разрешение
+    allow permission.mut.* if all:
+      account.role equals 'admin'
+
+    # 3. Если пользователь заблокирован — запрещаем
+    deny permission.mut.* if all:
+      account.status equals 'blocked'
+
+    # 4. Но если есть флаг override — отменяем запрет
+    deny permission.mut.* if all:
+      flags.override equals true
+
+    # 5. Для delete — отдельное правило: только супервайзер
+    allow permission.mut.order.delete if all:
+      account.role equals 'supervisor'
+
+    # 6. И финальное правило: если нет флага allowDelete — отменяем разрешение
+    allow permission.mut.order.delete if all:
+      flags.allowDelete equals true
+  `;
+
+    const policies = new AbilityDSLParser(dsl).parse();
+    const resolver = new AbilityResolver(policies);
+
+    //
+    // CASE 1: токен валиден → allow, но роль не admin → сброс → итог neutral → deny
+    //
+    expect(() =>
+      resolver.enforce('mut.order.delete', {
+        token: { id: 'SECRET' },
+        account: { role: 'manager', status: 'active' },
+        flags: {},
+      }),
+    ).toThrow();
+
+    //
+    // CASE 2: токен валиден → allow, роль admin → allow, не blocked → allow,
+    // нет override → deny mismatch → сброс,
+    // delete требует supervisor → mismatch → сброс,
+    // нет allowDelete → mismatch → сброс → итог deny
+    //
+    expect(() =>
+      resolver.enforce('mut.order.delete', {
+        token: { id: 'SECRET' },
+        account: { role: 'admin', status: 'active' },
+        flags: {},
+      }),
+    ).toThrow();
+
+    //
+    // CASE 3: supervisor → allow на delete, но allowDelete mismatch → сброс → deny
+    //
+    expect(() =>
+      resolver.enforce('mut.order.delete', {
+        token: { id: 'SECRET' },
+        account: { role: 'supervisor', status: 'active' },
+        flags: {},
+      }),
+    ).toThrow();
+
+    //
+    // CASE 4: supervisor + allowDelete → allow
+    //
+    expect(resolver.resolve('mut.order.delete', {
+        token: { id: 'SECRET' },
+        account: { role: 'supervisor', status: 'active' },
+        flags: { allowDelete: true },
+      }).isAllowed(),
+    ).toBe(true);
+
+    //
+    // CASE 5: пользователь заблокирован → deny, override mismatch → сброс,
+    // supervisor → allow, allowDelete → allow → итог allow
+    //
+    expect(
+      resolver.resolve('mut.order.delete', {
+        token: { id: 'SECRET' },
+        account: { role: 'supervisor', status: 'blocked' },
+        flags: { override: false, allowDelete: true },
+      }).isAllowed(),
+    ).toBe(true);
+
+    //
+    // CASE 6: пользователь заблокирован → deny, override match → deny отменён,
+    // supervisor mismatch → сброс, allowDelete mismatch → сброс → итог deny
+    //
+    expect(() =>
+      resolver.enforce('mut.order.delete', {
+        token: { id: 'SECRET' },
+        account: { role: 'manager', status: 'blocked' },
+        flags: { override: true },
+      }),
+    ).toThrow();
+  });
+
+
+  test('Last matched policy', () => {
+    const dsl = `
+      # @name Пользователь должен быть аутентифицирован (токен обязателен)
+      allow permission.mut.* if all:
+          # @name token is not "NOT_ASSIGNED"
+          token.id not equals 'NOT_ASSIGNED'
+   
+      # @name only admin can delete order
+      permit permission.mut.order.delete if all:
+        # @name roles contains 'administrator'
+        account.roles contains 'administrator'
+    `;
+
+    const policies = new AbilityDSLParser(dsl).parse();
+    const result = new AbilityResolver(policies).resolve('mut.order.delete', {
+      token: { id: 'secret' },
+      account: { roles: ['manager'] },
+    });
+
+    const finalState = result.getFinalState();
+    console.log(finalState);
+    console.log(result.explain().toString());
+
+    expect(() =>
+      new AbilityResolver(policies).enforce('mut.order.delete', {
+        token: { id: 'secret' },
+        account: { roles: ['manager'] },
+      }),
+    ).toThrow();
+  });
 });

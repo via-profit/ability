@@ -35,16 +35,41 @@ export class AbilityResult<Resource extends ResourceObject = Record<string, unkn
     return null;
   }
 
+  public getFinalState(): 'allow' | 'deny' | 'neutral' {
+    let state: 'allow' | 'deny' | 'neutral' = 'neutral';
+
+    for (const p of this.policies) {
+      if (p.matchState.isEqual(AbilityMatch.match)) {
+        if (p.effect.isEqual(AbilityPolicyEffect.permit)) {
+          state = 'allow';
+        } else if (p.effect.isEqual(AbilityPolicyEffect.deny)) {
+          state = 'deny';
+        }
+      } else if (p.matchState.isEqual(AbilityMatch.mismatch)) {
+        state = 'neutral';
+      }
+    }
+
+    return state;
+  }
+
+  // public isAllowed() {
+  //   const effect = this.getLastEffectOfMatchedPolicy();
+  //   return effect?.isEqual(AbilityPolicyEffect.permit) ?? false;
+  // }
   public isAllowed() {
-    const effect = this.getLastEffectOfMatchedPolicy();
-    return effect?.isEqual(AbilityPolicyEffect.permit) ?? false;
+    return this.getFinalState() === 'allow';
   }
 
   public isDenied() {
-    const effect = this.getLastEffectOfMatchedPolicy();
-
-    return effect?.isEqual(AbilityPolicyEffect.deny) ?? true;
+    return this.getFinalState() !== 'allow';
   }
+
+  // public isDenied() {
+  //   const effect = this.getLastEffectOfMatchedPolicy();
+  //
+  //   return effect?.isEqual(AbilityPolicyEffect.deny) ?? true;
+  // }
 
   /**
    * Get the last effect of the policy

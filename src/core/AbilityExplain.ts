@@ -26,7 +26,13 @@ export class AbilityExplain {
     const pad = ' '.repeat(indent);
     const mark = this.match.code === AbilityMatch.match.code ? '✓' : '✗';
 
-    let out = `${pad}${mark} ${this.type} «${this.name}» is ${this.match.code}`;
+    let out = '';
+
+    if (this.type === 'policy') {
+      out += '\n';
+    }
+
+    out += `${pad}${mark} ${this.type} «${this.name}» is ${this.match.code}`;
 
     this.children.forEach(child => {
       out += '\n' + child.toString(indent + 1);
