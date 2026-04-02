@@ -2,6 +2,24 @@ import { AbilityDSLParser } from '~/parsers/dsl/AbilityDSLParser';
 import AbilityResolver from '~/core/AbilityResolver';
 
 describe('DSL Operators', () => {
+  describe('Any', () => {
+    it('any', () => {
+      const dsl = `
+      deny permission.user.passwordHash if any:
+        viewer.id is not equals owner.id
+      `;
+
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies);
+
+      expect(() =>
+        resolver.enforce('user.passwordHash', {
+          viewer: { id: '1' },
+          owner: { id: '2' },
+        }),
+      ).toThrow();
+    })
+  });
   // -----------------------------
   // #region Operator "is equals"
   // -----------------------------
