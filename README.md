@@ -1,4 +1,3 @@
-```markdown
 # @via-profit/ability
 
 > A set of services partially implementing the [Attribute Based Access Control](https://en.wikipedia.org/wiki/Attribute-based_access_control) principle.
@@ -1346,4 +1345,4 @@ Throughput (ops/s)
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](/LICENSE) file for details.
-```
+
