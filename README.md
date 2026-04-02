@@ -318,7 +318,7 @@ It allows you to define rules in a human-readable form using simple constructs: 
 
 ### Policy Structure
 
-A policy consists of:
+A policy consists of the following construct:
 
 ```
 <effect> <permission> if <all|any>:
@@ -328,13 +328,13 @@ A policy consists of:
 Where:
 
 - **effect** — `permit` or `deny`
-- **permission** — a string of the form `permission.foo.bar`, where the `permission.` prefix is mandatory.
+- **permission** — a string in the form `permission.foo.bar`  
+  (the `permission.` prefix is required in DSL but is automatically removed by the parser)
 - **if all:** — all groups must be true
 - **if any:** — at least one group must be true
+- a policy may contain one or more rule groups
 
-A policy can contain one or more rule groups.
-
-Example:
+**Example**
 
 ```dsl
 permit permission.order.update if any:
@@ -347,36 +347,73 @@ permit permission.order.update if any:
     user.login is equals 'dev'
 ```
 
-> The `permission.` prefix is mandatory in DSL but is automatically removed by the parser. Internally, the permission is stored as `order.update`.
+This policy means:
 
-The example policy above says: permission `order.update` will be allowed if one of two conditions is met:
-1. `user.roles` contains 'admin' **and** `user.token` is not null
-2. `user.roles` contains 'developer' **or** `user.login` equals 'dev'
+The permission `permission.order.update` will be granted if **at least one** of the two groups is satisfied:
+
+1. `user.roles` contains `'admin'` **and** `user.token` is not `null`
+2. `user.roles` contains `'developer'` **or** `user.login` equals `'dev'`
+
+If multiple policies match a given permission key, they are **all evaluated** from top to bottom.
+
+Each policy:
+
+- **match**  
+  → sets a new state (`permit` → allow, `deny` → deny)
+
+- **mismatch**  
+  → **resets the state** to `neutral`  
+  (i.e., cancels the result of the previous policy)
+
+The final decision is determined by the **last processed policy**, not only by the ones that matched.
+
+This means:
+
+- a policy can **override** a previous one
+- a policy can **cancel** a previous one (via mismatch)
+- the order of policies in the DSL is critical
+
+---
 
 ### Permission Key
 
-Permission keys are written in dot notation but support the use of wildcard patterns with the `*` character. This allows grouping of keys and overriding policies with similar keys.
+Permission keys are written in `dot notation` and support wildcard patterns using the `*` character.  
+This allows grouping of permissions and overriding behaviour for entire families of operations.
 
-If multiple policies match a key, **all of them are executed**. The final result is determined by the **last matching policy**:
+**How policy matching works**
 
-**Example of using wildcards**
+If multiple policies match a given permission key, **all policies are executed in order**, from top to bottom.  
+The final decision is determined by the **last state** set during processing.
 
-| Policy (permission) | Key                   | Matches |
-|---------------------|-----------------------|---------|
-| `order.*`           | `order.create`        | yes     |
-| `order.*`           | `order.update`        | yes     |
-| `order.*`           | `user.create`         | no      |
-| `*.create`          | `order.create`        | yes     |
-| `*.create`          | `user.create`         | yes     |
-| `*.create`          | `order.update`        | no      |
-| `user.profile.*`    | `user.profile.update` | yes     |
-| `user.profile.*`    | `user.settings.update`| no      |
+This means:
 
-**Example of a policy with wildcard**
+- a policy can **override** the result of a previous one
+- a policy can **cancel** the result of a previous one (via mismatch)
+- the order of policies in the DSL is critical
+
+---
+
+### Example of using wildcard patterns
+
+| Policy (permission) | Key                    | Matches |
+|---------------------|------------------------|---------|
+| `order.*`           | `order.create`         | yes     |
+| `order.*`           | `order.update`         | yes     |
+| `order.*`           | `user.create`          | no      |
+| `*.create`          | `order.create`         | yes     |
+| `*.create`          | `user.create`          | yes     |
+| `*.create`          | `order.update`         | no      |
+| `user.profile.*`    | `user.profile.update`  | yes     |
+| `user.profile.*`    | `user.settings.update` | no      |
+
+---
+
+### Example of a policy with wildcard
+
 ```ts
 import { AbilityDSLParser, AbilityResolver } from '@via-profit/ability';
 
-// DSL is not complete, shown for illustration only
+// DSL is incomplete and shown only for illustration
 const dsl = `
 permit permission.order.*
 deny permission.order.update
@@ -388,23 +425,28 @@ const resolver = new AbilityResolver(policies);
 resolver.enforce('order.update', resource); // will throw AbilityError
 ```
 
+---
+
 **Explanation**
 
-In DSL, the order of policies matters:
-the last matching policy wins.
+The order of policies in the DSL determines the final decision.
 
-Therefore:
+Processing goes from top to bottom:
 
-1. `permit` `permission.order.*` allows everything that starts with `order.`
-2. `deny` `permission.order.update` overrides this permission.
+1. `permit permission.order.*`
+  - match → state = `allow`
 
-Execution result:
+2. `deny permission.order.update`
+  - match → state = `deny`
+  - final state overwrites the previous one
+
+Result:
 
 ```
 order.update → deny
-order.create → permit
-order.delete → permit
-order.view   → permit
+order.create → allow
+order.delete → allow
+order.view   → allow
 ```
 
 ### Comments
