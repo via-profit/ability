@@ -8,6 +8,7 @@ import { AbilityDSLLexer } from '~/parsers/dsl/AbilityDSLLexer';
 import { AbilityDSLToken, TokenType } from '~/parsers/dsl/AbilityDSLToken';
 import { ResourceObject } from '~/core/AbilityTypeGenerator';
 import { AbilityDSLSyntaxError } from '~/parsers/dsl/AbilityDSLSyntaxError';
+import { AbilityDSLTokenStream } from './AbilityDSLTokenStream';
 
 /**
  * Parser for the Ability DSL.
@@ -30,8 +31,7 @@ export class AbilityDSLParser<
   Environment = unknown,
 > {
   private dsl: string;
-  private tokens: AbilityDSLToken[] = [];
-  private pos = 0;
+  private stream!: AbilityDSLTokenStream;
   private annotationBuffer: Record<'name' | 'description', string | null> = {
     name: null,
     description: null,
@@ -46,20 +46,23 @@ export class AbilityDSLParser<
    * @returns Array of AbilityPolicy instances.
    */
   public parse(): readonly AbilityPolicy<Resource, Environment>[] {
-    // Tokenize the entire DSL string.
-    this.tokens = new AbilityDSLLexer(this.dsl).tokenize();
-    this.pos = 0;
+    // 1. Лексер → токены
+    const tokens = new AbilityDSLLexer(this.dsl).tokenize();
+
+    // 2. Создаём TokenStream
+    this.stream = new AbilityDSLTokenStream(tokens, this.dsl);
 
     const policies: AbilityPolicy[] = [];
 
-    // Keep parsing until we've consumed all tokens.
-    while (!this.isAtEnd()) {
+    // 3. Парсим политики
+    while (!this.stream.eof()) {
       this.consumeLeadingComments();
-      // Every policy must start with an EFFECT token.
+
       if (!this.isStartOfPolicy()) {
-        const token = this.peek();
+        const token = this.stream.peek();
         this.syntaxError(`Expected policy, got ${token.code}.`, token, ['EFFECT']);
       }
+
       policies.push(this.parsePolicy());
     }
 
@@ -81,11 +84,11 @@ export class AbilityDSLParser<
     const meta = this.takeAnnotations();
 
     // Effect: "permit" or "deny"
-    const effectToken = this.consume(AbilityDSLToken.EFFECT, 'Expected effect');
+    const effectToken = this.stream.expect(AbilityDSLToken.EFFECT, 'Expected effect');
     const effect = effectToken.value;
 
     // Permission: e.g. "order.update"
-    const permissionToken = this.consume(AbilityDSLToken.PERMISSION, 'Expected permission');
+    const permissionToken = this.stream.expect(AbilityDSLToken.PERMISSION, 'Expected permission');
     const permission = permissionToken.value;
     if (!permission.startsWith('permission.')) {
       return this.syntaxError(
@@ -95,10 +98,10 @@ export class AbilityDSLParser<
     }
 
     // "if" keyword
-    this.consume(AbilityDSLToken.IF, 'Expected "if"');
+    this.stream.expect(AbilityDSLToken.IF, 'Expected "if"');
 
     // Group selector: "all" or "any" – determines how the top‑level rule sets are combined.
-    const compareToken = this.consumeOneOf(
+    const compareToken = this.stream.expectOneOf(
       [AbilityDSLToken.ALL, AbilityDSLToken.ANY],
       'Expected "all" or "any"',
     );
@@ -107,7 +110,7 @@ export class AbilityDSLParser<
       compareToken.code === AbilityDSLToken.ALL ? AbilityCompare.and : AbilityCompare.or;
 
     // Colon after the group keyword
-    this.consume(AbilityDSLToken.COLON, 'Expected ":"');
+    this.stream.expect(AbilityDSLToken.COLON, 'Expected ":"');
 
     // Parse the list of rule sets (each "all of:" or "any of:" block)
     const ruleSets = this.parseRuleSets(compareMethod);
@@ -132,7 +135,7 @@ export class AbilityDSLParser<
   private parseRuleSets(policyCompareMethod: AbilityCompare): AbilityRuleSet[] {
     const sets: AbilityRuleSet[] = [];
 
-    while (!this.isAtEnd() && !this.isStartOfPolicy()) {
+    while (!this.stream.eof() && !this.isStartOfPolicy()) {
       this.consumeLeadingComments();
 
       // Если начинается новая except группа — парсим её
@@ -155,7 +158,7 @@ export class AbilityDSLParser<
       });
 
       // Читаем правила implicit-группы
-      while (!this.isAtEnd()) {
+      while (!this.stream.eof()) {
         this.consumeLeadingComments();
 
         if (this.isStartOfGroup() || this.isStartOfPolicy() || this.isStartOfExcept()) {
@@ -163,13 +166,13 @@ export class AbilityDSLParser<
         }
 
         if (
-          this.check(AbilityDSLToken.IDENTIFIER) ||
-          this.check(AbilityDSLToken.ALWAYS) ||
-          this.check(AbilityDSLToken.NEVER)
+          this.stream.check(AbilityDSLToken.IDENTIFIER) ||
+          this.stream.check(AbilityDSLToken.ALWAYS) ||
+          this.stream.check(AbilityDSLToken.NEVER)
         ) {
           group.addRule(this.parseRule());
         } else {
-          this.syntaxError(`Unexpected token in implicit group: ${this.peek().code}`, this.peek());
+          this.syntaxError(`Unexpected token in implicit group: ${this.stream.peek().code}`, this.stream.peek());
         }
       }
 
@@ -186,7 +189,7 @@ export class AbilityDSLParser<
     this.consumeLeadingComments();
     const meta = this.takeAnnotations();
 
-    const compareToken = this.consumeOneOf(
+    const compareToken = this.stream.expectOneOf(
       [AbilityDSLToken.ALL, AbilityDSLToken.ANY, AbilityDSLToken.ALWAYS, AbilityDSLToken.NEVER],
       'Expected "all" or "any" or "always" or "never"',
     );
@@ -194,15 +197,15 @@ export class AbilityDSLParser<
     const compareMethod =
       compareToken.code === AbilityDSLToken.ALL ? AbilityCompare.and : AbilityCompare.or;
 
-    if (this.check(AbilityDSLToken.OF)) {
-      this.advance();
+    if (this.stream.check(AbilityDSLToken.OF)) {
+      this.stream.next();
     }
 
-    this.consume(AbilityDSLToken.COLON, 'Expected ":"');
+    this.stream.expect(AbilityDSLToken.COLON, 'Expected ":"');
 
     const group = new AbilityRuleSet({ compareMethod, name: meta.name });
 
-    while (!this.isAtEnd()) {
+    while (!this.stream.eof()) {
       this.consumeLeadingComments();
 
       if (this.isStartOfExcept()) {
@@ -213,10 +216,10 @@ export class AbilityDSLParser<
         break;
       }
 
-      if (this.check(AbilityDSLToken.IDENTIFIER)) {
+      if (this.stream.check(AbilityDSLToken.IDENTIFIER)) {
         group.addRule(this.parseRule());
       } else {
-        this.syntaxError(`Unexpected token in group: ${this.peek().code}`, this.peek());
+        this.syntaxError(`Unexpected token in group: ${this.stream.peek().code}`, this.stream.peek());
       }
     }
 
@@ -231,25 +234,25 @@ export class AbilityDSLParser<
     const meta = this.takeAnnotations();
 
     // consume "except"
-    this.consume(AbilityDSLToken.EXCEPT, 'Expected "except"');
+    this.stream.expect(AbilityDSLToken.EXCEPT, 'Expected "except"');
 
     let compareMethod = policyCompareMethod;
 
     // optional: "all" / "any"
-    if (this.check(AbilityDSLToken.ALL) || this.check(AbilityDSLToken.ANY)) {
-      const compareToken = this.advance();
+    if (this.stream.check(AbilityDSLToken.ALL) || this.stream.check(AbilityDSLToken.ANY)) {
+      const compareToken = this.stream.next();
       compareMethod =
         compareToken.code === AbilityDSLToken.ALL ? AbilityCompare.and : AbilityCompare.or;
 
-      if (this.check(AbilityDSLToken.OF)) {
-        this.advance();
+      if (this.stream.check(AbilityDSLToken.OF)) {
+        this.stream.next();
       }
 
-      this.consume(AbilityDSLToken.COLON, 'Expected ":" after except group');
+      this.stream.expect(AbilityDSLToken.COLON, 'Expected ":" after except group');
     } else {
       // implicit except group — no "all/any of:"
       // but still must end with colon
-      this.consume(AbilityDSLToken.COLON, 'Expected ":" after "except"');
+      this.stream.expect(AbilityDSLToken.COLON, 'Expected ":" after "except"');
     }
 
     const group = new AbilityRuleSet({
@@ -259,17 +262,17 @@ export class AbilityDSLParser<
     });
 
     // read rules
-    while (!this.isAtEnd()) {
+    while (!this.stream.eof()) {
       this.consumeLeadingComments();
 
       if (this.isStartOfGroup() || this.isStartOfPolicy() || this.isStartOfExcept()) {
         break;
       }
 
-      if (this.check(AbilityDSLToken.IDENTIFIER)) {
+      if (this.stream.check(AbilityDSLToken.IDENTIFIER)) {
         group.addRule(this.parseRule());
       } else {
-        this.syntaxError(`Unexpected token in except group: ${this.peek().code}`, this.peek());
+        this.syntaxError(`Unexpected token in except group: ${this.stream.peek().code}`, this.stream.peek());
       }
     }
 
@@ -287,66 +290,54 @@ export class AbilityDSLParser<
     this.consumeLeadingComments();
     const meta = this.takeAnnotations();
 
-    // if (this.check(AbilityDSLToken.ALWAYS) || this.check(AbilityDSLToken.NEVER)) {
-    //   // Checking that there are no extra tokens after the value
-    //   // (skip comments)
-    //   this.consumeLeadingComments();
-    //   const specOperator = this.consume();
-    //   // return new AbilityRule({
-    //   //   subject: '',
-    //   //   resource,
-    //   //   condition,
-    //   //   name: meta.name,
-    //   // });
-    // }
+    const isNeverAlways =
+      this.stream.check(AbilityDSLToken.ALWAYS) || this.stream.check(AbilityDSLToken.NEVER);
 
-    const isNeverAlways = this.check(AbilityDSLToken.ALWAYS) || this.check(AbilityDSLToken.NEVER);
-
-    if (!isNeverAlways && !this.check(AbilityDSLToken.IDENTIFIER)) {
-      this.syntaxError(`Expected identifier, but got ${this.peek().code}`, this.peek());
+    if (!isNeverAlways && !this.stream.check(AbilityDSLToken.IDENTIFIER)) {
+      this.syntaxError(
+        `Expected identifier, but got ${this.stream.peek().code}`,
+        this.stream.peek(),
+      );
     }
 
-    // Subject (e.g., "user.roles")
+    // subject
     const subject = isNeverAlways
       ? ''
-      : this.consume(AbilityDSLToken.IDENTIFIER, 'Expected field').value;
+      : this.stream.expect(AbilityDSLToken.IDENTIFIER, 'Expected field').value;
 
-    // Operator (e.g., "contains", "equals", "is not null")
+    // operator
     const { condition, operator } = this.parseConditionOperator();
 
-    let resource: AbilityRuleConfig['resource'];
-    let beforePos = this.pos;
+    // value
+    let resource: AbilityRuleConfig['resource'] = null;
+    let valueToken: AbilityDSLToken | null = null;
 
-    // Special operators that don't consume a value token.
-    if (
-      operator === AbilityDSLToken.EQ_NULL ||
-      operator === AbilityDSLToken.NOT_EQ_NULL ||
-      operator === AbilityDSLToken.NULL ||
-      operator === AbilityDSLToken.ALWAYS ||
-      operator === AbilityDSLToken.NEVER
-    ) {
-      resource = null;
-    } else {
-      beforePos = this.pos;
+    const operatorConsumesValue =
+      operator !== AbilityDSLToken.EQ_NULL &&
+      operator !== AbilityDSLToken.NOT_EQ_NULL &&
+      operator !== AbilityDSLToken.NULL &&
+      operator !== AbilityDSLToken.ALWAYS &&
+      operator !== AbilityDSLToken.NEVER;
+
+    if (operatorConsumesValue) {
+      this.stream.mark();
       resource = this.parseValue();
+      valueToken = this.stream.previous();
+      this.stream.commit();
     }
 
-    // Checking that there are no extra tokens after the value
-    // (skip comments)
     this.consumeLeadingComments();
 
-    const resourceToken = this.tokens[beforePos];
-
+    // validation: identifier without dot → error
     if (
       typeof resource === 'string' &&
-      resourceToken.code === AbilityDSLToken.IDENTIFIER &&
-      !resourceToken.value.includes('.')
+      valueToken &&
+      valueToken.code === AbilityDSLToken.IDENTIFIER &&
+      !valueToken.value.includes('.')
     ) {
-      this.syntaxError(
-        `Expected comparison operator or value, got \`${resource}\``,
-        this.tokens[beforePos],
-        [AbilityDSLToken.KEYWORD],
-      );
+      this.syntaxError(`Expected comparison operator or value, got \`${resource}\``, valueToken, [
+        AbilityDSLToken.KEYWORD,
+      ]);
     }
 
     return new AbilityRule({
@@ -366,174 +357,214 @@ export class AbilityDSLParser<
    * Returns both the resulting AbilityCondition and the token type that was consumed.
    */
   private parseConditionOperator(): { condition: AbilityCondition; operator: TokenType } {
-    const savedPos = this.pos;
-
     // "always"
+    this.stream.mark();
     if (this.matchWord('always')) {
+      this.stream.commit();
       return { condition: AbilityCondition.always, operator: AbilityDSLToken.ALWAYS };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // "never"
+    this.stream.mark();
     if (this.matchWord('never')) {
+      this.stream.commit();
       return { condition: AbilityCondition.never, operator: AbilityDSLToken.NEVER };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // "length equals"
+    this.stream.mark();
     if (this.matchWord('length') && this.matchWord('equals')) {
+      this.stream.commit();
       return { condition: AbilityCondition.length_equals, operator: AbilityDSLToken.LEN_EQ };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // "length ="
+    this.stream.mark();
     if (this.matchWord('length') && this.matchSymbol('=')) {
+      this.stream.commit();
       return { condition: AbilityCondition.length_equals, operator: AbilityDSLToken.LEN_EQ };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // "length greater than"
+    this.stream.mark();
     if (this.matchWord('length') && this.matchWord('greater') && this.matchWord('than')) {
+      this.stream.commit();
       return { condition: AbilityCondition.length_greater_than, operator: AbilityDSLToken.LEN_GT };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // "length >"
+    this.stream.mark();
     if (this.matchWord('length') && this.matchSymbol('>')) {
+      this.stream.commit();
       return { condition: AbilityCondition.length_greater_than, operator: AbilityDSLToken.LEN_GT };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // "length less than"
+    this.stream.mark();
     if (this.matchWord('length') && this.matchWord('less') && this.matchWord('than')) {
+      this.stream.commit();
       return { condition: AbilityCondition.length_less_than, operator: AbilityDSLToken.LEN_LT };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // "length <"
+    this.stream.mark();
     if (this.matchWord('length') && this.matchSymbol('<')) {
+      this.stream.commit();
       return { condition: AbilityCondition.length_less_than, operator: AbilityDSLToken.LEN_LT };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // "greater than or equal"
+    this.stream.mark();
     if (
       this.matchWord('greater') &&
       this.matchWord('than') &&
       this.matchWord('or') &&
       this.matchWord('equal')
     ) {
+      this.stream.commit();
       return { condition: AbilityCondition.greater_or_equal, operator: AbilityDSLToken.GTE };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // greater than
+    this.stream.mark();
     if (this.matchWord('greater') && this.matchWord('than')) {
+      this.stream.commit();
       return { condition: AbilityCondition.greater_than, operator: AbilityDSLToken.GT };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // less than or equal
+    this.stream.mark();
     if (
       this.matchWord('less') &&
       this.matchWord('than') &&
       this.matchWord('or') &&
       this.matchWord('equal')
     ) {
+      this.stream.commit();
       return { condition: AbilityCondition.less_or_equal, operator: AbilityDSLToken.LTE };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // less than
     if (this.matchWord('less') && this.matchWord('than')) {
       return { condition: AbilityCondition.less_than, operator: AbilityDSLToken.LT };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // "not contains"
+    this.stream.mark();
     if (this.matchWord('not') && this.matchWord('contains')) {
+      this.stream.commit();
       return {
         condition: AbilityCondition.not_contains,
         operator: AbilityDSLToken.NOT_CONTAINS,
       };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // "not includes"
+    this.stream.mark();
     if (this.matchWord('not') && this.matchWord('includes')) {
+      this.stream.commit();
       return {
         condition: AbilityCondition.not_contains,
         operator: AbilityDSLToken.NOT_CONTAINS,
       };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // "not includes"
+    this.stream.mark();
     if (this.matchWord('not') && this.matchWord('has')) {
+      this.stream.commit();
       return {
         condition: AbilityCondition.not_contains,
         operator: AbilityDSLToken.NOT_CONTAINS,
       };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // "is equals"
+    this.stream.mark();
     if (this.matchWord('is') && this.matchWord('equals')) {
+      this.stream.commit();
       return { condition: AbilityCondition.equals, operator: AbilityDSLToken.EQ };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // not equal
+    this.stream.mark();
     if (this.matchWord('not') && this.matchWord('equals')) {
+      this.stream.commit();
       return { condition: AbilityCondition.not_equals, operator: AbilityDSLToken.NOT_EQ };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // is not equals
+    this.stream.mark();
     if (this.matchWord('is') && this.matchWord('not') && this.matchWord('equals')) {
+      this.stream.commit();
       return { condition: AbilityCondition.not_equals, operator: AbilityDSLToken.NOT_EQ };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // is in
+    this.stream.mark();
     if (this.matchWord('is') && this.matchWord('in')) {
+      this.stream.commit();
       return { condition: AbilityCondition.in, operator: AbilityDSLToken.IN };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // not in
+    this.stream.mark();
     if (this.matchWord('not') && this.matchWord('in')) {
+      this.stream.commit();
       return { condition: AbilityCondition.not_in, operator: AbilityDSLToken.NOT_IN };
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // is not null
+    this.stream.mark();
     if (this.matchWord('is') && this.matchWord('not')) {
-      if (this.check(AbilityDSLToken.NULL)) {
-        this.advance();
+      if (this.stream.check(AbilityDSLToken.NULL)) {
+        this.stream.next();
+        this.stream.commit();
         return {
           condition: AbilityCondition.not_equals,
           operator: AbilityDSLToken.NOT_EQ_NULL,
         };
       }
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // is null
+    this.stream.mark();
     if (this.matchWord('is') && this.matchWord('null')) {
-      if (this.check(AbilityDSLToken.NULL)) {
-        this.advance();
+      if (this.stream.check(AbilityDSLToken.NULL)) {
+        this.stream.commit();
+        this.stream.next();
         return {
           condition: AbilityCondition.equals,
           operator: AbilityDSLToken.EQ_NULL,
         };
       }
     }
-    this.pos = savedPos;
+    this.stream.reset();
 
     // Single token (symbol or keyword)
 
-    const token = this.peek();
+    const token = this.stream.peek();
 
     if (
       token.code !== AbilityDSLToken.SYMBOL &&
@@ -547,7 +578,7 @@ export class AbilityDSLParser<
       ]);
     }
 
-    this.advance();
+    this.stream.next();
 
     switch (token.code) {
       case AbilityDSLToken.SYMBOL:
@@ -606,11 +637,11 @@ export class AbilityDSLParser<
    * @returns True if the next token has that value.
    */
   private matchWord(word: string): boolean {
-    if (this.isAtEnd()) {
+    if (this.stream.eof()) {
       return false;
     }
 
-    const token = this.peek();
+    const token = this.stream.peek();
     if (
       (token.code === AbilityDSLToken.KEYWORD ||
         token.code === AbilityDSLToken.IDENTIFIER ||
@@ -618,17 +649,17 @@ export class AbilityDSLParser<
         token.code === AbilityDSLToken.NEVER) &&
       token.value === word
     ) {
-      this.advance();
+      this.stream.next();
       return true;
     }
     return false;
   }
 
   private matchSymbol(symbol: string): boolean {
-    if (this.isAtEnd()) return false;
-    const token = this.peek();
+    if (this.stream.eof()) return false;
+    const token = this.stream.peek();
     if (token.code === AbilityDSLToken.SYMBOL && token.value === symbol) {
-      this.advance();
+      this.stream.next();
       return true;
     }
     return false;
@@ -644,13 +675,13 @@ export class AbilityDSLParser<
    */
   private parseValue(): AbilityRuleConfig['resource'] {
     // Arrays start with a left bracket
-    if (this.check(AbilityDSLToken.LBRACKET)) {
-      this.advance();
+    if (this.stream.check(AbilityDSLToken.LBRACKET)) {
+      this.stream.next();
       return this.parseArray();
     }
 
     // Ensure we are not about to read a structural token as a value.
-    const token = this.peek();
+    const token = this.stream.peek();
     if (
       token.code === AbilityDSLToken.ALL ||
       token.code === AbilityDSLToken.ANY ||
@@ -659,7 +690,7 @@ export class AbilityDSLParser<
       this.syntaxError(`Unexpected ${token.code} in value position`, token);
     }
 
-    this.advance();
+    this.stream.next();
 
     // CHECK THIS SWITCH COMPARE
     switch (token.code) {
@@ -674,11 +705,9 @@ export class AbilityDSLParser<
       case AbilityDSLToken.IDENTIFIER:
         return token.value;
       default: {
-        this.syntaxError(
-          `Unexpected value token "${token.value}"`,
-          token ?? this.tokens[this.tokens.length - 1],
-          [AbilityDSLToken.KEYWORD],
-        );
+        this.syntaxError(`Unexpected value token "${token.value}"`, token, [
+          AbilityDSLToken.KEYWORD,
+        ]);
       }
     }
   }
@@ -691,12 +720,12 @@ export class AbilityDSLParser<
     const arr: (string | number | boolean | null)[] = [];
 
     // Handle empty array
-    if (this.check(AbilityDSLToken.RBRACKET)) {
-      this.advance();
+    if (this.stream.check(AbilityDSLToken.RBRACKET)) {
+      this.stream.next();
       return arr;
     }
 
-    while (!this.isAtEnd() && !this.check(AbilityDSLToken.RBRACKET)) {
+    while (!this.stream.eof() && !this.stream.check(AbilityDSLToken.RBRACKET)) {
       const value = this.parseValue();
 
       // Flatten nested arrays if they appear (though grammar doesn't currently allow nesting).
@@ -710,16 +739,16 @@ export class AbilityDSLParser<
         arr.push(value);
       } else if (value === null) {
         // Null is allowed in arrays? Currently, we throw.
-        this.syntaxError('Unexpected null in array', this.peek());
+        this.syntaxError('Unexpected null in array', this.stream.peek());
       }
 
       // Optional comma between elements
-      if (this.check(AbilityDSLToken.COMMA)) {
-        this.advance();
+      if (this.stream.check(AbilityDSLToken.COMMA)) {
+        this.stream.next();
       }
     }
 
-    this.consume(AbilityDSLToken.RBRACKET, 'Expected "]"');
+    this.stream.expect(AbilityDSLToken.RBRACKET, 'Expected "]"');
     return arr;
   }
 
@@ -727,8 +756,8 @@ export class AbilityDSLParser<
   // #region Annotations and comments
   // -------------------------------------------------------------------------
   private consumeLeadingComments() {
-    while (this.check(AbilityDSLToken.COMMENT)) {
-      const token = this.advance();
+    while (this.stream.check(AbilityDSLToken.COMMENT)) {
+      const token = this.stream.next();
       this.processCommentToken(token);
     }
   }
@@ -833,62 +862,18 @@ export class AbilityDSLParser<
   }
 
   // -------------------------------------------------------------------------
-  // #region Helper / lookahead methods
+  // #region Helpers
   // -------------------------------------------------------------------------
-  private consumeOneOf(types: TokenType[], message: string): AbilityDSLToken {
-    const token = this.peek();
-    for (const t of types) {
-      if (token && token.code === t) {
-        return this.advance();
-      }
-    }
-    const expected = types.map(t => t).join(', ');
-    const actual = token ? token.value : AbilityDSLToken.EOF;
-    const suggestion = this.suggest(actual, types);
-    const details = `${message}\nDetails: Unexpected token \`${actual}\`, expected one of: ${expected}.`;
-    const finalMsg = suggestion ? `${details} Did you mean \`${suggestion}\`?` : details;
-    this.syntaxError(finalMsg, token ?? this.tokens[this.tokens.length - 1]);
-  }
-
-  private consume(type: TokenType, message: string): AbilityDSLToken {
-    const token = this.peek();
-    if (token && token.code === type) {
-      return this.advance();
-    }
-    const expected = type;
-    const actual = token ? token.value : AbilityDSLToken.EOF;
-    const suggestion = this.suggest(actual, [type]);
-    const details = `${message}\nDetails: Unexpected token \`${actual}\`, expected "${expected}".`;
-    const finalMsg = suggestion ? `${details} Did you mean \`${suggestion}\`?` : details;
-    this.syntaxError(finalMsg, token ?? this.tokens[this.tokens.length - 1]);
-  }
-
-  private check(type: TokenType): boolean {
-    if (this.isAtEnd()) return false;
-    return this.peek().code === type;
-  }
 
   private isStartOfPolicy(): boolean {
-    return this.check(AbilityDSLToken.EFFECT);
+    return this.stream.check(AbilityDSLToken.EFFECT);
   }
 
   private isStartOfGroup(): boolean {
-    return this.check(AbilityDSLToken.ALL) || this.check(AbilityDSLToken.ANY);
+    return this.stream.check(AbilityDSLToken.ALL) || this.stream.check(AbilityDSLToken.ANY);
   }
 
   private isStartOfExcept(): boolean {
-    return this.check(AbilityDSLToken.EXCEPT);
-  }
-
-  private advance(): AbilityDSLToken {
-    return this.tokens[this.pos++];
-  }
-
-  private peek(): AbilityDSLToken {
-    return this.tokens[this.pos];
-  }
-
-  private isAtEnd(): boolean {
-    return this.peek().code === AbilityDSLToken.EOF;
+    return this.stream.check(AbilityDSLToken.EXCEPT);
   }
 }
