@@ -72,7 +72,7 @@ export class AbilityExplainPolicy extends AbilityExplain {
     super(
       {
         type: 'policy',
-        name: policy.name,
+        name: policy.priority > -1 ? `@priority ${policy.priority} ${policy.name}` : policy.name,
         match: policy.matchState,
       },
       children,
