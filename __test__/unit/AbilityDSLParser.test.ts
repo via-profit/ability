@@ -6,18 +6,19 @@ import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
 describe('AbilityDSLParser', () => {
   it('should parse a policy with two rule sets (all of and any of)', () => {
     const dsl = `
-# @name can order update
-permit permission.order.update if any:
-  # @name authorized admin
-  all of:
-    # @name contains role admin
-    user.roles contains 'admin'
-    user.token is not null
-
-  # @name if is developer
-  any of:
-    user.roles contains 'developer'
-    user.logit is equals 'dev'
+    # just a comment line
+    @name can order update
+    permit permission.order.update if any:
+      @name authorized admin
+      all of:
+        @name contains role admin
+        user.roles contains 'admin'
+        user.token is not null
+    
+      @name if is developer
+      any of:
+        user.roles contains 'developer'
+        user.logit is equals 'dev'
 `;
 
     const parser = new AbilityDSLParser(dsl);

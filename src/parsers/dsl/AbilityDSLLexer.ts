@@ -52,6 +52,11 @@ export class AbilityDSLLexer {
 
       const char = this.peek();
 
+      if (char === '@') {
+        this.tokens.push(this.readAnnotation());
+        continue;
+      }
+
       if (char === '#') {
         this.tokens.push(this.readComment());
         continue;
@@ -93,6 +98,18 @@ export class AbilityDSLLexer {
       value += this.advance();
     }
     return new AbilityDSLToken(AbilityDSLToken.COMMENT, value.trim(), startLine, startColumn);
+  }
+
+  private readAnnotation(): AbilityDSLToken {
+    const startLine = this.line;
+    const startColumn = this.column;
+
+    let value = '';
+
+    while (!this.isAtEnd() && !this.isNewline()) {
+      value += this.advance();
+    }
+    return new AbilityDSLToken(AbilityDSLToken.ANNOTATION, value.trim(), startLine, startColumn);
   }
 
   private readString(): AbilityDSLToken {
@@ -258,7 +275,6 @@ export class AbilityDSLLexer {
       if (word === 'except') {
         return new AbilityDSLToken(AbilityDSLToken.EXCEPT, word, startLine, startColumn);
       }
-
 
       // Остальные ключевые слова (contains, in, equals, greater, less, not, is, or, than, equal)
       return new AbilityDSLToken(AbilityDSLToken.KEYWORD, word, startLine, startColumn);

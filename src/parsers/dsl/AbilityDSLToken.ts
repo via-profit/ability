@@ -41,6 +41,7 @@ export type TokenType =
   | 'ALWAYS' // always
   | 'NEVER' // never
   | 'EXCEPT' // except block
+  | 'ANNOTATION' // annotations like a @name
 
   // -------------------------------------------------------------------------
   // #region Literal values
@@ -127,4 +128,5 @@ export class AbilityDSLToken<Code extends TokenType = TokenType> extends Ability
   public static readonly BOOLEAN: TokenType = 'BOOLEAN';
   public static readonly SYMBOL: TokenType = 'SYMBOL';
   public static readonly KEYWORD: TokenType = 'KEYWORD';
+  public static readonly ANNOTATION: TokenType = 'ANNOTATION';
 }

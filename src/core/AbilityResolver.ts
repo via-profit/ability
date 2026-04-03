@@ -3,20 +3,30 @@ import { AbilityError } from '~/core/AbilityError';
 import { AbilityResult } from '~/core/AbilityResult';
 import AbilityMatch from '~/core/AbilityMatch';
 import { ResourcesMap } from '~/core/AbilityTypeGenerator';
+import { AbilityStrategy } from '~/strategy/AbilityStrategy';
+import SequentialLastMatchStrategy from '~/strategy/SequentialLastMatchStrategy';
 
 
 export class AbilityResolver<Resources extends ResourcesMap, Environment = unknown> {
-  private policies: readonly AbilityPolicy[];
+  private readonly policies: readonly AbilityPolicy[];
+  private readonly StrategyClass: new (
+    policies: readonly AbilityPolicy<Resources, Environment>[],
+  ) => AbilityStrategy<Resources, Environment>;
 
   public constructor(
     /**
      * `Important!` The incorrect Resources type was intentionally passed to AbilityPolicy so that TypeScript could suggest the name of the permission and the structure of its resource in the parse method.
      */
     policyOrListOfPolicies: readonly AbilityPolicy<Resources>[] | AbilityPolicy<Resources>,
+    strategy?: new (
+      policies: readonly AbilityPolicy<Resources, Environment>[],
+    ) => AbilityStrategy<Resources, Environment>,
   ) {
     this.policies = Array.isArray(policyOrListOfPolicies)
       ? policyOrListOfPolicies
       : [policyOrListOfPolicies];
+
+    this.StrategyClass = strategy || SequentialLastMatchStrategy;
   }
 
   /**
@@ -31,6 +41,7 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
     resource: Resources[Permission],
     environment?: Environment,
   ): AbilityResult<Resources[Permission]> {
+    // 1. filter policies by permission key (с учётом wildcard)
     const filteredPolicies = this.policies.filter(policy =>
       AbilityResolver.isInPermissionContain(
         policy.permission,
@@ -38,6 +49,7 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
       ),
     );
 
+    // 2. check the policies
     for (const policy of filteredPolicies) {
       const policyMatchState = policy.check(resource, environment);
 
@@ -48,7 +60,11 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
       }
     }
 
-    return new AbilityResult(filteredPolicies);
+    // 3. Use strategy
+    const strategy = new this.StrategyClass(filteredPolicies) as AbilityStrategy<Resources[Permission], Environment>;
+    const effect = strategy.evaluate();
+
+    return new AbilityResult<Resources[Permission], Environment>(effect, strategy);
   }
 
   public enforce<Permission extends keyof Resources>(
@@ -59,14 +75,7 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
     const result = this.resolve(permission, resource, environment);
 
     if (result.isDenied()) {
-      const lastPolicy = result.getLastMatchedPolicy();
-
-      if (lastPolicy) {
-        throw new AbilityError(`Permission denied by policy "${lastPolicy.name.toString()}"`);
-      }
-
-      // No policy matched → implicit deny
-      throw new AbilityError(`Permission denied: no matching policy found (implicit deny)`);
+      throw new AbilityError(`Permission denied`);
     }
   }
 

@@ -113,383 +113,61 @@ resolver.enforce('user.passwordHash', {
 
 В `enforce` передаётся ключ без префикса `permission.` — он автоматически удаляется парсером.
 
-### Модель взаимодействия
-
-Сначала вы описываете "сырые" политики (SDL, JSON или при помощи классов). Затем из "сырых" данных вы формируете готовые политики (массив политик). Это делается один раз и позволяет иметь единый источник данных. Далее вы можете запускать проверку разрешений в нужных вам участках кода используя уже готовые политики и резолвер.
-
-Политики, группы и правила можно создавать при помощи:
-
-- DSL (Domain-Specific Language)
-- Классов (классический подход)
-- JSON
-
-**Создание политик при помощи DSL**
-
-```ts
-import { AbilityDSLParser } from '@via-profit/ability';
-
-// Описываем политики на языке Ability-DSL
-const dsl = `
-  # @name Создание заказа доступно только лицам старше 18 лет
-  permit permission.order.action.create if all:
-    all of:
-      user.age gte 18
-
-  # @name Редактирование стоимости доступно только администратору
-  permit permission.order.data.price if all:
-    all of:
-      user.roles contains 'administrator'
-`;
-
-// Определяем типы ресурсов для TypeScript
-// Типы можно генерировать автоматически (об этом позже), либо описывать вручную
-// В данном примере, для простоты, типы описываются вручную
-type Resources = {
-  ['order.action.create']: {
-    user: {
-      age: number;
-    }
-  }
-  ['order.data.price']: {
-    user: {
-      roles: string[];
-    }
-  }
-}
-
-// Для создания политик используем парсер
-// В качестве дженерика передаем тип ресурсов
-const policies = new AbilityDSLParser<Resources>(dsl).parse(); // AbilityPolicy[]
-
-// Парсер вернёт массив политик даже
-// если в DSL описана всего одна политика
-console.log(policies); // [AbilityPolicy, AbilityPolicy, ...]
-
-// экспортируем готовые политики
-export default policies;
-```
-
-Более подробно про DSL смотри в разделе (DSL)[#dsl]
-
-**Создание политик при помощи классов (классический подход)**
-
-Данный подход достаточно неповоротливый, но позволяет получить полный контроль над политиками
-
-```ts
-import { AbilityPolicy, AbilityRuleSet, AbilityRule, AbilityCompare, AbilityPolicyEffect } from '@via-profit/ability';
-
-// Определяем типы ресурсов для TypeScript
-// Типы можно генерировать автоматически (об этом позже), либо описывать вручную
-// В данном примере, для простоты, типы описываются вручную
-type Resources = {
-  ['order.action.create']: {
-    user: {
-      age: number;
-    }
-  }
-  ['order.data.price']: {
-    user: {
-      roles: string[];
-    }
-  }
-}
-
-const policies = [
-  // первая политика
-  new AbilityPolicy<Resources>({
-    id: '1',
-    name: 'Создание заказа доступно только лицам старше 18 лет',
-    compareMethod: AbilityCompare.and,
-    effect: AbilityPolicyEffect.permit,
-    permission: 'order.action.create',
-  }).addRuleSet(
-    AbilityRuleSet.and([
-      // правило
-      AbilityRule.moreOrEqual('user.age', 18),
-    ]),
-  ),
-
-  // вторая политика
-  new AbilityPolicy<Resources>({
-    id: '2',
-    name: 'Редактирование стоимости доступно только администратору',
-    compareMethod: AbilityCompare.and,
-    effect: AbilityPolicyEffect.permit,
-    permission: 'order.data.price',
-  }).addRuleSet(
-    AbilityRuleSet.and([
-      // правило
-      AbilityRule.contains('user.roles', 'administrator'),
-    ])
-  ),
-];
-
-// экспортируем готовые политики
-export default policies;
-
-```
-
-**Создание политик при помощи JSON**
-
-JSON позволяет хранить политики в файле или базе данных, например, в PostgreSQL, которая поддерживает работу с JSON-данными.
-
-Классы политик, групп и правил имеют методы экспорта в JSON, таким образом, вы можете формировать политики любым способом и экспортировать их в JSON в любой момент когда вам это потребуется 
-
-```ts
-import { AbilityJSONParser } from '@via-profit/ability';
-
-// Определяем типы ресурсов для TypeScript
-// Типы можно генерировать автоматически (об этом позже), либо описывать вручную
-// В данном примере, для простоты, типы описываются вручную
-type Resources = {
-  ['order.action.create']: {
-    user: {
-      age: number;
-    }
-  }
-  ['order.data.price']: {
-    user: {
-      roles: string[];
-    }
-  }
-}
-
-// Парсим JSON используя AbilityJSONParser
-// В качестве дженерика передаем типы ресурсов
-const policies = AbilityJSONParser.parse<Resources>([
-  {
-    id: '1',
-    name: 'Создание заказа доступно только лицам старше 18 лет',
-    effect: 'permit',
-    permission: 'order.action.create',
-    compareMethod: 'and',
-    ruleSet: [
-      {
-        compareMethod: 'and',
-        rules: [
-          {
-            subject: 'user.age',
-            resource: 18,
-            condition: '>',
-          }
-        ]
-      }
-    ],
-  },
-  {
-    id: '2',
-    name: 'Редактирование стоимости доступно только администратору',
-    effect: 'permit',
-    permission: 'order.data.price',
-    compareMethod: 'and',
-    ruleSet: [
-      {
-        compareMethod: 'and',
-        rules: [
-          {
-            subject: 'user.roles',
-            resource: 'administrator',
-            condition: 'contains',
-          }
-        ]
-      }
-    ]
-  }
-]);
-
-export default policies;
-```
-
----
-
-
 ## DSL
 
-> DSL - Domain-Specific Language
+Ability DSL — декларативный язык для описания политик доступа.  
+Каждая политика определяет условия, при которых разрешение (`permit`) или запрет (`deny`) применяется к определённому permission‑ключу.
 
-Ability DSL — это декларативный язык для описания политик доступа.  
-Он позволяет определять правила в человекочитаемой форме, используя простые конструкции: *политики*, *группы*, *правила* и *аннотации*.
-
-- выполняются **все** подходящие политики
-- каждая политика может **установить или сбросить состояние**
-- итог определяется **последней обработанной политикой**
+Семантика основана на **последовательной обработке политик**:  
+все подходящие политики вычисляются сверху вниз, итог определяется **последней совпавшей политикой**.
 
 ---
 
-### Структура политики
+### 1. Политики
 
-Политика состоит из конструкции:
+Политика имеет форму:
 
 ```
 <effect> <permission> if <all|any>:
-  <group>...
+  <groups...>
 ```
 
-Где:
+#### 1.1. Effect
+- `permit`
+- `deny`
 
-- **effect** — `permit` или `deny`
-- **permission** — строка вида `permission.foo.bar`  
-  (префикс `permission.` обязателен в DSL, но автоматически удаляется парсером)
-- **if all:** — все группы должны быть истинны
-- **if any:** — хотя бы одна группа должна быть истинна
-- политика может содержать одну или несколько групп правил
+#### 1.2. Permission
+Строка вида:
 
-**Пример**
-
-```dsl
-permit permission.order.update if any:
-  all of:
-    user.roles contains 'admin'
-    user.token is not null
-
-  any of:
-    user.roles contains 'developer'
-    user.login is equals 'dev'
+```
+permission.<key>
 ```
 
-Эта политика означает:
+Требования:
 
-Разрешение `permission.order.update` будет выдано, если выполнится **хотя бы одна** из двух групп:
+- префикс `permission.` обязателен
+- поддерживается wildcard `*`
+- ключ — dot‑notation
 
-1. `user.roles` содержит `'admin'` **и** `user.token` не `null`
-2. `user.roles` содержит `'developer'` **или** `user.login` равен `'dev'`
+#### 1.3. Policy operator
+- `if all:` — все группы должны быть истинны
+- `if any:` — хотя бы одна группа должна быть истинна
 
-Если под ключ подходит несколько политик, они **выполняются все**, сверху вниз.
+#### 1.4. Семантика выполнения
 
-Каждая политика:
-
-- **match**  
-  → устанавливает новое состояние (`permit` → allow, `deny` → deny)
-
-- **mismatch**  
-  → **сбрасывает состояние** в `neutral`  
-  (то есть отменяет результат предыдущей политики)
-
-Итоговое решение определяется **последней обработанной политикой**, а не только совпавшей.
-
-Это означает:
-
-- политика может **переопределить** предыдущую
-- политика может **отменить** предыдущую (через mismatch)
-- порядок политик в DSL имеет критическое значение
-
-
-### Ключ разрешения (permission key)
-
-Ключи разрешений записываются в формате `dot notation` и поддерживают wildcard‑шаблоны с помощью символа `*`.  
-Это позволяет группировать разрешения и переопределять поведение для целых семейств операций.
-
-**Как работает сопоставление политик**
-
-Если под ключ подходит несколько политик, **выполняются все политики по порядку**, сверху вниз.
-Итоговое решение определяется **последним состоянием**, установленным в процессе обработки.
-
-Это означает:
-
-- политика может **переопределить** результат предыдущей
-- политика может **отменить** результат предыдущей (через mismatch)
-- порядок политик в DSL имеет критическое значение
-
-
-### Пример использования шаблонов
-
-| Политика (permission) | ключ                   | Совпадает |
-|-----------------------|------------------------|-----------|
-| `order.*`             | `order.create`         | да        |
-| `order.*`             | `order.update`         | да        |
-| `order.*`             | `user.create`          | нет       |
-| `*.create`            | `order.create`         | да        |
-| `*.create`            | `user.create`          | да        |
-| `*.create`            | `order.update`         | нет       |
-| `user.profile.*`      | `user.profile.update`  | да        |
-| `user.profile.*`      | `user.settings.update` | нет       |
-
-
-### Пример политики с wildcard
-
-```ts
-// Example-02
-import { AbilityDSLParser, AbilityResolver } from '@via-profit/ability';
-
-const dsl = `
-    # Разрешить все действия с заказами
-    permit permission.order.* if all:
-      user.authenticated equals true
-    
-    # Запретить обновление заказа (переопределяет предыдущее разрешение)
-    deny permission.order.update if all:
-      user.role not equals 'admin'
-`;
-
-const policies = new AbilityDSLParser(dsl).parse();
-const resolver = new AbilityResolver(policies);
-
-resolver.enforce('order.update', resource); // выбросит AbilityError
-```
+1. При запросе разрешения выбираются **все политики**, чьи permission‑ключи совпадают с запрашиваемым (с учётом wildcard).
+2. Политики выполняются **в порядке объявления в DSL**.
+3. Каждая политика вычисляется независимо:
+    - если политика **match** → она устанавливает текущее состояние (`permit` или `deny`)
+    - если политика **not match** → она не влияет на текущее состояние
+4. Итоговое решение — **effect последней совпавшей политики**.
+5. Если ни одна политика не совпала → результат `deny` (по умолчанию).
 
 ---
 
-**Пояснение**
+### 2. Группы правил
 
-Порядок политик в DSL определяет итоговое решение.
-
-Обработка идёт сверху вниз:
-
-1. `permit permission.order.*`
-  - match → состояние = `allow`
-
-2. `deny permission.order.update`
-  - match → состояние = `deny`
-  - итоговое состояние перезаписывает предыдущее
-
-Итог:
-
-```
-order.update → deny
-order.create → allow
-order.delete → allow
-order.view   → allow
-```
-
-
-### Комментарии
-
-Строки, начинающиеся с символа `#` считаются комментариями и не влияют на результат работы правил и политик.
-
----
-
-### Аннотации
-
-В настоящий момент поддерживается только одна аннотация ’name’, которая будет использована в качестве имени для политики, либо группы правил, либо правила.
-
-Аннотации задаются через комментарии:
-
-```
-# @name <имя>
-```
-
-Аннотации применяются к **следующей сущности**:
-
-- политике
-- группе
-- правилу
-
-Пример:
-
-```dsl
-# @name can order update
-permit permission.order.update if any:
-  # @name authorized admin
-  all of:
-    # @name contains role admin
-    user.roles contains 'admin'
-```
-
----
-
-### Группы правил
-
-Группа определяет, как объединяются правила внутри неё:
+Группа определяет способ объединения правил:
 
 ```
 all of:
@@ -501,159 +179,14 @@ any of:
   <rule>
 ```
 
+#### 2.1. Типы групп
 - `all of:` — логическое AND
 - `any of:` — логическое OR
 
-`all of` - значит, что группа считается выполненной, если все правила внутри группы сработали.
-
-`any of` - значит, что группа считается выполненной, если хотя бы одно правило внутри группы сработало.
-
-Каждая группа внутри политики будет вычисляться независимо от других групп. Итоговая оценка результата будет определена путем сравнения результата вычисления всех групп в политике.
-
-
-Группы могут иметь аннотации:
-
-```dsl
-# @name developer group
-any of:
-  user.roles contains 'developer'
-```
-
----
-
-### Правила
-
-Правило — это атомарное условие внутри политики. Оно определяет, при каких данных политика будет считаться совпавшей. С помощью правил задаются условия по которым определяется эффективность политики (`permit` или `deny`)
-
-Правило имеет форму:
+#### 2.2. Неявная группа
+Если правила идут без `all of:` / `any of:`, используется оператор политики:
 
 ```
-<subject> <operator> <value?> — значение указывается не для всех операторов (например, is null не требует значения).
-```
-
-#### Subject (субъект)
-
-Идентификатор в dot‑нотации:
-
-```
-user.roles
-env.time.hour
-order.total
-```
-
-#### Operators (операторы)
-
-_Синонимы — это альтернативные формы записи, которые также поддерживаются парсером._
-
-**Базовые операторы сравнения**
-
-| Оператор DSL | Синонимы | Пример | Описание | Типы |
-|--------------|----------|--------|----------|------|
-| **is equals** | `=`, `==`, `equals` | `age is equals 18` | Строгое равенство | number, string, boolean |
-| **is not equals** | `!=`, `<>`, `not equals` | `role is not equals 'admin'` | Строгое неравенство | number, string, boolean |
-| **greater than** | `>`, `gt` | `age greater than 18` | Больше | number, date |
-| **greater than or equal** | `>=`, `gte` | `age greater than or equal 18` | Больше или равно | number, date |
-| **less than** | `<`, `lt` | `age less than 18` | Меньше | number, date |
-| **less than or equal** | `<=`, `lte` | `age less than or equal 18` | Меньше или равно | number, date |
-
-
-**Null‑операторы**
-
-| Оператор DSL | Синонимы | Пример | Описание | Типы |
-|--------------|----------|--------|----------|------|
-| **is null** | `== null`, `= null` | `middleName is null` | Значение отсутствует | any |
-| **is not null** | `!= null` | `middleName is not null` | Значение присутствует | any |
-
-**Операторы для списков (массивов)**
-
-| Оператор DSL | Синонимы                  | Пример | Описание | Типы |
-|--------------|---------------------------|--------|----------|------|
-| **in [...]** | -                         | `role in ['admin', 'manager']` | Значение входит в список | number, string |
-| **not in [...]** | -                         | `role not in ['banned']` | Значение не входит | number, string |
-| **contains** | `includes`, `has`         | `tags contains 'vip'` | Массив содержит элемент | array |
-| **not contains** | `not includes`, `not has` | `tags not contains 'vip'` | Массив не содержит элемент | array |
-
-**Булевые операторы**
-
-| Оператор DSL | Синонимы | Пример | Описание | Типы |
-|--------------|----------|--------|----------|------|
-| **is true** | `= true` | `isActive is true` | Значение истинно | boolean |
-| **is false** | `= false` | `isActive is false` | Значение ложно | boolean |
-
-**Операторы длины**
-
-| Оператор DSL | Синонимы | Пример | Описание | Типы |
-|--------------|----------|--------|----------|------|
-| **length equals** | `len =` | `tags length equals 3` | Длина равна | array, string |
-| **length greater than** | `len >` | `tags length greater than 2` | Длина больше | array, string |
-| **length less than** | `len <` | `tags length less than 5` | Длина меньше | array, string |
-
-Вот аккуратная таблица для операторов **always** и **never**, оформленная в том же стиле, что и твои предыдущие таблицы.
-
-
-**Специальные операторы**
-
-| Оператор DSL | Синонимы | Пример | Описание | Типы |
-|--------------|----------|--------|----------|------|
-| **always** | — | `always` | Условие всегда истинно. Используется для глобального разрешения или упрощения логики. | специальный оператор |
-| **never** | — | `never` | Условие всегда ложно. Используется для глобального запрета или отключения правила. | специальный оператор |
-
-**always**
-Оператор, который всегда возвращает `true`.  
-Используется для:
-
-- глобального разрешения (`permit permission.* if all: always`)
-- тестирования
-- отключения сложных условий
-- создания fallback‑правил
-
-**never**
-Оператор, который всегда возвращает `false`.  
-Используется для:
-
-- глобального запрета (`deny permission.* if all: never`)
-- временного отключения правила
-- явного отрицания без условий
-
-
-#### Value (значение)
-
-Поддерживаются:
-
-- строки `'text'`
-- числа `42`
-- булевы `true` / `false`
-- `null`
-- массивы `[1, 2, 3]` / `['foo', false, null, 1, 2, '999']`
-
-Примеры:
-
-```dsl
-# возраст пользователя больше 18
-user.age greater than 18
-
-# массив ролей содержит роль 'admin'
-user.roles contains 'admin'
-
-# тэг заказа либо 'vip', либо 'priority'
-order.tag in ['vip', 'priority']
-
-# токен пользователя не null
-user.token is not null
-
-# логин пользователя длиннее 12 символов
-user.login length greater than 12
-```
-
-
-
----
-
-### Неявная группа (implicit group)
-
-Если правила идут без `all of:` или `any of:`, они объединяются оператором политики:
-
-```dsl
 permit permission.order.update if all:
   user.roles contains 'admin'
   user.token is not null
@@ -661,18 +194,163 @@ permit permission.order.update if all:
 
 Эквивалентно:
 
-```dsl
-permit permission.order.update if all:
-  all of:
-    user.roles contains 'admin'
-    user.token is not null
+```
+all of:
+  user.roles contains 'admin'
+  user.token is not null
 ```
 
-Неявная группа всегда соответствует оператору политики (`if all` или `if any`).
+#### 2.3. Исключающие группы (`except`)
+
+`except` определяет условия, при которых политика считается **not match**, даже если остальные группы истинны.
+
+Форма:
+
+```
+except <all|any>?:
+  <rule>
+  <rule>
+```
+
+Правила:
+
+- `except` относится к текущей политике
+- если `except`‑группа истинна → политика **not match**
+- если `all|any` не указано, используется оператор политики (`if all` / `if any`)
+- допускается несколько `except`‑групп
 
 ---
 
-### Полный пример
+### 3. Правила
+
+Правило имеет форму:
+
+```
+<subject> <operator> <value?>
+```
+
+#### 3.1. Subject
+Dot‑notation путь:
+
+```
+user.roles
+order.total
+env.time.hour
+```
+
+#### 3.2. Value
+Допустимые значения:
+
+- строки `'text'`
+- числа `42`
+- булевы `true` / `false`
+- `null`
+- массивы `[1, 2, 'x']`
+- идентификаторы (`user.role`, `env.time.hour`)
+
+---
+
+### 4. Операторы
+
+#### 4.1. Базовые сравнения
+
+| Оператор DSL | Синонимы | Пример |
+|--------------|----------|--------|
+| **is equals** | `=`, `==`, `equals` | `age is equals 18` |
+| **is not equals** | `!=`, `<>`, `not equals` | `role is not equals 'admin'` |
+| **greater than** | `>`, `gt` | `age greater than 18` |
+| **greater than or equal** | `>=`, `gte` | `age greater than or equal 18` |
+| **less than** | `<`, `lt` | `age less than 18` |
+| **less than or equal** | `<=`, `lte` | `age less than or equal 18` |
+
+---
+
+#### 4.2. Null‑операторы
+
+| Оператор DSL | Синонимы | Пример |
+|--------------|----------|--------|
+| **is null** | `= null`, `== null` | `middleName is null` |
+| **is not null** | `!= null` | `middleName is not null` |
+
+---
+
+#### 4.3. Операторы для массивов
+
+| Оператор DSL | Синонимы | Пример |
+|--------------|----------|--------|
+| **contains** | `includes`, `has` | `tags contains 'vip'` |
+| **not contains** | `not includes`, `not has` | `tags not contains 'vip'` |
+| **in [...]** | — | `role in ['admin', 'manager']` |
+| **not in [...]** | — | `role not in ['banned']` |
+
+---
+
+#### 4.4. Булевые операторы
+
+| Оператор DSL | Синонимы | Пример |
+|--------------|----------|--------|
+| **is true** | `= true` | `isActive is true` |
+| **is false** | `= false` | `isActive is false` |
+
+---
+
+#### 4.5. Операторы длины
+
+| Оператор DSL | Синонимы | Пример |
+|--------------|----------|--------|
+| **length equals** | `len =` | `tags length equals 3` |
+| **length greater than** | `len >` | `tags length greater than 2` |
+| **length less than** | `len <` | `tags length less than 5` |
+
+---
+
+#### 4.6. Специальные операторы
+
+| Оператор DSL | Пример | Описание |
+|--------------|--------|----------|
+| **always** | `always` | Всегда истинно |
+| **never** | `never` | Всегда ложно |
+
+---
+
+### 5. Аннотации
+
+Аннотации задаются через комментарии:
+
+```
+# @name <имя>
+```
+
+Применяются к:
+
+- политике
+- группе
+- правилу
+
+Аннотация относится к **следующей сущности**.
+
+---
+
+### 6. Комментарии
+
+Строки, начинающиеся с `#`, игнорируются, кроме аннотаций.
+
+---
+
+### 7. Environment
+
+В правилах можно ссылаться на данные окружения:
+
+```
+env.time.hour
+env.geo.country
+```
+
+Environment передаётся в `resolve()` / `enforce()` как третий аргумент.
+
+---
+
+### 8. Пример полной политики
 
 ```dsl
 # @name разрешено обновление заказа
@@ -687,86 +365,12 @@ permit permission.order.update if any:
   any of:
     user.roles contains 'developer'
     user.login is equals 'dev'
+
+  # @name исключения
+  except any:
+    user.roles contains 'banned'
+    user.blocked is true
 ```
-
-
-
-## Объединение политик
-
-В реальном проекте следует использовать несколько политик сразу
-
-TODO: использование нескольких политик
-
-## Environment политик
-
-**Environment** — это объект, содержащий данные окружения, которые не принадлежат ни пользователю, ни ресурсу.
-Содержимое объекта определяется разработчиком и может быть любым объектом состоящим из примитивов.
-
-- время запроса,
-- IP‑адрес,
-- параметры устройства,
-- заголовки запроса,
-- контекст сессии,
-- любые другие внешние условия.
-
-Environment передаётся в `resolve()` и `enforce()` как третий аргумент:
-
-```ts
-const environment = {
-  time: {
-    hour: new Date().getHours(),
-  },
-  ip: req.ip,
-}
-
-resolver.enforce('order.update', resource, environment);
-```
-
-### Использование environment в правилах
-
-В политике можно ссылаться на environment через путь `env.*`.
-
-Пример политики, которая запрещает обновление заказов ночью (22:00–06:00).:
-
-```dsl
-# @name Deny updates at night
-deny permission.order.update if all:
-  env.time.hour less than 6 
-  env.time.hour greater or equal than 22
-```
-
-**Извлечение значений из environment**
-
-Если в правиле указан путь:
-
-- `env.*` → значение берётся из environment
-- `user.*`, `order.*`, `profile.*` → из resource
-- литерал (`18`, `"admin"`, `true`) → используется как есть
-
-Пример:
-
-```ts
-subject: "env.geo.country"
-resource: "user.country"
-condition: "equal"
-```
-
-### Environment в TypeScript
-
-Тип Environment задаётся на уровне `AbilityResolver`:
-
-```ts
-const resolver = new AbilityResolver<Resources, Environment>(policies);
-```
-
-Это позволяет:
-
-- получать автодополнение в IDE,
-- проверять корректность путей `env.*`,
-- избегать ошибок при передаче environment.
-
-> Если правило использует `env.*`, но environment не передан, то значение `env.*` будет `undefined`, и сравнение будет выполнено так, как если бы environment не было вовсе
-
 
 
 ## Генератор типов для TypeScript

@@ -19,6 +19,7 @@ describe('multiple policies', () => {
     client.createdDaysAt < 2
 `;
 
+    const tokens = new AbilityDSLLexer(dsl).tokenize();
     const policies = new AbilityDSLParser(dsl).parse();
     const resolver = new AbilityResolver(policies);
 
@@ -47,11 +48,11 @@ describe('multiple policies', () => {
 
   it('Complex policies with explicit and implicit except blocks', () => {
     const dsl = `
-    # @name 1. Администраторы могут удалять любых клиентов
+    @name 1. Администраторы могут удалять любых клиентов
     permit permission.client.delete if all:
       user.roles contains 'admin'
 
-    # @name 2. Менеджеры могут удалять клиентов, кроме тех, чей юр. статус ООО или ПАО или ОАО
+    @name 2. Менеджеры могут удалять клиентов, кроме тех, чей юр. статус ООО или ПАО или ОАО
     permit permission.client.delete if all:
       user.roles contains 'manager'
       except any of:
@@ -59,14 +60,14 @@ describe('multiple policies', () => {
         client.legalStatus is equals 'ПАО'
         client.legalStatus is equals 'ОАО'
 
-    # @name 3. Диспетчеры могут удалять клиентов чей юр. статус ИП, но кроме созданных более 2 дней назад
+    @name 3. Диспетчеры могут удалять клиентов чей юр. статус ИП, но кроме созданных более 2 дней назад
     permit permission.client.delete if all:
       user.roles contains 'dispatcher'
       client.legalStatus is equals 'ИП'
       except any of:
         client.createdDaysAt > 2
 
-    # @name 4. Операторы могут удалять клиентов, кроме тех, кто заблокирован (implicit except)
+    @name 4. Операторы могут удалять клиентов, кроме тех, кто заблокирован (implicit except)
     permit permission.client.delete if all:
       user.roles contains 'operator'
       except:

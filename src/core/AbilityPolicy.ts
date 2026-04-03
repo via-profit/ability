@@ -13,6 +13,7 @@ export type AbilityPolicyConfig = {
   readonly ruleSet: readonly AbilityRuleSetConfig[];
   readonly id: string;
   readonly name: string;
+  readonly priority: number;
 };
 
 export type AbilityPolicyConstructorProps = {
@@ -21,6 +22,7 @@ export type AbilityPolicyConstructorProps = {
   permission: string;
   effect: AbilityPolicyEffect;
   compareMethod?: AbilityCompare;
+  priority?: number | null;
 };
 
 export class AbilityPolicy<
@@ -62,13 +64,16 @@ export class AbilityPolicy<
    */
   public permission: string;
 
+  public priority: number = -1;
+
   public constructor(params: AbilityPolicyConstructorProps) {
-    const { name, id, permission, effect, compareMethod = AbilityCompare.and } = params;
+    const { name, id, permission, effect, compareMethod = AbilityCompare.and, priority } = params;
     this.name = name;
     this.id = id;
     this.permission = permission;
     this.effect = effect;
     this.compareMethod = compareMethod;
+    this.priority = typeof priority === 'number' ? priority : -1;
   }
 
   /**
@@ -110,7 +115,6 @@ export class AbilityPolicy<
     const exceptGroups = this.ruleSet.filter(g => g.isExcept);
 
     const normalStates: AbilityMatch[] = [];
-    // const exceptStates: AbilityMatch[] = [];
 
     // 2. Проверяем обычные группы
     for (const group of normalGroups) {
@@ -171,6 +175,7 @@ export class AbilityPolicy<
     props: Partial<{
       id: string;
       name: string;
+      priority: number;
       permission: string;
       effect: AbilityPolicyEffect;
       compareMethod: AbilityCompare;
@@ -180,6 +185,7 @@ export class AbilityPolicy<
     const policy = new AbilityPolicy<Resource, Environment>({
       id: props.id ?? this.id,
       name: props.name ?? this.name,
+      priority: typeof props.priority !== 'undefined' ? props.priority : this.priority,
       permission: props.permission ?? this.permission,
       effect: props.effect ?? this.effect,
       compareMethod: props.compareMethod ?? this.compareMethod,

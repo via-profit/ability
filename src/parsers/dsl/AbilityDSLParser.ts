@@ -30,11 +30,12 @@ export class AbilityDSLParser<
   Resource extends ResourceObject = Record<string, unknown>,
   Environment = unknown,
 > {
-  private dsl: string;
+  private readonly dsl: string;
   private stream!: AbilityDSLTokenStream;
-  private annotationBuffer: Record<'name' | 'description', string | null> = {
+  private annotationBuffer: Record<'name' | 'description' | 'priority', string | null> = {
     name: null,
     description: null,
+    priority: null,
   };
 
   constructor(dsl: string) {
@@ -57,6 +58,7 @@ export class AbilityDSLParser<
     // 3. Парсим политики
     while (!this.stream.eof()) {
       this.consumeLeadingComments();
+      this.consumeLeadingAnnotations();
 
       if (!this.isStartOfPolicy()) {
         const token = this.stream.peek();
@@ -81,6 +83,7 @@ export class AbilityDSLParser<
    */
   private parsePolicy(): AbilityPolicy {
     this.consumeLeadingComments();
+    this.consumeLeadingAnnotations()
     const meta = this.takeAnnotations();
 
     // Effect: "permit" or "deny"
@@ -119,6 +122,7 @@ export class AbilityDSLParser<
     return new AbilityPolicy({
       id: `${effect}:${permission}:${Math.random()}`,
       name: meta.name ?? `${effect} ${permission}`,
+      priority: meta.priority !== null ? parseInt(meta.priority, 10) : undefined,
       permission: permission.replace(/^permission\./, ''),
       effect: effect === 'permit' ? AbilityPolicyEffect.permit : AbilityPolicyEffect.deny,
       compareMethod,
@@ -137,6 +141,7 @@ export class AbilityDSLParser<
 
     while (!this.stream.eof() && !this.isStartOfPolicy()) {
       this.consumeLeadingComments();
+      this.consumeLeadingAnnotations()
 
       // Если начинается новая except группа — парсим её
       if (this.isStartOfExcept()) {
@@ -160,6 +165,7 @@ export class AbilityDSLParser<
       // Читаем правила implicit-группы
       while (!this.stream.eof()) {
         this.consumeLeadingComments();
+        this.consumeLeadingAnnotations();
 
         if (this.isStartOfGroup() || this.isStartOfPolicy() || this.isStartOfExcept()) {
           break;
@@ -172,7 +178,10 @@ export class AbilityDSLParser<
         ) {
           group.addRule(this.parseRule());
         } else {
-          this.syntaxError(`Unexpected token in implicit group: ${this.stream.peek().code}`, this.stream.peek());
+          this.syntaxError(
+            `Unexpected token in implicit group: ${this.stream.peek().code}`,
+            this.stream.peek(),
+          );
         }
       }
 
@@ -187,6 +196,7 @@ export class AbilityDSLParser<
    */
   private parseGroup(): AbilityRuleSet {
     this.consumeLeadingComments();
+    this.consumeLeadingAnnotations();
     const meta = this.takeAnnotations();
 
     const compareToken = this.stream.expectOneOf(
@@ -207,6 +217,7 @@ export class AbilityDSLParser<
 
     while (!this.stream.eof()) {
       this.consumeLeadingComments();
+      this.consumeLeadingAnnotations();
 
       if (this.isStartOfExcept()) {
         break;
@@ -219,7 +230,10 @@ export class AbilityDSLParser<
       if (this.stream.check(AbilityDSLToken.IDENTIFIER)) {
         group.addRule(this.parseRule());
       } else {
-        this.syntaxError(`Unexpected token in group: ${this.stream.peek().code}`, this.stream.peek());
+        this.syntaxError(
+          `Unexpected token in group: ${this.stream.peek().code}`,
+          this.stream.peek(),
+        );
       }
     }
 
@@ -231,6 +245,7 @@ export class AbilityDSLParser<
   // -------------------------------------------------------------------------
   private parseExceptGroup(policyCompareMethod: AbilityCompare): AbilityRuleSet {
     this.consumeLeadingComments();
+    this.consumeLeadingAnnotations();
     const meta = this.takeAnnotations();
 
     // consume "except"
@@ -264,6 +279,7 @@ export class AbilityDSLParser<
     // read rules
     while (!this.stream.eof()) {
       this.consumeLeadingComments();
+      this.consumeLeadingAnnotations();
 
       if (this.isStartOfGroup() || this.isStartOfPolicy() || this.isStartOfExcept()) {
         break;
@@ -272,7 +288,10 @@ export class AbilityDSLParser<
       if (this.stream.check(AbilityDSLToken.IDENTIFIER)) {
         group.addRule(this.parseRule());
       } else {
-        this.syntaxError(`Unexpected token in except group: ${this.stream.peek().code}`, this.stream.peek());
+        this.syntaxError(
+          `Unexpected token in except group: ${this.stream.peek().code}`,
+          this.stream.peek(),
+        );
       }
     }
 
@@ -288,6 +307,7 @@ export class AbilityDSLParser<
    */
   private parseRule(): AbilityRule {
     this.consumeLeadingComments();
+    this.consumeLeadingAnnotations();
     const meta = this.takeAnnotations();
 
     const isNeverAlways =
@@ -327,6 +347,7 @@ export class AbilityDSLParser<
     }
 
     this.consumeLeadingComments();
+    this.consumeLeadingAnnotations();
 
     // validation: identifier without dot → error
     if (
@@ -753,16 +774,23 @@ export class AbilityDSLParser<
   }
 
   // -------------------------------------------------------------------------
-  // #region Annotations and comments
+  // #region comments
   // -------------------------------------------------------------------------
   private consumeLeadingComments() {
     while (this.stream.check(AbilityDSLToken.COMMENT)) {
-      const token = this.stream.next();
-      this.processCommentToken(token);
+      this.stream.next();
+      // this.processCommentToken(token);
     }
   }
 
-  private processCommentToken(token: AbilityDSLToken) {
+  private consumeLeadingAnnotations() {
+    while (this.stream.check(AbilityDSLToken.ANNOTATION)) {
+      const token = this.stream.next();
+      this.processAnnotationToken(token);
+    }
+  }
+
+  private processAnnotationToken(token: AbilityDSLToken) {
     const text = token.value.trim();
 
     if (text.startsWith('@name ')) {
@@ -772,6 +800,10 @@ export class AbilityDSLParser<
     if (text.startsWith('@description ')) {
       this.annotationBuffer.description = text.slice(13).trim();
     }
+
+    if (text.startsWith('@priority ')) {
+      this.annotationBuffer.priority = text.slice(10).trim();
+    }
   }
 
   private takeAnnotations(): typeof this.annotationBuffer {
@@ -779,6 +811,7 @@ export class AbilityDSLParser<
     this.annotationBuffer = {
       name: null,
       description: null,
+      priority: null,
     };
     return meta;
   }

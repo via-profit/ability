@@ -1,0 +1,16 @@
+import { AbilityStrategy } from '~/strategy/AbilityStrategy';
+import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
+import { ResourceObject } from '~/core/AbilityTypeGenerator';
+
+export class SequentialLastMatchStrategy<
+  R extends ResourceObject,
+  E = unknown,
+> extends AbilityStrategy<R, E> {
+  evaluate() {
+    const last = this.lastMatched();
+
+    return last?.effect ?? AbilityPolicyEffect.deny;
+  }
+}
+
+export default SequentialLastMatchStrategy;

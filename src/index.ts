@@ -16,3 +16,13 @@ export * from '~/parsers/json/AbilityJSONParser';
 export * from '~/parsers/dsl/AbilityDSLParser';
 export * from '~/parsers/dsl/AbilityDSLLexer';
 export * from '~/parsers/dsl/AbilityDSLToken';
+
+export * from '~/strategy/AllMustPermitStrategy';
+export * from '~/strategy/AnyPermitStrategy';
+export * from '~/strategy/DenyOverridesStrategy';
+export * from '~/strategy/FirstMatchStrategy';
+export * from '~/strategy/OnlyOneApplicableStrategy';
+export * from '~/strategy/PermitOverridesStrategy';
+export * from '~/strategy/SequentialLastMatchStrategy';
+export * from '~/strategy/PriorityStrategy';
+export * from '~/strategy/AbilityStrategy';

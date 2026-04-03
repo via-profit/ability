@@ -22,13 +22,14 @@ export class AbilityJSONParser {
     Resource extends ResourceObject = Record<string, unknown>,
     Environment = unknown,
   >(config: AbilityPolicyConfig): AbilityPolicy<Resource, Environment> {
-    const { id, name, ruleSet, compareMethod, permission, effect } = config;
+    const { id, name, ruleSet, compareMethod, permission, effect, priority } = config;
 
     // Create the empty policy
     const policy = new AbilityPolicy<Resource, Environment>({
       name,
       id,
       permission: permission,
+      priority: priority,
       effect: new AbilityPolicyEffect(effect),
     });
 
@@ -109,6 +110,7 @@ export class AbilityJSONParser {
       ruleSet: policy.ruleSet.map(ruleSet => AbilityJSONParser.ruleSetToJSON(ruleSet)),
       permission: policy.permission,
       effect: policy.effect.code,
+      priority: policy.priority,
     };
   }
 
