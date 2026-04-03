@@ -14,6 +14,7 @@ export type AbilityRuleSetConstructorProps = {
   readonly id?: string | null;
   readonly name?: string | null;
   readonly compareMethod: AbilityCompare;
+  readonly isExcept?: boolean;
 };
 
 export class AbilityRuleSet<
@@ -44,12 +45,15 @@ export class AbilityRuleSet<
    */
   public id: string;
 
+  readonly isExcept?: boolean = false;
+
   public constructor(params: AbilityRuleSetConstructorProps) {
-    const { name, id, compareMethod } = params;
+    const { name, id, compareMethod, isExcept } = params;
 
     this.name = name || '';
     this.id = id || this.name;
     this.compareMethod = compareMethod;
+    this.isExcept = isExcept;
   }
 
   public addRule(rule: AbilityRule<Resources, Environment>): this {

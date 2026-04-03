@@ -1,148 +1,161 @@
-import { AbilityDSLParser, AbilityResolver } from '../../src';
+import { AbilityDSLLexer, AbilityDSLParser, AbilityResolver } from '../../src';
 
-const dsl = `
-############################################################
-# @name Admin can edit ticket price
-permit permission.ticket.price.edit if all:
-  user.role is equals 'admin'
 
-############################################################
-# @name Seller can sell tickets during working hours
-permit permission.ticket.sell if all:
-  user.role is equals 'seller'
-  all of:
-    env.time.hour greater than or equal 9
-    env.time.hour less than or equal 23
-
-############################################################
-# @name Users older than 21 can buy tickets
-permit permission.ticket.buy if all:
-  user.age greater than 21
-
-############################################################
-# @name VIP users can buy tickets anytime
-permit permission.ticket.buy if all:
-  user.isVIP is true
-
-############################################################
-# @name Deny buying tickets if user is banned
-deny permission.ticket.buy if all:
-  user.status is equals 'banned'
-
-############################################################
-# @name Deny selling tickets if cinema is closed
-deny permission.ticket.sell if all:
-  any of:
-    env.time.hour less than 9
-    env.time.hour greater than 23
-
-############################################################
-# @name Manager can do everything seller can
-permit permission.ticket.sell if all:
-  user.role is equals 'manager'
-
-############################################################
-# @name Admin wildcard permissions
-permit permission.* if all:
-  user.role is equals 'admin'
-
-############################################################
-# @name Limit tickets per user (max 6)
-deny permission.ticket.buy if all:
-  user.ticketsCount greater than or equal 6
-
-############################################################
-# @name Cannot sell already sold tickets
-deny permission.ticket.sell if all:
-  ticket.status is equals 'sold'
+describe('multiple policies', () => {
+  it('Multiple policies', () => {
+    const dsl = `
+  # @name 1. Администраторы могут удалять любых клиентов
+  permit permission.client.delete if all:
+    user.roles contains 'admin'
+  
+  # @name 2. Менеджеры могут удалять только клиентов, созданных не более 2 дней назад
+  permit permission.client.delete if all:
+    user.roles contains 'manager'
+    client.createdDaysAt >= 2
+  
+  # @name 3. Запрет менеджерам удалять клиентов, созданных более 2 дней назад
+  deny permission.client.delete if all:
+    user.roles contains 'manager'
+    client.createdDaysAt < 2
 `;
 
-describe('Cinema complex policies (state-machine model)', () => {
-  const policies = new AbilityDSLParser(dsl).parse();
-  const resolver = new AbilityResolver(policies);
+    const policies = new AbilityDSLParser(dsl).parse();
+    const resolver = new AbilityResolver(policies);
 
-  test('Admin can edit ticket price', () => {
-    const result = resolver.resolve('ticket.price.edit', {
-      user: { role: 'admin' },
-      env: { time: { hour: 12 } },
-    });
-    expect(result.isAllowed()).toBe(true);
+    expect(() =>
+      resolver.enforce('client.delete', {
+        user: { roles: ['admin'] },
+        client: { createdDaysAt: 3 },
+      }),
+    ).not.toThrow();
+
+    expect(() =>
+      resolver.enforce('client.delete', {
+        user: { roles: ['manager'] },
+        client: { createdDaysAt: 3 },
+      }),
+    ).not.toThrow();
+
+    expect(() =>
+      resolver.enforce('client.delete', {
+        user: { roles: ['manager'] },
+        client: { createdDaysAt: 1 },
+      }),
+    ).toThrow();
   });
 
-  test('Seller can sell tickets during working hours → DENIED (mismatch resets)', () => {
-    const result = resolver.resolve('ticket.sell', {
-      user: { role: 'seller' },
-      env: { time: { hour: 15 } },
-      ticket: { status: 'available' },
-    });
-    expect(result.isDenied()).toBe(true);
+
+  it('Complex policies with explicit and implicit except blocks', () => {
+    const dsl = `
+    # @name 1. Администраторы могут удалять любых клиентов
+    permit permission.client.delete if all:
+      user.roles contains 'admin'
+
+    # @name 2. Менеджеры могут удалять клиентов, кроме тех, чей юр. статус ООО или ПАО или ОАО
+    permit permission.client.delete if all:
+      user.roles contains 'manager'
+      except any of:
+        client.legalStatus is equals 'ООО'
+        client.legalStatus is equals 'ПАО'
+        client.legalStatus is equals 'ОАО'
+
+    # @name 3. Диспетчеры могут удалять клиентов чей юр. статус ИП, но кроме созданных более 2 дней назад
+    permit permission.client.delete if all:
+      user.roles contains 'dispatcher'
+      client.legalStatus is equals 'ИП'
+      except any of:
+        client.createdDaysAt > 2
+
+    # @name 4. Операторы могут удалять клиентов, кроме тех, кто заблокирован (implicit except)
+    permit permission.client.delete if all:
+      user.roles contains 'operator'
+      except:
+        client.blocked is equals true
+  `;
+
+    const policies = new AbilityDSLParser(dsl).parse();
+    const resolver = new AbilityResolver(policies);
+
+    //
+    // 1. Администратор — всегда можно
+    //
+    expect(() =>
+      resolver.enforce('client.delete', {
+        user: { roles: ['admin'] },
+        client: { legalStatus: 'ООО', createdDaysAt: 100, blocked: true },
+      }),
+    ).not.toThrow();
+
+    //
+    // 2. Менеджер — можно, если статус НЕ ООО/ПАО/ОАО
+    //
+    expect(() =>
+      resolver.enforce('client.delete', {
+        user: { roles: ['manager'] },
+        client: { legalStatus: 'ИП', createdDaysAt: 1, blocked: false },
+      }),
+    ).not.toThrow();
+
+    //
+    // 2. Менеджер — нельзя, если статус ООО/ПАО/ОАО
+    //
+    expect(() =>
+      resolver.enforce('client.delete', {
+        user: { roles: ['manager'] },
+        client: { legalStatus: 'ООО', createdDaysAt: 1, blocked: false },
+      }),
+    ).toThrow();
+
+    //
+    // 3. Диспетчер — можно, если ИП и создан <= 2 дней назад
+    //
+    expect(() =>
+      resolver.enforce('client.delete', {
+        user: { roles: ['dispatcher'] },
+        client: { legalStatus: 'ИП', createdDaysAt: 1, blocked: false },
+      }),
+    ).not.toThrow();
+
+    //
+    // 3. Диспетчер — нельзя, если ИП, но создан > 2 дней назад
+    //
+    expect(() =>
+      resolver.enforce('client.delete', {
+        user: { roles: ['dispatcher'] },
+        client: { legalStatus: 'ИП', createdDaysAt: 3, blocked: false },
+      }),
+    ).toThrow();
+
+    //
+    // 3. Диспетчер — нельзя, если НЕ ИП
+    //
+    expect(() =>
+      resolver.enforce('client.delete', {
+        user: { roles: ['dispatcher'] },
+        client: { legalStatus: 'ООО', createdDaysAt: 1, blocked: false },
+      }),
+    ).toThrow();
+
+    //
+    // 4. Оператор — можно, если клиент НЕ заблокирован
+    //
+    expect(() =>
+      resolver.enforce('client.delete', {
+        user: { roles: ['operator'] },
+        client: { legalStatus: 'ИП', createdDaysAt: 1, blocked: false },
+      }),
+    ).not.toThrow();
+
+    //
+    // 4. Оператор — нельзя, если клиент заблокирован (implicit except)
+    //
+    expect(() =>
+      resolver.enforce('client.delete', {
+        user: { roles: ['operator'] },
+        client: { legalStatus: 'ИП', createdDaysAt: 1, blocked: true },
+      }),
+    ).toThrow();
   });
 
-  test('Seller cannot sell tickets at night', () => {
-    const result = resolver.resolve('ticket.sell', {
-      user: { role: 'seller' },
-      env: { time: { hour: 2 } },
-      ticket: { status: 'available' },
-    });
-    expect(result.isDenied()).toBe(true);
-  });
 
-  test('User older than 21 can buy tickets → DENIED (mismatch resets)', () => {
-    const result = resolver.resolve('ticket.buy', {
-      user: { age: 25, ticketsCount: 0 },
-      env: { time: { hour: 18 } },
-    });
-    expect(result.isDenied()).toBe(true);
-  });
-
-  test('VIP can buy tickets anytime → DENIED (mismatch resets)', () => {
-    const result = resolver.resolve('ticket.buy', {
-      user: { isVIP: true, ticketsCount: 0 },
-      env: { time: { hour: 3 } },
-    });
-    expect(result.isDenied()).toBe(true);
-  });
-
-  test('Banned user cannot buy tickets', () => {
-    const result = resolver.resolve('ticket.buy', {
-      user: { status: 'banned', age: 30, ticketsCount: 0 },
-      env: { time: { hour: 12 } },
-    });
-    expect(result.isDenied()).toBe(true);
-  });
-
-  test('User cannot buy more than 6 tickets', () => {
-    const result = resolver.resolve('ticket.buy', {
-      user: { age: 30, ticketsCount: 6 },
-      env: { time: { hour: 12 } },
-    });
-    expect(result.isDenied()).toBe(true);
-  });
-
-  test('Cannot sell already sold ticket', () => {
-    const result = resolver.resolve('ticket.sell', {
-      user: { role: 'seller' },
-      env: { time: { hour: 12 } },
-      ticket: { status: 'sold' },
-    });
-    expect(result.isDenied()).toBe(true);
-  });
-
-  test('Manager can sell tickets → DENIED (mismatch resets)', () => {
-    const result = resolver.resolve('ticket.sell', {
-      user: { role: 'manager' },
-      env: { time: { hour: 12 } },
-      ticket: { status: 'available' },
-    });
-    expect(result.isDenied()).toBe(true);
-  });
-
-  test('Admin wildcard: admin can sell tickets even at night → DENIED (mismatch resets)', () => {
-    const result = resolver.resolve('ticket.sell', {
-      user: { role: 'admin' },
-      env: { time: { hour: 3 } },
-      ticket: { status: 'available' },
-    });
-    expect(result.isDenied()).toBe(true);
-  });
 });

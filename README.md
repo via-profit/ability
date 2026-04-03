@@ -115,36 +115,6 @@ resolver.enforce('user.passwordHash', {
 ```
 In `enforce`, the key is passed without the `permission.` prefix – it is automatically removed by the parser.
 
-## Key concepts
-
-Let's list the key points you need to know before starting to use the package:
-
-1. **The resolver (`AbilityResolver`) works on the `Default Deny` principle.**
-   If no policy has set a final state, the result will be `deny`
-   ([see here](#troubleshooting)).
-   To avoid unexpected `deny`, ensure there is at least one `permit` policy that can match.
-   Only then add `deny` policies.
-
-2. **Policies are processed sequentially, from top to bottom.**
-   Unlike classic ABAC models, where a `mismatch` is simply ignored, Ability uses a **state‑machine model**:
-
-- `match` sets the state (`permit` → allow, `deny` → deny),
-- `mismatch` **resets the state to neutral**,
-- the final result is determined by the **last processed policy**, not just the one that matched.
-
-3. **Rules within a policy are also executed sequentially.**
-
-4. **In a rule set with the `all` operator, execution stops at the first `mismatch`.**
-   In `any` – at the first `match`.
-
-5. **Use [DSL](#dsl) to compose policies** – it's simpler and more convenient.
-
-6. **Use JSON to store policies on the server.**
-   Policies can be exported to JSON and imported back.
-
-7. **Follow the principle: if permission is not explicitly granted → access is denied.**
-   This is a natural consequence of the `Default Deny` model and state‑machine behavior.
-
 ### Interaction model
 
 First, you describe "raw" policies (SDL, JSON, or using classes). Then, from the "raw" data, you form ready policies (an array of policies). This is done once and allows you to have a single source of truth. Then you can run permission checks in the necessary parts of your code using the already prepared policies and resolver.

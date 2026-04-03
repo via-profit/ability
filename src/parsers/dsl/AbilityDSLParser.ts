@@ -135,6 +135,12 @@ export class AbilityDSLParser<
     while (!this.isAtEnd() && !this.isStartOfPolicy()) {
       this.consumeLeadingComments();
 
+      // Если начинается новая except группа — парсим её
+      if (this.isStartOfExcept()) {
+        sets.push(this.parseExceptGroup(policyCompareMethod));
+        continue;
+      }
+
       // Если начинается новая группа — парсим её
       if (this.isStartOfGroup()) {
         sets.push(this.parseGroup());
@@ -152,7 +158,7 @@ export class AbilityDSLParser<
       while (!this.isAtEnd()) {
         this.consumeLeadingComments();
 
-        if (this.isStartOfGroup() || this.isStartOfPolicy()) {
+        if (this.isStartOfGroup() || this.isStartOfPolicy() || this.isStartOfExcept()) {
           break;
         }
 
@@ -199,6 +205,10 @@ export class AbilityDSLParser<
     while (!this.isAtEnd()) {
       this.consumeLeadingComments();
 
+      if (this.isStartOfExcept()) {
+        break;
+      }
+
       if (this.isStartOfGroup() || this.isStartOfPolicy()) {
         break;
       }
@@ -207,6 +217,59 @@ export class AbilityDSLParser<
         group.addRule(this.parseRule());
       } else {
         this.syntaxError(`Unexpected token in group: ${this.peek().code}`, this.peek());
+      }
+    }
+
+    return group;
+  }
+
+  // -------------------------------------------------------------------------
+  // #region Except RuleSet parsing
+  // -------------------------------------------------------------------------
+  private parseExceptGroup(policyCompareMethod: AbilityCompare): AbilityRuleSet {
+    this.consumeLeadingComments();
+    const meta = this.takeAnnotations();
+
+    // consume "except"
+    this.consume(AbilityDSLToken.EXCEPT, 'Expected "except"');
+
+    let compareMethod = policyCompareMethod;
+
+    // optional: "all" / "any"
+    if (this.check(AbilityDSLToken.ALL) || this.check(AbilityDSLToken.ANY)) {
+      const compareToken = this.advance();
+      compareMethod =
+        compareToken.code === AbilityDSLToken.ALL ? AbilityCompare.and : AbilityCompare.or;
+
+      if (this.check(AbilityDSLToken.OF)) {
+        this.advance();
+      }
+
+      this.consume(AbilityDSLToken.COLON, 'Expected ":" after except group');
+    } else {
+      // implicit except group — no "all/any of:"
+      // but still must end with colon
+      this.consume(AbilityDSLToken.COLON, 'Expected ":" after "except"');
+    }
+
+    const group = new AbilityRuleSet({
+      compareMethod,
+      name: meta.name,
+      isExcept: true,
+    });
+
+    // read rules
+    while (!this.isAtEnd()) {
+      this.consumeLeadingComments();
+
+      if (this.isStartOfGroup() || this.isStartOfPolicy() || this.isStartOfExcept()) {
+        break;
+      }
+
+      if (this.check(AbilityDSLToken.IDENTIFIER)) {
+        group.addRule(this.parseRule());
+      } else {
+        this.syntaxError(`Unexpected token in except group: ${this.peek().code}`, this.peek());
       }
     }
 
@@ -811,6 +874,10 @@ export class AbilityDSLParser<
 
   private isStartOfGroup(): boolean {
     return this.check(AbilityDSLToken.ALL) || this.check(AbilityDSLToken.ANY);
+  }
+
+  private isStartOfExcept(): boolean {
+    return this.check(AbilityDSLToken.EXCEPT);
   }
 
   private advance(): AbilityDSLToken {

@@ -3,7 +3,6 @@ import AbilityMatch from '~/core/AbilityMatch';
 import { ResourceObject } from '~/core/AbilityTypeGenerator';
 import AbilityPolicy from '~/core/AbilityPolicy';
 import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
-import AbilityResultState from '~/core/AbilityResultState';
 
 export class AbilityResult<Resource extends ResourceObject = Record<string, unknown>> {
   /**
@@ -36,29 +35,29 @@ export class AbilityResult<Resource extends ResourceObject = Record<string, unkn
     return null;
   }
 
-  public getFinalState(): AbilityResultState {
-    let state = AbilityResultState.neutral;
-
-    for (const p of this.policies) {
-      if (p.matchState.isEqual(AbilityMatch.match)) {
-        if (p.effect.isEqual(AbilityPolicyEffect.permit)) {
-          state = AbilityResultState.allow;
-        } else if (p.effect.isEqual(AbilityPolicyEffect.deny)) {
-          state = AbilityResultState.deny;
-        }
-      } else if (p.matchState.isEqual(AbilityMatch.mismatch)) {
-        state = AbilityResultState.neutral;
-      }
-    }
-
-    return state;
-  }
-
   public isAllowed() {
-    return this.getFinalState().isEqual(AbilityResultState.allow);
+    const effect = this.getLastEffectOfMatchedPolicy();
+    return effect?.isEqual(AbilityPolicyEffect.permit) ?? false;
   }
 
   public isDenied() {
-    return this.getFinalState().isNotEqual(AbilityResultState.allow);
+    const effect = this.getLastEffectOfMatchedPolicy();
+
+    return effect?.isEqual(AbilityPolicyEffect.deny) ?? true;
+  }
+
+  /**
+   * Get the last effect of the policy
+   *
+   * @returns {AbilityPolicyEffect | null}
+   */
+  public getLastEffectOfMatchedPolicy(): AbilityPolicyEffect | null {
+    for (let i = this.policies.length - 1; i >= 0; i--) {
+      const p = this.policies[i];
+      if (p.matchState.isEqual(AbilityMatch.match)) {
+        return p.effect;
+      }
+    }
+    return null;
   }
 }

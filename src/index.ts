@@ -11,7 +11,6 @@ export * from '~/core/AbilityRule';
 export * from '~/core/AbilityRuleSet';
 export * from '~/core/AbilityExplain';
 export * from '~/core/AbilityResult';
-export * from '~/core/AbilityResultState';
 
 export * from '~/parsers/json/AbilityJSONParser';
 export * from '~/parsers/dsl/AbilityDSLParser';

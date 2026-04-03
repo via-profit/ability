@@ -105,34 +105,57 @@ export class AbilityPolicy<
       return this.matchState;
     }
 
-    const rulesetCheckStates: AbilityMatch[] = [];
+    // 1. Разделяем группы
+    const normalGroups = this.ruleSet.filter(g => !g.isExcept);
+    const exceptGroups = this.ruleSet.filter(g => g.isExcept);
 
-    for (const ruleSet of this.ruleSet) {
-      const state = ruleSet.check(resource, environment);
-      rulesetCheckStates.push(state);
+    const normalStates: AbilityMatch[] = [];
+    // const exceptStates: AbilityMatch[] = [];
+
+    // 2. Проверяем обычные группы
+    for (const group of normalGroups) {
+      const state = group.check(resource, environment);
+      normalStates.push(state);
 
       if (AbilityCompare.and.isEqual(this.compareMethod) && AbilityMatch.mismatch.isEqual(state)) {
-        return this.matchState; // mismatch
+        this.matchState = AbilityMatch.mismatch;
+        return this.matchState;
       }
 
       if (AbilityCompare.or.isEqual(this.compareMethod) && AbilityMatch.match.isEqual(state)) {
         this.matchState = AbilityMatch.match;
+        // но ещё нужно проверить except-группы
+        break;
+      }
+    }
+
+    // 3. Итог по обычным группам
+    let normalMatch = false;
+
+    if (AbilityCompare.and.isEqual(this.compareMethod)) {
+      normalMatch = normalStates.every(s => AbilityMatch.match.isEqual(s));
+    } else {
+      normalMatch = normalStates.some(s => AbilityMatch.match.isEqual(s));
+    }
+
+    if (!normalMatch) {
+      this.matchState = AbilityMatch.mismatch;
+      return this.matchState;
+    }
+
+    // 4. Проверяем except-группы
+    for (const group of exceptGroups) {
+      const state = group.check(resource, environment);
+      // exceptStates.push(state);
+
+      if (AbilityMatch.match.isEqual(state)) {
+        this.matchState = AbilityMatch.exceptMismatch;
         return this.matchState;
       }
     }
 
-    if (AbilityCompare.and.isEqual(this.compareMethod)) {
-      if (rulesetCheckStates.every(s => AbilityMatch.match.isEqual(s))) {
-        this.matchState = AbilityMatch.match;
-      }
-    }
-
-    if (AbilityCompare.or.isEqual(this.compareMethod)) {
-      if (rulesetCheckStates.some(s => AbilityMatch.match.isEqual(s))) {
-        this.matchState = AbilityMatch.match;
-      }
-    }
-
+    // 5. Всё хорошо — политика совпала
+    this.matchState = AbilityMatch.match;
     return this.matchState;
   }
 
