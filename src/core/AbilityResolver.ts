@@ -4,7 +4,7 @@ import { AbilityResult } from '~/core/AbilityResult';
 import AbilityMatch from '~/core/AbilityMatch';
 import { ResourcesMap } from '~/core/AbilityTypeGenerator';
 import { AbilityStrategy } from '~/strategy/AbilityStrategy';
-import SequentialLastMatchStrategy from '~/strategy/SequentialLastMatchStrategy';
+import DenyOverridesStrategy from '~/strategy/DenyOverridesStrategy';
 
 
 export class AbilityResolver<Resources extends ResourcesMap, Environment = unknown> {
@@ -26,7 +26,7 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
       ? policyOrListOfPolicies
       : [policyOrListOfPolicies];
 
-    this.StrategyClass = strategy || SequentialLastMatchStrategy;
+    this.StrategyClass = strategy ?? DenyOverridesStrategy;
   }
 
   /**
