@@ -630,28 +630,28 @@ describe('DSL Operators', () => {
       expect(result.isDenied()).toBeTruthy();
     });
 
-    it('Operator "always" should permit, but deny fo next', () => {
+    it('Operator "always" should NOT permit after 16 under DenyOverrides', () => {
       const dsl = `
-
+        @name deny_after_16
         deny permission.test if any:
           env.hour >= 16
-
-        allow permission.* if all:
+    
+        @name allow_all_permissions
+        permit permission.* if all:
           always
-
-
       `;
+
       const policies = new AbilityDSLParser(dsl).parse();
       const resolver = new AbilityResolver(policies);
 
       const result = resolver.resolve('permission.test', {
-        env: {
-          hour: 16,
-        },
+        env: { hour: 16 },
       });
-      expect(result.isAllowed()).toBeTruthy();
-      expect(result.isDenied()).toBeFalsy();
+
+      expect(result.isDenied()).toBeTruthy();
+      expect(result.isAllowed()).toBeFalsy();
     });
+
   });
 
   // -----------------------------
