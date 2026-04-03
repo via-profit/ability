@@ -60,7 +60,7 @@ export class AbilityDSLParser<
 
       if (!this.isStartOfPolicy()) {
         const token = this.stream.peek();
-        this.syntaxError(`Expected policy, got ${token.code}.`, token, ['EFFECT']);
+        this.stream.syntaxError(`Expected policy, got ${token.code}.`, token, ['EFFECT']);
       }
 
       policies.push(this.parsePolicy());
