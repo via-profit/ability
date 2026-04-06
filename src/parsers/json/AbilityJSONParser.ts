@@ -22,7 +22,7 @@ export class AbilityJSONParser {
     Resource extends ResourceObject = Record<string, unknown>,
     Environment = unknown,
   >(config: AbilityPolicyConfig): AbilityPolicy<Resource, Environment> {
-    const { id, name, ruleSet, compareMethod, permission, effect, priority } = config;
+    const { id, name, ruleSet, compareMethod, permission, effect, priority, disabled } = config;
 
     // Create the empty policy
     const policy = new AbilityPolicy<Resource, Environment>({
@@ -31,6 +31,7 @@ export class AbilityJSONParser {
       permission: permission,
       priority: priority,
       effect: new AbilityPolicyEffect(effect),
+      disabled,
     });
 
     policy.compareMethod = new AbilityCompare(compareMethod);
@@ -45,13 +46,14 @@ export class AbilityJSONParser {
   public static parseRule<Resources extends object, Environment = unknown>(
     config: AbilityRuleConfig,
   ): AbilityRule<Resources, Environment> {
-    const { id, name, subject, resource, condition } = config;
+    const { id, name, subject, resource, condition, disabled } = config;
 
     return new AbilityRule<Resources, Environment>({
       id,
       name,
       subject,
       resource,
+      disabled,
       condition: new AbilityCondition(condition),
     });
   }
@@ -63,9 +65,10 @@ export class AbilityJSONParser {
     Resource extends ResourceObject = Record<string, unknown>,
     Environment = unknown,
   >(config: AbilityRuleSetConfig): AbilityRuleSet<Resource, Environment> {
-    const { id, name, rules, compareMethod } = config;
+    const { id, name, rules, compareMethod, disabled } = config;
 
     const ruleSet = new AbilityRuleSet<Resource, Environment>({
+      disabled,
       compareMethod: new AbilityCompare(compareMethod),
       name,
       id,
@@ -90,6 +93,7 @@ export class AbilityJSONParser {
       subject: rule.subject,
       resource: rule.resource,
       condition: rule.condition.code,
+      disabled: rule.disabled,
     };
   }
 
@@ -99,6 +103,7 @@ export class AbilityJSONParser {
       name: ruleSet.name.toString(),
       compareMethod: ruleSet.compareMethod.code.toString() as AbilityRuleSetConfig['compareMethod'],
       rules: ruleSet.rules.map(rule => AbilityJSONParser.ruleToJSON(rule)),
+      disabled: ruleSet.disabled,
     };
   }
 
@@ -111,6 +116,7 @@ export class AbilityJSONParser {
       permission: policy.permission,
       effect: policy.effect.code,
       priority: policy.priority,
+      disabled: policy.disabled,
     };
   }
 

@@ -151,6 +151,7 @@ except any of:
 ```ruby
 @name "Высокий приоритет"
 @priority 100
+@disabled true
 deny permission.admin.all if always:
 ```
 

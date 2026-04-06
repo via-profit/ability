@@ -32,10 +32,16 @@ export class AbilityDSLParser<
 > {
   private readonly dsl: string;
   private stream!: AbilityDSLTokenStream;
-  private annotationBuffer: Record<'name' | 'description' | 'priority', string | null> = {
+  private annotationBuffer: {
+    name: string | null;
+    description: string | null;
+    priority: number | null;
+    disabled: boolean | null;
+  } = {
     name: null,
     description: null,
     priority: null,
+    disabled: null,
   };
 
   constructor(dsl: string) {
@@ -83,7 +89,7 @@ export class AbilityDSLParser<
    */
   private parsePolicy(): AbilityPolicy {
     this.consumeLeadingComments();
-    this.consumeLeadingAnnotations()
+    this.consumeLeadingAnnotations();
     const meta = this.takeAnnotations();
 
     // Effect: "permit" or "deny"
@@ -122,9 +128,10 @@ export class AbilityDSLParser<
     return new AbilityPolicy({
       id: `${effect}:${permission}:${Math.random()}`,
       name: meta.name ?? `${effect} ${permission}`,
-      priority: meta.priority !== null ? parseInt(meta.priority, 10) : undefined,
+      priority: meta.priority !== null ? meta.priority : undefined,
       permission: permission.replace(/^permission\./, ''),
       effect: effect === 'permit' ? AbilityPolicyEffect.permit : AbilityPolicyEffect.deny,
+      disabled: meta.disabled !== null ? meta.disabled : false,
       compareMethod,
     }).addRuleSets(ruleSets);
   }
@@ -141,7 +148,7 @@ export class AbilityDSLParser<
 
     while (!this.stream.eof() && !this.isStartOfPolicy()) {
       this.consumeLeadingComments();
-      this.consumeLeadingAnnotations()
+      this.consumeLeadingAnnotations();
 
       // Если начинается новая except группа — парсим её
       if (this.isStartOfExcept()) {
@@ -160,6 +167,7 @@ export class AbilityDSLParser<
       const group = new AbilityRuleSet({
         compareMethod: policyCompareMethod,
         name: meta.name,
+        disabled: meta.disabled !== null ? meta.disabled : false,
       });
 
       // Читаем правила implicit-группы
@@ -213,7 +221,11 @@ export class AbilityDSLParser<
 
     this.stream.expect(AbilityDSLToken.COLON, 'Expected ":"');
 
-    const group = new AbilityRuleSet({ compareMethod, name: meta.name });
+    const group = new AbilityRuleSet({
+      compareMethod,
+      name: meta.name,
+      disabled: meta.disabled !== null ? meta.disabled : false,
+    });
 
     while (!this.stream.eof()) {
       this.consumeLeadingComments();
@@ -274,6 +286,7 @@ export class AbilityDSLParser<
       compareMethod,
       name: meta.name,
       isExcept: true,
+      disabled: meta.disabled !== null ? meta.disabled : false,
     });
 
     // read rules
@@ -366,6 +379,7 @@ export class AbilityDSLParser<
       resource,
       condition,
       name: meta.name,
+      disabled: meta.disabled !== null ? meta.disabled : false,
     });
   }
 
@@ -802,7 +816,13 @@ export class AbilityDSLParser<
     }
 
     if (text.startsWith('@priority ')) {
-      this.annotationBuffer.priority = text.slice(10).trim();
+      this.annotationBuffer.priority = parseInt(text.slice(10).trim(), 10);
+    }
+
+    if (text.startsWith('@disabled')) {
+      const value = text.slice(9).trim();
+      this.annotationBuffer.disabled =
+        value.length === 0 ? true : text.slice(9).trim() === 'true';
     }
   }
 
@@ -812,6 +832,7 @@ export class AbilityDSLParser<
       name: null,
       description: null,
       priority: null,
+      disabled: null,
     };
     return meta;
   }

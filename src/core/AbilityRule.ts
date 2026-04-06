@@ -19,6 +19,8 @@ export type AbilityRuleConfig = {
   readonly resource: string | number | boolean | null | (string | number | boolean | null)[];
 
   readonly condition: AbilityConditionCodeType;
+
+  readonly disabled?: boolean;
 };
 
 export type AbilityRuleConstructorProps = Omit<AbilityRuleConfig, 'condition'> & {
@@ -42,6 +44,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
   public name: string;
   public id: string;
   public state: AbilityMatch = AbilityMatch.pending;
+  public disabled: boolean;
 
   /**
    * Creates an instance of AbilityRule.
@@ -50,12 +53,14 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
    * @param {AbilityCondition} params.condition - The condition to evaluate.
    * @param {string} params.subject - The subject of the rule.
    * @param {string} params.resource - The resource to compare against.
+   * @param {boolean} params.disabled - Disabling flag.
    * @param params
    */
   public constructor(params: AbilityRuleConstructorProps) {
-    const { id, name, subject, resource, condition } = params;
+    const { id, name, subject, resource, condition, disabled } = params;
     this.name = name || `${JSON.stringify(subject)} ${condition.code} ${JSON.stringify(resource)}`;
     this.id = id || this.name;
+    this.disabled = typeof disabled === 'boolean' ? disabled : false;
 
     this.subject = subject;
     this.resource = resource;
@@ -187,6 +192,11 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
    * @param environment
    */
   public check(resource: Resources | null, environment?: Environment): AbilityMatch {
+
+    if (this.disabled) {
+      return AbilityMatch.pending;
+    }
+
     const [subjectValue, resourceValue] = this.extractValues(resource, environment);
     const handler = this.operatorHandlers[this.condition.literal];
     const result = handler(subjectValue, resourceValue);

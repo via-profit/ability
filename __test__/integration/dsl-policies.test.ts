@@ -4,16 +4,16 @@ import { AbilityDSLLexer, AbilityDSLParser, AbilityResolver } from '../../src';
 describe('multiple policies', () => {
   it('Multiple policies', () => {
     const dsl = `
-  # @name 1. Администраторы могут удалять любых клиентов
+ @name 1. Администраторы могут удалять любых клиентов
   permit permission.client.delete if all:
     user.roles contains 'admin'
   
-  # @name 2. Менеджеры могут удалять только клиентов, созданных не более 2 дней назад
+  @name 2. Менеджеры могут удалять только клиентов, созданных не более 2 дней назад
   permit permission.client.delete if all:
     user.roles contains 'manager'
     client.createdDaysAt >= 2
   
-  # @name 3. Запрет менеджерам удалять клиентов, созданных более 2 дней назад
+ @name 3. Запрет менеджерам удалять клиентов, созданных более 2 дней назад
   deny permission.client.delete if all:
     user.roles contains 'manager'
     client.createdDaysAt < 2

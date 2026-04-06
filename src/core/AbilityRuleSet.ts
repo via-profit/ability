@@ -8,6 +8,7 @@ export type AbilityRuleSetConfig = {
   readonly name?: string | null;
   readonly compareMethod: AbilityCompareCodeType;
   readonly rules: readonly AbilityRuleConfig[];
+  readonly disabled?: boolean;
 };
 
 export type AbilityRuleSetConstructorProps = {
@@ -15,6 +16,7 @@ export type AbilityRuleSetConstructorProps = {
   readonly name?: string | null;
   readonly compareMethod: AbilityCompare;
   readonly isExcept?: boolean;
+  readonly disabled?: boolean;
 };
 
 export class AbilityRuleSet<
@@ -47,13 +49,16 @@ export class AbilityRuleSet<
 
   readonly isExcept?: boolean = false;
 
+  public disabled: boolean;
+
   public constructor(params: AbilityRuleSetConstructorProps) {
-    const { name, id, compareMethod, isExcept } = params;
+    const { name, id, compareMethod, isExcept, disabled } = params;
 
     this.name = name || '';
     this.id = id || this.name;
     this.compareMethod = compareMethod;
     this.isExcept = isExcept;
+    this.disabled = typeof disabled === 'boolean' ? disabled : false;
   }
 
   public addRule(rule: AbilityRule<Resources, Environment>): this {
@@ -71,6 +76,10 @@ export class AbilityRuleSet<
   public check(resources: Resources | null, environment?: Environment): AbilityMatch {
     this.state = AbilityMatch.mismatch;
 
+    if (this.disabled) {
+      return AbilityMatch.pending;
+    }
+
     if (!this.rules.length) {
       return this.state;
     }
@@ -78,6 +87,10 @@ export class AbilityRuleSet<
     const ruleCheckStates: AbilityMatch[] = [];
 
     for (const rule of this.rules) {
+      if (rule.disabled) {
+        continue;
+      }
+
       const state = rule.check(resources, environment);
       ruleCheckStates.push(state);
 

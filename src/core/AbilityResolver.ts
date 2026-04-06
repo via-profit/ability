@@ -41,7 +41,7 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
     resource: Resources[Permission],
     environment?: Environment,
   ): AbilityResult<Resources[Permission]> {
-    // 1. filter policies by permission key (с учётом wildcard)
+
     const filteredPolicies = this.policies.filter(policy =>
       AbilityResolver.isInPermissionContain(
         policy.permission,
@@ -51,6 +51,10 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
 
     // 2. check the policies
     for (const policy of filteredPolicies) {
+      if(policy.disabled) {
+        continue;
+      }
+
       const policyMatchState = policy.check(resource, environment);
 
       if (policyMatchState === AbilityMatch.pending) {

@@ -14,6 +14,7 @@ export type AbilityPolicyConfig = {
   readonly id: string;
   readonly name: string;
   readonly priority: number;
+  readonly disabled?: boolean;
 };
 
 export type AbilityPolicyConstructorProps = {
@@ -23,6 +24,7 @@ export type AbilityPolicyConstructorProps = {
   effect: AbilityPolicyEffect;
   compareMethod?: AbilityCompare;
   priority?: number | null;
+  readonly disabled?: boolean;
 };
 
 export class AbilityPolicy<
@@ -66,14 +68,17 @@ export class AbilityPolicy<
 
   public priority: number = -1;
 
+  public disabled: boolean;
+
   public constructor(params: AbilityPolicyConstructorProps) {
-    const { name, id, permission, effect, compareMethod = AbilityCompare.and, priority } = params;
+    const { name, id, permission, effect, compareMethod = AbilityCompare.and, priority, disabled } = params;
     this.name = name;
     this.id = id;
     this.permission = permission;
     this.effect = effect;
     this.compareMethod = compareMethod;
     this.priority = typeof priority === 'number' ? priority : -1;
+    this.disabled = typeof disabled === 'boolean' ? disabled : false;
   }
 
   /**
@@ -110,14 +115,17 @@ export class AbilityPolicy<
       return this.matchState;
     }
 
-    // 1. Разделяем группы
     const normalGroups = this.ruleSet.filter(g => !g.isExcept);
     const exceptGroups = this.ruleSet.filter(g => g.isExcept);
-
     const normalStates: AbilityMatch[] = [];
 
-    // 2. Проверяем обычные группы
+
     for (const group of normalGroups) {
+
+      if (group.disabled) {
+        continue;
+      }
+
       const state = group.check(resource, environment);
       normalStates.push(state);
 
