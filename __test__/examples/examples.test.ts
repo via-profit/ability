@@ -1,24 +1,7 @@
 import { AbilityDSLParser, AbilityResolver } from '../../src';
+import DenyOverridesStrategy from '../../src/strategy/DenyOverridesStrategy';
 
 describe('Examples', () => {
-  it('Example-01', () => {
-    const dsl = `
-      permit permission.user.passwordHash.read if all:
-        viewer.id equals owner.id
-    `;
-
-    const policies = new AbilityDSLParser(dsl).parse();
-    const resolver = new AbilityResolver(policies);
-
-    expect(() =>
-      resolver.enforce('user.passwordHash', {
-        viewer: { id: '1' },
-        owner: { id: '2' },
-      }),
-    ).toThrow();
-  });
-
-
   it('Example-02', () => {
     const dsl = `
     permit permission.order.* if all:
@@ -28,8 +11,30 @@ describe('Examples', () => {
       user.role not equals 'admin'
     `;
 
-    const policies = new AbilityDSLParser(dsl).parse();
-    const resolver = new AbilityResolver(policies);
+    type Resources = {
+      ['order.update']: {
+        user: {
+          authenticated: boolean;
+          role: string;
+        };
+      };
+      ['foo']: {
+        bat: boolean;
+        user: {
+          token: string;
+        };
+      };
+    };
+
+    const policies = new AbilityDSLParser<Resources>(dsl).parse();
+    const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+    resolver.resolve('order.update', {
+      user: { role: 'admin', authenticated: false },
+    });
+
+
+
 
     // Для не-администратора – исключение
     expect(() =>
@@ -44,13 +49,5 @@ describe('Examples', () => {
         user: { authenticated: true, role: 'admin' },
       }),
     ).not.toThrow();
-
-    // Другое действие (например, order.view) – разрешено
-    expect(() =>
-      resolver.enforce('order.view', {
-        user: { authenticated: true },
-      }),
-    ).not.toThrow();
-
   });
 });

@@ -7,7 +7,6 @@ export class AbilityDSLLexer {
   private line = 1;
   private column = 1;
 
-  // Список ключевых слов
   private readonly keywords = new Set([
     'if',
     'all',

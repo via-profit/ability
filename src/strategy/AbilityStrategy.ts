@@ -1,11 +1,11 @@
 import AbilityMatch from '~/core/AbilityMatch';
 import AbilityPolicy from '~/core/AbilityPolicy';
-import { ResourceObject } from '~/core/AbilityTypeGenerator';
+import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
 import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
 
 export abstract class AbilityStrategy<
   Resource extends ResourceObject = Record<string, unknown>,
-  Environment = unknown,
+  Environment extends EnvironmentObject = Record<string, unknown>,
 > {
   private readonly matched: readonly AbilityPolicy<Resource, Environment>[];
 

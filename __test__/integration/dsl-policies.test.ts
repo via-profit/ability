@@ -1,10 +1,11 @@
 import { AbilityDSLLexer, AbilityDSLParser, AbilityResolver } from '../../src';
+import DenyOverridesStrategy from '../../src/strategy/DenyOverridesStrategy';
 
 
 describe('multiple policies', () => {
   it('Multiple policies', () => {
     const dsl = `
- @name 1. Администраторы могут удалять любых клиентов
+  @name 1. Администраторы могут удалять любых клиентов
   permit permission.client.delete if all:
     user.roles contains 'admin'
   
@@ -19,9 +20,8 @@ describe('multiple policies', () => {
     client.createdDaysAt < 2
 `;
 
-    const tokens = new AbilityDSLLexer(dsl).tokenize();
     const policies = new AbilityDSLParser(dsl).parse();
-    const resolver = new AbilityResolver(policies);
+    const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
     expect(() =>
       resolver.enforce('client.delete', {
@@ -75,7 +75,7 @@ describe('multiple policies', () => {
   `;
 
     const policies = new AbilityDSLParser(dsl).parse();
-    const resolver = new AbilityResolver(policies);
+    const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
     //
     // 1. Администратор — всегда можно

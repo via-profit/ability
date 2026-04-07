@@ -1,8 +1,8 @@
 import { AbilityStrategy } from '~/strategy/AbilityStrategy';
 import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
-import { ResourceObject } from '~/core/AbilityTypeGenerator';
+import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
 
-export class PermitOverridesStrategy<R extends ResourceObject, E> extends AbilityStrategy<
+export class PermitOverridesStrategy<R extends ResourceObject, E extends EnvironmentObject = Record<string, unknown>> extends AbilityStrategy<
   R,
   E
 > {

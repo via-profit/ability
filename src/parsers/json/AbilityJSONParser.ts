@@ -12,43 +12,43 @@ export class AbilityJSONParser {
    * @param configs - Array of policy configurations
    * @returns Array of AbilityPolicy instances
    */
-  public static parse<Resource extends ResourceObject, Environment = unknown>(
+  public static parse<Resource extends ResourceObject>(
     configs: readonly AbilityPolicyConfig[],
-  ): AbilityPolicy<Resource, Environment>[] {
-    return configs.map(config => AbilityJSONParser.parsePolicy<Resource, Environment>(config));
+  ): AbilityPolicy<Resource>[] {
+    return configs.map(config => AbilityJSONParser.parsePolicy<Resource>(config));
   }
 
   public static parsePolicy<
     Resource extends ResourceObject = Record<string, unknown>,
-    Environment = unknown,
-  >(config: AbilityPolicyConfig): AbilityPolicy<Resource, Environment> {
-    const { id, name, ruleSet, compareMethod, permission, effect, priority, disabled } = config;
+  >(config: AbilityPolicyConfig): AbilityPolicy<Resource> {
+    const { id, name, ruleSet, compareMethod, permission, effect, priority, disabled, tags } = config;
 
     // Create the empty policy
-    const policy = new AbilityPolicy<Resource, Environment>({
+    const policy = new AbilityPolicy<Resource>({
       name,
       id,
       permission: permission,
       priority: priority,
       effect: new AbilityPolicyEffect(effect),
       disabled,
+      tags,
     });
 
     policy.compareMethod = new AbilityCompare(compareMethod);
 
     ruleSet.forEach(ruleSetConfig => {
-      policy.addRuleSet(AbilityJSONParser.parseRuleSet<Resource, Environment>(ruleSetConfig));
+      policy.addRuleSet(AbilityJSONParser.parseRuleSet<Resource>(ruleSetConfig));
     });
 
     return policy;
   }
 
-  public static parseRule<Resources extends object, Environment = unknown>(
+  public static parseRule<Resources extends object>(
     config: AbilityRuleConfig,
-  ): AbilityRule<Resources, Environment> {
+  ): AbilityRule<Resources> {
     const { id, name, subject, resource, condition, disabled } = config;
 
-    return new AbilityRule<Resources, Environment>({
+    return new AbilityRule<Resources>({
       id,
       name,
       subject,
@@ -62,12 +62,11 @@ export class AbilityJSONParser {
    * Parse the config JSON format to Group class instance
    */
   public static parseRuleSet<
-    Resource extends ResourceObject = Record<string, unknown>,
-    Environment = unknown,
-  >(config: AbilityRuleSetConfig): AbilityRuleSet<Resource, Environment> {
+    Resource extends ResourceObject = Record<string, unknown>
+  >(config: AbilityRuleSetConfig): AbilityRuleSet<Resource> {
     const { id, name, rules, compareMethod, disabled } = config;
 
-    const ruleSet = new AbilityRuleSet<Resource, Environment>({
+    const ruleSet = new AbilityRuleSet<Resource>({
       disabled,
       compareMethod: new AbilityCompare(compareMethod),
       name,
@@ -117,6 +116,7 @@ export class AbilityJSONParser {
       effect: policy.effect.code,
       priority: policy.priority,
       disabled: policy.disabled,
+      tags: policy.tags,
     };
   }
 

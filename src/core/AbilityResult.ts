@@ -1,9 +1,9 @@
 import { AbilityExplain, AbilityExplainPolicy } from '~/core/AbilityExplain';
-import { ResourceObject } from '~/core/AbilityTypeGenerator';
+import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
 import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
 import { AbilityStrategy } from '~/strategy/AbilityStrategy';
 
-export class AbilityResult<R extends ResourceObject = Record<string, unknown>, E = unknown> {
+export class AbilityResult<R extends ResourceObject = Record<string, unknown>, E extends EnvironmentObject = Record<string, unknown>> {
   protected readonly effect: AbilityPolicyEffect;
   protected readonly strategy: AbilityStrategy<R, E>;
 

@@ -6,7 +6,7 @@ import AbilityRule, { AbilityRuleConfig } from '~/core/AbilityRule';
 import AbilityRuleSet from '~/core/AbilityRuleSet';
 import { AbilityDSLLexer } from '~/parsers/dsl/AbilityDSLLexer';
 import { AbilityDSLToken, TokenType } from '~/parsers/dsl/AbilityDSLToken';
-import { ResourceObject } from '~/core/AbilityTypeGenerator';
+import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
 import { AbilityDSLSyntaxError } from '~/parsers/dsl/AbilityDSLSyntaxError';
 import { AbilityDSLTokenStream } from './AbilityDSLTokenStream';
 
@@ -27,21 +27,26 @@ import { AbilityDSLTokenStream } from './AbilityDSLTokenStream';
  * composed (is null, is not null, greater than, less than or equal, etc.).
  */
 export class AbilityDSLParser<
-  Resource extends ResourceObject = Record<string, unknown>,
-  Environment = unknown,
+  R extends ResourceObject = Record<string, unknown>,
+  E extends EnvironmentObject = Record<string, unknown>,
+  T extends string = string
 > {
   private readonly dsl: string;
   private stream!: AbilityDSLTokenStream;
   private annotationBuffer: {
+    id: string | null;
     name: string | null;
     description: string | null;
     priority: number | null;
     disabled: boolean | null;
+    tags: string[];
   } = {
+    id: null,
     name: null,
     description: null,
     priority: null,
     disabled: null,
+    tags: [],
   };
 
   constructor(dsl: string) {
@@ -52,14 +57,14 @@ export class AbilityDSLParser<
    * Main entry point: tokenize the input and parse all policies.
    * @returns Array of AbilityPolicy instances.
    */
-  public parse(): readonly AbilityPolicy<Resource, Environment>[] {
+  public parse(): readonly AbilityPolicy<R, E, T>[] {
     // 1. Лексер → токены
     const tokens = new AbilityDSLLexer(this.dsl).tokenize();
 
     // 2. Создаём TokenStream
     this.stream = new AbilityDSLTokenStream(tokens, this.dsl);
 
-    const policies: AbilityPolicy[] = [];
+    const policies: AbilityPolicy<R, E, T>[] = [];
 
     // 3. Парсим политики
     while (!this.stream.eof()) {
@@ -71,7 +76,7 @@ export class AbilityDSLParser<
         this.stream.syntaxError(`Expected policy, got ${token.code}.`, token, ['EFFECT']);
       }
 
-      policies.push(this.parsePolicy());
+      policies.push(this.parsePolicy() as AbilityPolicy<R, E, T>);
     }
 
     return policies;
@@ -125,13 +130,14 @@ export class AbilityDSLParser<
     const ruleSets = this.parseRuleSets(compareMethod);
 
     // Construct the policy instance.
-    return new AbilityPolicy({
-      id: `${effect}:${permission}:${Math.random()}`,
-      name: meta.name ?? `${effect} ${permission}`,
+    return new AbilityPolicy<R, E, T>({
+      id: meta.id || `policy${effect}:${permission}`,
+      name: meta.name ?? `policy${effect}:${permission}`,
       priority: meta.priority !== null ? meta.priority : undefined,
       permission: permission.replace(/^permission\./, ''),
       effect: effect === 'permit' ? AbilityPolicyEffect.permit : AbilityPolicyEffect.deny,
       disabled: meta.disabled !== null ? meta.disabled : false,
+      tags: Array.from(new Set(meta.tags)),
       compareMethod,
     }).addRuleSets(ruleSets);
   }
@@ -165,6 +171,7 @@ export class AbilityDSLParser<
       // Иначе — implicit group (all-of по умолчанию)
       const meta = this.takeAnnotations();
       const group = new AbilityRuleSet({
+        id: meta.id,
         compareMethod: policyCompareMethod,
         name: meta.name,
         disabled: meta.disabled !== null ? meta.disabled : false,
@@ -222,6 +229,7 @@ export class AbilityDSLParser<
     this.stream.expect(AbilityDSLToken.COLON, 'Expected ":"');
 
     const group = new AbilityRuleSet({
+      id: meta.id,
       compareMethod,
       name: meta.name,
       disabled: meta.disabled !== null ? meta.disabled : false,
@@ -283,6 +291,7 @@ export class AbilityDSLParser<
     }
 
     const group = new AbilityRuleSet({
+      id: meta.id,
       compareMethod,
       name: meta.name,
       isExcept: true,
@@ -375,6 +384,7 @@ export class AbilityDSLParser<
     }
 
     return new AbilityRule({
+      id: meta.id,
       subject,
       resource,
       condition,
@@ -807,32 +817,59 @@ export class AbilityDSLParser<
   private processAnnotationToken(token: AbilityDSLToken) {
     const text = token.value.trim();
 
+    if (text.startsWith('@id ')) {
+      this.annotationBuffer.id = text.slice(4).trim();
+
+      return;
+    }
+
     if (text.startsWith('@name ')) {
       this.annotationBuffer.name = text.slice(6).trim();
+
+      return;
     }
 
     if (text.startsWith('@description ')) {
       this.annotationBuffer.description = text.slice(13).trim();
+
+      return;
     }
 
     if (text.startsWith('@priority ')) {
       this.annotationBuffer.priority = parseInt(text.slice(10).trim(), 10);
+
+      return;
     }
 
     if (text.startsWith('@disabled')) {
       const value = text.slice(9).trim();
       this.annotationBuffer.disabled =
         value.length === 0 ? true : text.slice(9).trim() === 'true';
+
+      return;
+    }
+
+    if (text.startsWith('@tags ')) {
+       const value = text.slice(6).trim().split(',').map(tag => tag.trim());
+       this.annotationBuffer.tags = this.annotationBuffer.tags.concat(value);
+
+       return;
+    }
+
+    if (text.startsWith('@')) {
+      return this.stream.syntaxError(`Unexpected annotation "${text.trim()}"`, token, ['ANNOTATION']);
     }
   }
 
   private takeAnnotations(): typeof this.annotationBuffer {
     const meta = { ...this.annotationBuffer };
     this.annotationBuffer = {
+      id: null,
       name: null,
       description: null,
       priority: null,
       disabled: null,
+      tags: [],
     };
     return meta;
   }

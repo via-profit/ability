@@ -30,7 +30,7 @@ export type AbilityRuleConstructorProps = Omit<AbilityRuleConfig, 'condition'> &
 /**
  * Represents a rule that defines a condition to be checked against a subject and resource.
  */
-export class AbilityRule<Resources extends object = object, Environment = unknown> {
+export class AbilityRule<Resources extends object = object, Environment extends object = object> {
   /**
    * Subject key path like a 'user.name'
    */
@@ -58,13 +58,14 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
    */
   public constructor(params: AbilityRuleConstructorProps) {
     const { id, name, subject, resource, condition, disabled } = params;
-    this.name = name || `${JSON.stringify(subject)} ${condition.code} ${JSON.stringify(resource)}`;
+    this.name = name || `rule:${JSON.stringify(subject)}:${condition.code}:${JSON.stringify(resource)}`;
     this.id = id || this.name;
     this.disabled = typeof disabled === 'boolean' ? disabled : false;
 
     this.subject = subject;
     this.resource = resource;
     this.condition = condition;
+    this.state = this.disabled ? AbilityMatch.disabled : this.state;
   }
 
   private isPrimitive(v: unknown): v is string | number | boolean | null {
@@ -194,7 +195,8 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
   public check(resource: Resources | null, environment?: Environment): AbilityMatch {
 
     if (this.disabled) {
-      return AbilityMatch.pending;
+      this.state = AbilityMatch.disabled;
+      return this.state;
     }
 
     const [subjectValue, resourceValue] = this.extractValues(resource, environment);
@@ -319,7 +321,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     });
   }
 
-  static equals<Resources extends object = object, Environment = unknown>(
+  static equals<Resources extends object = object, Environment extends object = object>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
@@ -330,7 +332,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     });
   }
 
-  static notEquals<Resources extends object = object, Environment = unknown>(
+  static notEquals<Resources extends object = object, Environment extends object = object>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
@@ -341,7 +343,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     });
   }
 
-  static contains<Resources extends object = object, Environment = unknown>(
+  static contains<Resources extends object = object, Environment extends object = object>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
@@ -352,7 +354,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     });
   }
 
-  static notContains<Resources extends object = object, Environment = unknown>(
+  static notContains<Resources extends object = object, Environment extends object = object>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
@@ -363,7 +365,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     });
   }
 
-  static notIn<Resources extends object = object, Environment = unknown>(
+  static notIn<Resources extends object = object, Environment extends object = object>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
@@ -374,7 +376,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     });
   }
 
-  static in<Resources extends object = object, Environment = unknown>(
+  static in<Resources extends object = object, Environment extends object = object>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
@@ -385,7 +387,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     });
   }
 
-  static notEqual<Resources extends object = object, Environment = unknown>(
+  static notEqual<Resources extends object = object, Environment extends object = object>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
@@ -396,7 +398,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     });
   }
 
-  static lessThan<Resources extends object = object, Environment = unknown>(
+  static lessThan<Resources extends object = object, Environment extends object = object>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
@@ -407,7 +409,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     });
   }
 
-  static lessOrEqual<Resources extends object = object, Environment = unknown>(
+  static lessOrEqual<Resources extends object = object, Environment extends object = object>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
@@ -417,7 +419,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
       resource,
     });
   }
-  static moreThan<Resources extends object = object, Environment = unknown>(
+  static moreThan<Resources extends object = object, Environment extends object = object>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {
@@ -428,7 +430,7 @@ export class AbilityRule<Resources extends object = object, Environment = unknow
     });
   }
 
-  static moreOrEqual<Resources extends object = object, Environment = unknown>(
+  static moreOrEqual<Resources extends object = object, Environment extends object = object>(
     subject: string,
     resource: AbilityRuleConfig['resource'],
   ): AbilityRule<Resources, Environment> {

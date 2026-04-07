@@ -1,8 +1,8 @@
 import { AbilityStrategy } from '~/strategy/AbilityStrategy';
 import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
-import { ResourceObject } from '~/core/AbilityTypeGenerator';
+import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
 
-export class PriorityStrategy<R extends ResourceObject, E> extends AbilityStrategy<R, E> {
+export class PriorityStrategy<R extends ResourceObject, E extends EnvironmentObject = Record<string, unknown>> extends AbilityStrategy<R, E> {
   evaluate() {
     const matched = this.matchedPolicies();
     if (matched.length === 0) {

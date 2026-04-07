@@ -1,7 +1,7 @@
 import AbilityRule, { AbilityRuleConfig } from '~/core/AbilityRule';
 import AbilityCompare, { AbilityCompareCodeType } from '~/core/AbilityCompare';
 import AbilityMatch from '~/core/AbilityMatch';
-import { ResourceObject } from '~/core/AbilityTypeGenerator';
+import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
 
 export type AbilityRuleSetConfig = {
   readonly id?: string | null;
@@ -20,14 +20,14 @@ export type AbilityRuleSetConstructorProps = {
 };
 
 export class AbilityRuleSet<
-  Resources extends ResourceObject = Record<string, unknown>,
-  Environment = unknown,
+  R extends ResourceObject = Record<string, unknown>,
+  E extends EnvironmentObject = Record<string, unknown>,
 > {
   public state: AbilityMatch = AbilityMatch.pending;
   /**
    * List of rules
    */
-  public rules: AbilityRule<Resources, Environment>[] = [];
+  public rules: AbilityRule<R, E>[] = [];
 
   /**
    * Rules compare method.\
@@ -54,30 +54,32 @@ export class AbilityRuleSet<
   public constructor(params: AbilityRuleSetConstructorProps) {
     const { name, id, compareMethod, isExcept, disabled } = params;
 
-    this.name = name || '';
+    this.name = name || `ruleset:${compareMethod.code}`;
     this.id = id || this.name;
     this.compareMethod = compareMethod;
     this.isExcept = isExcept;
     this.disabled = typeof disabled === 'boolean' ? disabled : false;
+    this.state = this.disabled ? AbilityMatch.disabled : this.state;
   }
 
-  public addRule(rule: AbilityRule<Resources, Environment>): this {
+  public addRule(rule: AbilityRule<R, E>): this {
     this.rules.push(rule);
 
     return this;
   }
 
-  public addRules(rules: AbilityRule<Resources, Environment>[]): this {
+  public addRules(rules: AbilityRule<R, E>[]): this {
     rules.forEach(rule => this.addRule(rule));
 
     return this;
   }
 
-  public check(resources: Resources | null, environment?: Environment): AbilityMatch {
+  public check(resources: R | null, environment?: E): AbilityMatch {
     this.state = AbilityMatch.mismatch;
 
     if (this.disabled) {
-      return AbilityMatch.pending;
+      this.state = AbilityMatch.disabled;
+      return this.state;
     }
 
     if (!this.rules.length) {
@@ -87,6 +89,7 @@ export class AbilityRuleSet<
     const ruleCheckStates: AbilityMatch[] = [];
 
     for (const rule of this.rules) {
+
       if (rule.disabled) {
         continue;
       }
@@ -128,10 +131,10 @@ export class AbilityRuleSet<
       id: string | null;
       name: string | null;
       compareMethod: AbilityCompare;
-      rules: AbilityRule<Resources, Environment>[];
+      rules: AbilityRule<R, E>[];
     }>,
-  ): AbilityRuleSet<Resources, Environment> {
-    const next = new AbilityRuleSet<Resources, Environment>({
+  ): AbilityRuleSet<R, E> {
+    const next = new AbilityRuleSet<R, E>({
       id: props.id ?? this.id,
       name: props.name ?? this.name,
       compareMethod: props.compareMethod ?? this.compareMethod,

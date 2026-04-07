@@ -2,31 +2,47 @@ import AbilityPolicy from '~/core/AbilityPolicy';
 import { AbilityError } from '~/core/AbilityError';
 import { AbilityResult } from '~/core/AbilityResult';
 import AbilityMatch from '~/core/AbilityMatch';
-import { ResourcesMap } from '~/core/AbilityTypeGenerator';
 import { AbilityStrategy } from '~/strategy/AbilityStrategy';
-import DenyOverridesStrategy from '~/strategy/DenyOverridesStrategy';
 
+export interface AbilityResolverOptions<TTags extends string> {
+  tags?: readonly TTags[];
+}
 
-export class AbilityResolver<Resources extends ResourcesMap, Environment = unknown> {
-  private readonly policies: readonly AbilityPolicy[];
-  private readonly StrategyClass: new (
-    policies: readonly AbilityPolicy<Resources, Environment>[],
-  ) => AbilityStrategy<Resources, Environment>;
+type ExtractResources<P> = P extends AbilityPolicy<infer R, any, any> ? R : never;
+
+type ExtractEnvironment<P> = P extends AbilityPolicy<any, infer E, any> ? E : never;
+
+type ExtractTags<P> = P extends AbilityPolicy<any, any, infer T> ? T : never;
+
+type ExtractResourceByPermission<P, Perm extends string> =
+  P extends AbilityPolicy<infer R, any, any> ? (Perm extends keyof R ? R[Perm] : never) : never;
+
+export class AbilityResolver<
+  P extends AbilityPolicy<any, any, any>, // Политика
+  S extends AbilityStrategy<
+    P extends AbilityPolicy<infer R, infer E, any> ? R : never,
+    P extends AbilityPolicy<any, infer E, any> ? E : never
+  >,
+  TTags extends string = P extends AbilityPolicy<any, any, infer T> ? T : never,
+> {
+  private readonly policies: readonly P[];
+  private readonly StrategyClass: new (policies: readonly P[]) => S;
 
   public constructor(
     /**
      * `Important!` The incorrect Resources type was intentionally passed to AbilityPolicy so that TypeScript could suggest the name of the permission and the structure of its resource in the parse method.
      */
-    policyOrListOfPolicies: readonly AbilityPolicy<Resources>[] | AbilityPolicy<Resources>,
-    strategy?: new (
-      policies: readonly AbilityPolicy<Resources, Environment>[],
-    ) => AbilityStrategy<Resources, Environment>,
+    policyOrListOfPolicies: readonly P[] | P,
+    strategy: new (policies: readonly P[]) => S,
+    options: AbilityResolverOptions<TTags> = {},
   ) {
-    this.policies = Array.isArray(policyOrListOfPolicies)
-      ? policyOrListOfPolicies
-      : [policyOrListOfPolicies];
+    const policies = this.toArray(policyOrListOfPolicies);
 
-    this.StrategyClass = strategy ?? DenyOverridesStrategy;
+    this.policies = options.tags
+      ? policies.filter(p => p.tags.some(tag => options.tags!.includes(tag as TTags)))
+      : policies;
+
+    this.StrategyClass = strategy;
   }
 
   /**
@@ -36,12 +52,11 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
    * @param resource - Resource
    * @param environment
    */
-  public resolve<Permission extends keyof Resources>(
+  public resolve<Permission extends keyof ExtractResources<P> & string>(
     permission: Permission,
-    resource: Resources[Permission],
-    environment?: Environment,
-  ): AbilityResult<Resources[Permission]> {
-
+    resource: ExtractResourceByPermission<P, Permission>,
+    environment?: ExtractEnvironment<P>,
+  ): AbilityResult<ExtractResourceByPermission<P, Permission>, ExtractEnvironment<P>> {
     const filteredPolicies = this.policies.filter(policy =>
       AbilityResolver.isInPermissionContain(
         policy.permission,
@@ -51,7 +66,7 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
 
     // 2. check the policies
     for (const policy of filteredPolicies) {
-      if(policy.disabled) {
+      if (policy.disabled) {
         continue;
       }
 
@@ -65,16 +80,19 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
     }
 
     // 3. Use strategy
-    const strategy = new this.StrategyClass(filteredPolicies) as AbilityStrategy<Resources[Permission], Environment>;
+    const strategy = new this.StrategyClass(filteredPolicies);
     const effect = strategy.evaluate();
 
-    return new AbilityResult<Resources[Permission], Environment>(effect, strategy);
+    return new AbilityResult(effect, strategy) as AbilityResult<
+      ExtractResourceByPermission<P, Permission>,
+      ExtractEnvironment<P>
+    >;
   }
 
-  public enforce<Permission extends keyof Resources>(
+  public enforce<Permission extends keyof ExtractResources<P> & string>(
     permission: Permission,
-    resource: Resources[Permission],
-    environment?: Environment,
+    resource: ExtractResourceByPermission<P, Permission>,
+    environment?: ExtractEnvironment<P>,
   ): void | never {
     const result = this.resolve(permission, resource, environment);
 
@@ -97,6 +115,10 @@ export class AbilityResolver<Resources extends ResourcesMap, Environment = unkno
     return shorter.every((chunk, i) => {
       return chunk === '*' || longer[i] === '*' || chunk === longer[i];
     });
+  }
+
+  private toArray<T>(value: T | readonly T[]): readonly T[] {
+    return [...(Array.isArray(value) ? value : [value])];
   }
 }
 

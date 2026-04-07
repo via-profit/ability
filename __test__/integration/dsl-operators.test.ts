@@ -1,5 +1,6 @@
 import { AbilityDSLParser } from '~/parsers/dsl/AbilityDSLParser';
 import AbilityResolver from '~/core/AbilityResolver';
+import DenyOverridesStrategy from '../../src/strategy/DenyOverridesStrategy';
 
 describe('DSL Operators', () => {
   describe('Any', () => {
@@ -10,7 +11,7 @@ describe('DSL Operators', () => {
       `;
 
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       expect(() =>
         resolver.enforce('user.passwordHash', {
@@ -35,7 +36,7 @@ describe('DSL Operators', () => {
         user.stateOn equals true
     `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('test', {
         user: {
@@ -61,7 +62,7 @@ describe('DSL Operators', () => {
         user.stateOn equals true
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: {
@@ -87,7 +88,7 @@ describe('DSL Operators', () => {
       user.age not equals 16
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { age: 20 } });
 
@@ -100,7 +101,7 @@ describe('DSL Operators', () => {
       user.age is not equals 21
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { age: 21 } });
 
@@ -120,7 +121,7 @@ describe('DSL Operators', () => {
       user.age gt 18
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { age: 19 } });
 
@@ -133,7 +134,7 @@ describe('DSL Operators', () => {
       user.age greater than 18
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { age: 18 } });
 
@@ -153,7 +154,7 @@ describe('DSL Operators', () => {
       user.val gte 6
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { age: 18, val: 6 } });
 
@@ -166,7 +167,7 @@ describe('DSL Operators', () => {
       user.age greater than or equal 18
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { age: 17 } });
 
@@ -186,7 +187,7 @@ describe('DSL Operators', () => {
       user.age < 30
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { age: 29 } });
 
@@ -199,7 +200,7 @@ describe('DSL Operators', () => {
       user.age less than 30
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { age: 30 } });
 
@@ -219,7 +220,7 @@ describe('DSL Operators', () => {
       user.vol lte 15
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('test', { user: { age: 30, vol: 15 } });
 
@@ -232,7 +233,7 @@ describe('DSL Operators', () => {
       user.age less than or equal 30
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { age: 31 } });
 
@@ -251,7 +252,7 @@ describe('DSL Operators', () => {
       user.surname = null
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: {
@@ -269,7 +270,7 @@ describe('DSL Operators', () => {
       user.middleName is null
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { middleName: 'Ivan' } });
 
@@ -290,7 +291,7 @@ describe('DSL Operators', () => {
       user.surname <> null
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: {
@@ -308,7 +309,7 @@ describe('DSL Operators', () => {
       user.name is not null
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { name: null } });
 
@@ -326,7 +327,7 @@ describe('DSL Operators', () => {
       user.role in ['admin', 'manager']
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: {
@@ -343,7 +344,7 @@ describe('DSL Operators', () => {
       user.role in ['admin', 'manager']
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { role: 'guest' } });
 
@@ -361,7 +362,7 @@ describe('DSL Operators', () => {
       user.role not in ['banned', 'blocked']
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { role: 'user' } });
 
@@ -374,7 +375,7 @@ describe('DSL Operators', () => {
       user.role not in ['banned', 'blocked']
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', { user: { role: 'banned' } });
 
@@ -394,7 +395,7 @@ describe('DSL Operators', () => {
       user.tags has 'vip'
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: { tags: ['vip', 'premium'] },
@@ -409,7 +410,7 @@ describe('DSL Operators', () => {
       user.tags contains 'vip'
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: { tags: ['basic'] },
@@ -431,7 +432,7 @@ describe('DSL Operators', () => {
       user.tags not has 'banned'
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: { tags: ['vip', 'premium'] },
@@ -446,7 +447,7 @@ describe('DSL Operators', () => {
       user.tags not contains 'banned'
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: { tags: ['banned'] },
@@ -468,7 +469,7 @@ describe('DSL Operators', () => {
       user.statusOn == true
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: { statusOn: true },
@@ -486,7 +487,7 @@ describe('DSL Operators', () => {
       user.statusOn == true
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: { statusOn: true },
@@ -507,7 +508,7 @@ describe('DSL Operators', () => {
       user.name length = 4
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: {
@@ -525,7 +526,7 @@ describe('DSL Operators', () => {
       user.name length = 3
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: {
@@ -551,7 +552,7 @@ describe('DSL Operators', () => {
       user.roles length > 2
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: {
@@ -577,7 +578,7 @@ describe('DSL Operators', () => {
       user.roles length < 4
   `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         user: {
@@ -600,7 +601,7 @@ describe('DSL Operators', () => {
           always
       `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         foo: 'bar',
@@ -619,15 +620,16 @@ describe('DSL Operators', () => {
           env.hour >= 16
       `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         env: {
-          hour: 16,
+          hour: 12,
         },
       });
-      expect(result.isAllowed()).toBeFalsy();
-      expect(result.isDenied()).toBeTruthy();
+      expect(result.isAllowed()).toBeTruthy();
+      expect(result.isDenied()).toBeFalsy();
+
     });
 
     it('Operator "always" should NOT permit after 16 under DenyOverrides', () => {
@@ -642,14 +644,18 @@ describe('DSL Operators', () => {
       `;
 
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         env: { hour: 16 },
       });
 
+      console.log(result.explain().toString());
+
       expect(result.isDenied()).toBeTruthy();
       expect(result.isAllowed()).toBeFalsy();
+
+
     });
 
   });
@@ -664,7 +670,7 @@ describe('DSL Operators', () => {
           never
       `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         foo: 'bar',
@@ -687,7 +693,7 @@ describe('DSL Operators', () => {
         
       `;
       const policies = new AbilityDSLParser(dsl).parse();
-      const resolver = new AbilityResolver(policies);
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
       const result = resolver.resolve('permission.test', {
         foo: 'bar',

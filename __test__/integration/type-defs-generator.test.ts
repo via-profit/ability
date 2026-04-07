@@ -1,28 +1,33 @@
 import { AbilityDSLParser, AbilityResolver, AbilityTypeGenerator } from '../../src';
 
 const dsl = `
-# @name AuthenticationRequired
 # Пользователь должен быть аутентифицирован (токен обязателен)
+@name AuthenticationRequired
+@tags mutation
 allow permission.mut.* if all:
   token.id not equals 'NOT_ASSIGNED'
   token.type is equals 'access'
 
-# @name OrderDeleteAccess
+
+@name OrderDeleteAccess
+@tags mutation, order
 permit permission.mut.order.delete if all:
   account.roles contains 'administrator'
   account.roles contains 'developer'
-
-# @name ClientDeleteAccess
+  env.hour is equals 12
+  
+@name ClientDeleteAccess
+@tags mutation, client
 permit permission.mut.client.delete if all:
   account.roles contains 'viewer'
   account.roles contains 'administrator'
   account.roles contains 'developer'
 
-# @name Cant remove unnamed clients
+@name Cant remove unnamed clients
+@tags mutation, client
 deny permission.mut.client.delete if all:
   client.name equals 'Неизвестный'
-  
-  
+
   deny permission.mut.order.delete if all:
     order.createdHourLef gte 12
 `;

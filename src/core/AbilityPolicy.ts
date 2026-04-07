@@ -4,9 +4,10 @@ import AbilityCompare, { AbilityCompareCodeType } from '~/core/AbilityCompare';
 import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from '~/core/AbilityPolicyEffect';
 import { AbilityExplain, AbilityExplainPolicy } from '~/core/AbilityExplain';
 import { AbilityError } from '~/core/AbilityError';
-import { ResourceObject } from '~/core/AbilityTypeGenerator';
+import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
+import { read } from 'node:fs';
 
-export type AbilityPolicyConfig = {
+export type AbilityPolicyConfig<TTag extends string = string> = {
   readonly permission: string;
   readonly effect: AbilityPolicyEffectCodeType;
   readonly compareMethod: AbilityCompareCodeType;
@@ -15,27 +16,30 @@ export type AbilityPolicyConfig = {
   readonly name: string;
   readonly priority: number;
   readonly disabled?: boolean;
+  readonly tags?: readonly TTag[];
 };
 
-export type AbilityPolicyConstructorProps = {
+export type AbilityPolicyConstructorProps<TTag extends string = string> = {
   id: string;
   name: string;
   permission: string;
   effect: AbilityPolicyEffect;
   compareMethod?: AbilityCompare;
   priority?: number | null;
-  readonly disabled?: boolean;
+  disabled?: boolean;
+  tags?: readonly TTag[];
 };
 
 export class AbilityPolicy<
-  Resource extends ResourceObject = Record<string, unknown>,
-  Environment = unknown,
+  R extends ResourceObject = Record<string, unknown>,
+  E extends EnvironmentObject = Record<string, unknown>,
+  TTag extends string = string,
 > {
   public matchState: AbilityMatch = AbilityMatch.pending;
   /**
    * List of rules
    */
-  public ruleSet: AbilityRuleSet<Resource, Environment>[] = [];
+  public ruleSet: AbilityRuleSet<R, E>[] = [];
 
   /**
    * Policy effect
@@ -70,8 +74,19 @@ export class AbilityPolicy<
 
   public disabled: boolean;
 
+  public tags: readonly TTag[];
+
   public constructor(params: AbilityPolicyConstructorProps) {
-    const { name, id, permission, effect, compareMethod = AbilityCompare.and, priority, disabled } = params;
+    const {
+      name,
+      id,
+      permission,
+      effect,
+      compareMethod = AbilityCompare.and,
+      priority,
+      disabled,
+      tags,
+    } = params;
     this.name = name;
     this.id = id;
     this.permission = permission;
@@ -79,13 +94,14 @@ export class AbilityPolicy<
     this.compareMethod = compareMethod;
     this.priority = typeof priority === 'number' ? priority : -1;
     this.disabled = typeof disabled === 'boolean' ? disabled : false;
+    this.tags = (tags || []) as readonly TTag[];
   }
 
   /**
    * Add rule set to the policy
    * @param ruleSet - The rule set to add
    */
-  public addRuleSet(ruleSet: AbilityRuleSet<Resource, Environment>): this {
+  public addRuleSet(ruleSet: AbilityRuleSet<R, E>): this {
     this.ruleSet.push(ruleSet);
 
     return this;
@@ -95,7 +111,7 @@ export class AbilityPolicy<
    * Add rule set to the policy
    * @param ruleSets - The array of rule set to add
    */
-  public addRuleSets(ruleSets: readonly AbilityRuleSet<Resource, Environment>[]): this {
+  public addRuleSets(ruleSets: readonly AbilityRuleSet<R, E>[]): this {
     for (const ruleSet of ruleSets) {
       this.ruleSet.push(ruleSet);
     }
@@ -108,8 +124,13 @@ export class AbilityPolicy<
    * @param resource - The resource to check
    * @param environment - The user environment object
    */
-  public check(resource: Resource, environment?: Environment): AbilityMatch {
+  public check(resource: R, environment?: E): AbilityMatch {
     this.matchState = AbilityMatch.mismatch;
+
+    if (this.disabled) {
+      this.matchState = AbilityMatch.disabled;
+      return this.matchState;
+    }
 
     if (!this.ruleSet.length) {
       return this.matchState;
@@ -119,9 +140,7 @@ export class AbilityPolicy<
     const exceptGroups = this.ruleSet.filter(g => g.isExcept);
     const normalStates: AbilityMatch[] = [];
 
-
     for (const group of normalGroups) {
-
       if (group.disabled) {
         continue;
       }
@@ -136,12 +155,12 @@ export class AbilityPolicy<
 
       if (AbilityCompare.or.isEqual(this.compareMethod) && AbilityMatch.match.isEqual(state)) {
         this.matchState = AbilityMatch.match;
-        // но ещё нужно проверить except-группы
+        // break to check except-rule sets
         break;
       }
     }
 
-    // 3. Итог по обычным группам
+    // 3. Simple rule sets
     let normalMatch = false;
 
     if (AbilityCompare.and.isEqual(this.compareMethod)) {
@@ -155,10 +174,12 @@ export class AbilityPolicy<
       return this.matchState;
     }
 
-    // 4. Проверяем except-группы
+    // 4. except-rule sets
     for (const group of exceptGroups) {
+      if (group.disabled) {
+        continue;
+      }
       const state = group.check(resource, environment);
-      // exceptStates.push(state);
 
       if (AbilityMatch.match.isEqual(state)) {
         this.matchState = AbilityMatch.exceptMismatch;
@@ -166,7 +187,7 @@ export class AbilityPolicy<
       }
     }
 
-    // 5. Всё хорошо — политика совпала
+    // 5. match
     this.matchState = AbilityMatch.match;
     return this.matchState;
   }
@@ -187,10 +208,10 @@ export class AbilityPolicy<
       permission: string;
       effect: AbilityPolicyEffect;
       compareMethod: AbilityCompare;
-      ruleSet: AbilityRuleSet<Resource, Environment>[];
+      ruleSet: AbilityRuleSet<R, E>[];
     }>,
-  ): AbilityPolicy<Resource, Environment> {
-    const policy = new AbilityPolicy<Resource, Environment>({
+  ): AbilityPolicy<R, E> {
+    const policy = new AbilityPolicy<R, E>({
       id: props.id ?? this.id,
       name: props.name ?? this.name,
       priority: typeof props.priority !== 'undefined' ? props.priority : this.priority,
