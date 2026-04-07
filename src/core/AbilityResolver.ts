@@ -17,6 +17,10 @@ type ExtractTags<P> = P extends AbilityPolicy<any, any, infer T> ? T : never;
 type ExtractResourceByPermission<P, Perm extends string> =
   P extends AbilityPolicy<infer R, any, any> ? (Perm extends keyof R ? R[Perm] : never) : never;
 
+type ExtractEnvironmentByPermission<P, Perm extends string> =
+  P extends AbilityPolicy<any, infer E, any> ? (Perm extends keyof E ? E[Perm] : never) : never;
+
+
 export class AbilityResolver<
   P extends AbilityPolicy<any, any, any>, // Политика
   S extends AbilityStrategy<
@@ -55,7 +59,7 @@ export class AbilityResolver<
   public resolve<Permission extends keyof ExtractResources<P> & string>(
     permission: Permission,
     resource: ExtractResourceByPermission<P, Permission>,
-    environment?: ExtractEnvironment<P>,
+    environment?: ExtractEnvironmentByPermission<P, Permission>,
   ): AbilityResult<ExtractResourceByPermission<P, Permission>, ExtractEnvironment<P>> {
     const filteredPolicies = this.policies.filter(policy =>
       AbilityResolver.isInPermissionContain(
@@ -92,7 +96,7 @@ export class AbilityResolver<
   public enforce<Permission extends keyof ExtractResources<P> & string>(
     permission: Permission,
     resource: ExtractResourceByPermission<P, Permission>,
-    environment?: ExtractEnvironment<P>,
+    environment?: ExtractEnvironmentByPermission<P, Permission>,
   ): void | never {
     const result = this.resolve(permission, resource, environment);
 
