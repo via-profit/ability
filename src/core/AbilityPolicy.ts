@@ -20,8 +20,8 @@ export type AbilityPolicyConfig<TTag extends string = string> = {
 };
 
 export type AbilityPolicyConstructorProps<TTag extends string = string> = {
-  id: string;
-  name: string;
+  id: string | null;
+  name: string | null;
   permission: string;
   effect: AbilityPolicyEffect;
   compareMethod?: AbilityCompare;
@@ -87,8 +87,8 @@ export class AbilityPolicy<
       disabled,
       tags,
     } = params;
-    this.name = name;
-    this.id = id;
+    this.id = id || `policy:${effect}:${permission}`;
+    this.name = name || this.id;
     this.permission = permission;
     this.effect = effect;
     this.compareMethod = compareMethod;

@@ -8,6 +8,31 @@ import { AbilityDSLLexer } from './AbilityDSLLexer';
 import { AbilityDSLToken, TokenType } from './AbilityDSLToken';
 import { EnvironmentObject, ResourceObject } from '../../core/AbilityTypeGenerator';
 import { AbilityDSLTokenStream } from './AbilityDSLTokenStream';
+import {
+  AbilityDSLAnnotation,
+  AbilityDSLAnnotationName,
+  AbilityDSLAnnotationOwner,
+  AbilityDSLAnnotations,
+} from '~/parsers/dsl/AbilityDSLAnnotations';
+
+
+type AnnotationBuffer = {
+  id: string | null;
+  name: string | null;
+  description: string | null;
+  priority: number | null;
+  disabled: boolean | null;
+  tags: readonly string[];
+};
+
+type AnnotationTokens = {
+  id?: AbilityDSLToken;
+  name?: AbilityDSLToken;
+  description?: AbilityDSLToken;
+  priority?: AbilityDSLToken;
+  disabled?: AbilityDSLToken;
+  tags?: AbilityDSLToken;
+};
 
 /**
  * Parser for the Ability DSL.
@@ -32,14 +57,7 @@ export class AbilityDSLParser<
 > {
   private readonly dsl: string;
   private stream!: AbilityDSLTokenStream;
-  private annotationBuffer: {
-    id: string | null;
-    name: string | null;
-    description: string | null;
-    priority: number | null;
-    disabled: boolean | null;
-    tags: string[];
-  } = {
+  private annotationBuffer: AnnotationBuffer = {
     id: null,
     name: null,
     description: null,
@@ -47,6 +65,31 @@ export class AbilityDSLParser<
     disabled: null,
     tags: [],
   };
+
+  private annotationMatrix2 = {
+    [AbilityDSLAnnotationOwner.policy.code]: new Set([
+      AbilityDSLAnnotationName.id,
+      AbilityDSLAnnotationName.name,
+      AbilityDSLAnnotationName.disabled,
+      AbilityDSLAnnotationName.description,
+      AbilityDSLAnnotationName.priority,
+      AbilityDSLAnnotationName.tags,
+    ]),
+    [AbilityDSLAnnotationOwner.ruleSet.code]: new Set([
+      AbilityDSLAnnotationName.id,
+      AbilityDSLAnnotationName.name,
+      AbilityDSLAnnotationName.disabled,
+      AbilityDSLAnnotationName.description,
+    ]),
+    [AbilityDSLAnnotationOwner.rule.code]: new Set([
+      AbilityDSLAnnotationName.id,
+      AbilityDSLAnnotationName.name,
+      AbilityDSLAnnotationName.disabled,
+      AbilityDSLAnnotationName.description,
+    ]),
+  } as const;
+  private annBuffer : AbilityDSLAnnotations = new AbilityDSLAnnotations();
+  private annotationTokens: AnnotationTokens = {};
   private annotationMatrix = {
     policy: new Set(['id', 'name', 'disabled', 'description', 'priority', 'tags']),
     ruleSet: new Set(['id', 'name', 'disabled', 'description']),
@@ -99,8 +142,8 @@ export class AbilityDSLParser<
   private parsePolicy(): AbilityPolicy {
     this.consumeLeadingComments();
     this.consumeLeadingAnnotations();
-    const meta = this.takeAnnotations();
-    // this.validateAnnotations('policy', meta);
+    const annotations = this.takeAnnotations(AbilityDSLAnnotationOwner.policy);
+    // this.validateAnnotations('policy', meta, tokens);
 
     // Effect: "permit" or "deny"
     const effectToken = this.stream.expect(AbilityDSLToken.EFFECT, 'Expected effect');
@@ -136,13 +179,13 @@ export class AbilityDSLParser<
 
     // Construct the policy instance.
     return new AbilityPolicy<R, E, T>({
-      id: meta.id || `policy${effect}:${permission}`,
-      name: meta.name ?? `policy${effect}:${permission}`,
-      priority: meta.priority !== null ? meta.priority : undefined,
+      id: annotations.id?.value || null,
+      name: annotations.name?.value || null,
+      priority: annotations.priority?.value || null,
       permission: permission.replace(/^permission\./, ''),
       effect: effect === 'permit' ? AbilityPolicyEffect.permit : AbilityPolicyEffect.deny,
-      disabled: meta.disabled !== null ? meta.disabled : false,
-      tags: Array.from(new Set(meta.tags)),
+      disabled: annotations.disabled?.value ?? undefined,
+      tags: annotations.tags?.value ?? undefined,
       compareMethod,
     }).addRuleSets(ruleSets);
   }
@@ -173,14 +216,15 @@ export class AbilityDSLParser<
         continue;
       }
 
-      const meta = this.takeAnnotations();
+      const annotation = this.takeAnnotations(AbilityDSLAnnotationOwner.ruleSet);
+      // this.validateAnnotations('ruleSet', meta, tokens);
       // this.validateAnnotations('ruleSet', meta);
 
       const group = new AbilityRuleSet({
-        id: meta.id,
+        id: annotation.id?.value || null,
         compareMethod: policyCompareMethod,
-        name: meta.name,
-        disabled: meta.disabled !== null ? meta.disabled : false,
+        name: annotation.name?.value ?? null,
+        disabled: annotation.disabled?.value ?? undefined,
       });
 
       // Читаем правила implicit-группы
@@ -218,8 +262,8 @@ export class AbilityDSLParser<
   private parseGroup(): AbilityRuleSet {
     this.consumeLeadingComments();
     this.consumeLeadingAnnotations();
-    const meta = this.takeAnnotations();
-    // this.validateAnnotations('ruleSet', meta);
+    const annotations = this.takeAnnotations(AbilityDSLAnnotationOwner.ruleSet);
+    // this.validateAnnotations('ruleSet', meta, tokens);
 
     const compareToken = this.stream.expectOneOf(
       [AbilityDSLToken.ALL, AbilityDSLToken.ANY, AbilityDSLToken.ALWAYS, AbilityDSLToken.NEVER],
@@ -236,10 +280,10 @@ export class AbilityDSLParser<
     this.stream.expect(AbilityDSLToken.COLON, 'Expected ":"');
 
     const group = new AbilityRuleSet({
-      id: meta.id,
+      id: annotations.id?.value || null,
       compareMethod,
-      name: meta.name,
-      disabled: meta.disabled !== null ? meta.disabled : false,
+      name: annotations.name?.value || null,
+      disabled: annotations.disabled?.value ?? undefined,
     });
 
     while (!this.stream.eof()) {
@@ -273,8 +317,8 @@ export class AbilityDSLParser<
   private parseExceptGroup(policyCompareMethod: AbilityCompare): AbilityRuleSet {
     this.consumeLeadingComments();
     this.consumeLeadingAnnotations();
-    const meta = this.takeAnnotations();
-    // this.validateAnnotations('ruleSet', meta);
+    const annotations = this.takeAnnotations(AbilityDSLAnnotationOwner.ruleSet);
+    // this.validateAnnotations('ruleSet', meta, tokens);
 
     // consume "except"
     this.stream.expect(AbilityDSLToken.EXCEPT, 'Expected "except"');
@@ -299,11 +343,11 @@ export class AbilityDSLParser<
     }
 
     const group = new AbilityRuleSet({
-      id: meta.id,
+      id: annotations.id?.value || null,
       compareMethod,
-      name: meta.name,
+      name: annotations.name?.value || null,
       isExcept: true,
-      disabled: meta.disabled !== null ? meta.disabled : false,
+      disabled: annotations.disabled?.value ?? undefined,
     });
 
     // read rules
@@ -338,8 +382,8 @@ export class AbilityDSLParser<
   private parseRule(): AbilityRule {
     this.consumeLeadingComments();
     this.consumeLeadingAnnotations();
-    const meta = this.takeAnnotations();
-    // this.validateAnnotations('rule', meta);
+    const annotations = this.takeAnnotations(AbilityDSLAnnotationOwner.rule);
+    // this.validateAnnotations('rule', meta, tokens);
 
     const isNeverAlways =
       this.stream.check(AbilityDSLToken.ALWAYS) || this.stream.check(AbilityDSLToken.NEVER);
@@ -395,12 +439,12 @@ export class AbilityDSLParser<
     }
 
     return new AbilityRule({
-      id: meta.id,
+      id: annotations.id?.value || null,
       subject,
       resource,
       condition,
-      name: meta.name,
-      disabled: meta.disabled !== null ? meta.disabled : false,
+      name: annotations.name?.value || null,
+      disabled: annotations.disabled?.value ?? undefined,
     });
   }
 
@@ -818,52 +862,119 @@ export class AbilityDSLParser<
     }
   }
 
+  // private _consumeLeadingAnnotations() {
+  //   while (this.stream.check(AbilityDSLToken.ANNOTATION)) {
+  //     const token = this.stream.next();
+  //     this.processAnnotationToken(token);
+  //   }
+  // }
+
   private consumeLeadingAnnotations() {
     // const annotationNames = Object.keys(this.annotationBuffer);
     // console.log(`annotationNames: ${annotationNames}`);
 
     while (this.stream.check(AbilityDSLToken.ANNOTATION)) {
       const token = this.stream.next();
-      this.processAnnotationToken(token);
+      const text = token.value.trim();
+
+      if (text.startsWith('@id ')) {
+        this.annotationBuffer.id = text.slice(4).trim();
+        this.annBuffer.setID(text.slice(4).trim(), token);
+      }
+
+      if (text.startsWith('@name ')) {
+        this.annBuffer.setName(text.slice(6).trim(), token);
+      }
+
+      if (text.startsWith('@description ')) {
+        this.annBuffer.setDescription(text.slice(13).trim(), token);
+      }
+
+      if (text.startsWith('@priority ')) {
+        this.annBuffer.setPriority(parseInt(text.slice(10).trim(), 10), token);
+      }
+
+      if (text.startsWith('@disabled')) {
+        const value = text.slice(9).trim();
+
+        this.annBuffer.setDisabled(
+          value.length === 0 ? true : text.slice(9).trim() === 'true',
+          token,
+        );
+      }
+
+      if (text.startsWith('@tags ')) {
+        const value = text
+          .slice(6)
+          .trim()
+          .split(',')
+          .map(tag => tag.trim());
+
+        this.annBuffer.setTags(value, token);
+      }
     }
   }
 
-  private processAnnotationToken(token: AbilityDSLToken) {
-    const text = token.value.trim();
+  // private processAnnotationToken(token: AbilityDSLToken) {
+  //   const text = token.value.trim();
+  //
+  //   if (text.startsWith('@id ')) {
+  //     this.annotationBuffer.id = text.slice(4).trim();
+  //   }
+  //
+  //   if (text.startsWith('@name ')) {
+  //     this.annotationBuffer.name = text.slice(6).trim();
+  //   }
+  //
+  //   if (text.startsWith('@description ')) {
+  //     this.annotationBuffer.description = text.slice(13).trim();
+  //   }
+  //
+  //   if (text.startsWith('@priority ')) {
+  //     this.annotationBuffer.priority = parseInt(text.slice(10).trim(), 10);
+  //   }
+  //
+  //   if (text.startsWith('@disabled')) {
+  //     const value = text.slice(9).trim();
+  //     this.annotationBuffer.disabled = value.length === 0 ? true : text.slice(9).trim() === 'true';
+  //   }
+  //
+  //   if (text.startsWith('@tags ')) {
+  //     const value = text
+  //       .slice(6)
+  //       .trim()
+  //       .split(',')
+  //       .map(tag => tag.trim());
+  //     this.annotationBuffer.tags = this.annotationBuffer.tags.concat(value);
+  //   }
+  // }
 
-    if (text.startsWith('@id ')) {
-      this.annotationBuffer.id = text.slice(4).trim();
-    }
+  private takeAnnotations(owner: AbilityDSLAnnotationOwner): AbilityDSLAnnotations {
+    // const meta = { ...this.annotationBuffer };
+    // const tokens = { ...this.annotationTokens };
+    const annBuffer = this.annBuffer.clone();
 
-    if (text.startsWith('@name ')) {
-      this.annotationBuffer.name = text.slice(6).trim();
-    }
+    const allowed = this.annotationMatrix2[owner.code];
+    //
+    // const checkField = (field: AbilityDSLAnnotationName) => {
+    //   if (!allowed.has(field)) {
+    //     const msg = `Annotation @${field} is not allowed on ${owner.code}. Allowed: ${Array.from(allowed)
+    //       .map(a => `@${a}`)
+    //       .join(', ')}`;
+    //     this.stream.syntaxError(msg, allo);
+    //   }
+    // };
+    // checkField(AbilityDSLAnnotationName.id, tokens.id);
+    // checkField('name', tokens.name);
+    // checkField('description', tokens.description);
+    // checkField('priority', tokens.priority);
+    // checkField('disabled', tokens.disabled);
+    // if (tokens.tags && meta.tags.length > 0) {
+    //   checkField('tags', tokens.tags);
+    // }
 
-    if (text.startsWith('@description ')) {
-      this.annotationBuffer.description = text.slice(13).trim();
-    }
+    this.annBuffer.clear();
 
-    if (text.startsWith('@priority ')) {
-      this.annotationBuffer.priority = parseInt(text.slice(10).trim(), 10);
-    }
-
-    if (text.startsWith('@disabled')) {
-      const value = text.slice(9).trim();
-      this.annotationBuffer.disabled = value.length === 0 ? true : text.slice(9).trim() === 'true';
-    }
-
-    if (text.startsWith('@tags ')) {
-      const value = text
-        .slice(6)
-        .trim()
-        .split(',')
-        .map(tag => tag.trim());
-      this.annotationBuffer.tags = this.annotationBuffer.tags.concat(value);
-    }
-  }
-
-  private takeAnnotations(): typeof this.annotationBuffer {
-    const meta = { ...this.annotationBuffer };
     this.annotationBuffer = {
       id: null,
       name: null,
@@ -872,31 +983,33 @@ export class AbilityDSLParser<
       disabled: null,
       tags: [],
     };
+    this.annotationTokens = {};
+    return annBuffer;
+  }
 
-    // const annotations = Object.keys(meta).filter(a => {
-    //   const v = meta[a as keyof typeof meta];
-    //   return Array.isArray(v) ? v.length > 0 : v !== null;
-    // });
-
-    // for (let i = 0; i < annotations.length; i++) {
-    //   const annotation = annotations[i];
-    //
-    //   if (!this.annotationMatrix[type].has(annotation)) {
-    //
-    //     let t: AbilityDSLToken | null = this.stream.peek();
-    //     while(t !== null) {
-    //       if (t.code === 'ANNOTATION' && `@${t.value}` === annotation) {
-    //         this.stream.syntaxError(`Annotation @${annotation} is not allowed on ${type}`, t, [
-    //           'ANNOTATION',
-    //         ]);
-    //       }
-    //
-    //       t = this.stream.prev();
-    //     }
-    //   }
-    // }
-
-    return meta;
+  // Метод validateAnnotations
+  private validateAnnotations(
+    type: keyof typeof this.annotationMatrix,
+    meta: typeof this.annotationBuffer,
+    tokens: typeof this.annotationTokens,
+  ): void {
+    const allowed = this.annotationMatrix[type];
+    const checkField = (field: keyof typeof meta, token?: AbilityDSLToken) => {
+      if (token && !allowed.has(field)) {
+        const msg = `Annotation @${field} is not allowed on ${type}. Allowed: ${Array.from(allowed)
+          .map(a => `@${a}`)
+          .join(', ')}`;
+        this.stream.syntaxError(msg, token);
+      }
+    };
+    checkField('id', tokens.id);
+    checkField('name', tokens.name);
+    checkField('description', tokens.description);
+    checkField('priority', tokens.priority);
+    checkField('disabled', tokens.disabled);
+    if (tokens.tags && meta.tags.length > 0) {
+      checkField('tags', tokens.tags);
+    }
   }
 
   // -------------------------------------------------------------------------
