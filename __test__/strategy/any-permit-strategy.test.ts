@@ -1,5 +1,5 @@
-import { AbilityResolver } from '~/core/AbilityResolver';
-import { AbilityDSLParser } from '../../src';
+import { AbilityResolver } from '../../src/core/AbilityResolver';
+import { AbilityDSLParser } from '../../src/parsers/dsl/AbilityDSLParser';
 import AnyPermitStrategy from '../../src/strategy/AnyPermitStrategy';
 
 const dsl = `

@@ -1,5 +1,5 @@
-import AbilityTypeGenerator from '~/core/AbilityTypeGenerator';
-import { AbilityDSLParser } from '~/parsers/dsl/AbilityDSLParser';
+import AbilityTypeGenerator from '../../src/core/AbilityTypeGenerator';
+import { AbilityDSLParser } from '../../src/parsers/dsl/AbilityDSLParser';
 
 describe('AbilityDSLParser', () => {
   it('should parse a policy with two rule sets (all of and any of)', () => {

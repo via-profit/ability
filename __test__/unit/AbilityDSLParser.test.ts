@@ -1,7 +1,7 @@
-import { AbilityDSLParser } from '~/parsers/dsl/AbilityDSLParser';
-import AbilityCondition from '~/core/AbilityCondition';
-import AbilityCompare from '~/core/AbilityCompare';
-import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
+import { AbilityDSLParser } from '../../src/parsers/dsl/AbilityDSLParser';
+import {AbilityCondition} from '../../src/core/AbilityCondition';
+import {AbilityCompare} from '../../src/core/AbilityCompare';
+import {AbilityPolicyEffect} from '../../src/core/AbilityPolicyEffect';
 
 describe('AbilityDSLParser', () => {
   it('should parse a policy with two rule sets (all of and any of)', () => {

@@ -1,6 +1,7 @@
-import { AbilityResolver } from '~/core/AbilityResolver';
+import { AbilityResolver } from '../../src/core/AbilityResolver';
+import { AbilityDSLParser } from '../../src/parsers/dsl/AbilityDSLParser';
 import { DenyOverridesStrategy } from '../../src/strategy/DenyOverridesStrategy';
-import { AbilityDSLParser } from '../../src';
+
 
 const dsl = `
 # 1. Администраторы могут удалять любых клиентов

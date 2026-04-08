@@ -1,6 +1,7 @@
-import { AbilityResolver } from '~/core/AbilityResolver';
+import { AbilityResolver } from '../../src/core/AbilityResolver';
+import { AbilityDSLParser } from '../../src/parsers/dsl/AbilityDSLParser';
 import { PriorityStrategy } from '../../src/strategy/PriorityStrategy';
-import { AbilityDSLParser } from '../../src';
+
 
 
 const dsl = `

@@ -1,4 +1,4 @@
-import { AbilityDSLParser, AbilityResolver, AbilityTypeGenerator } from '../../src';
+import { AbilityDSLParser, AbilityTypeGenerator } from '../../src';
 
 const dsl = `
 # Пользователь должен быть аутентифицирован (токен обязателен)
@@ -30,6 +30,7 @@ deny permission.mut.client.delete if all:
 
   deny permission.mut.order.delete if all:
     order.createdHourLef gte 12
+    env.time.hour > 16
 `;
 
 describe('Type defs generation', () => {

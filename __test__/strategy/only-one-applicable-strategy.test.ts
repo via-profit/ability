@@ -1,5 +1,5 @@
-import { AbilityResolver } from '~/core/AbilityResolver';
-import { AbilityDSLParser } from '../../src';
+import { AbilityResolver } from '../../src/core/AbilityResolver';
+import { AbilityDSLParser } from '../../src/parsers/dsl/AbilityDSLParser';
 import OnlyOneApplicableStrategy from '../../src/strategy/OnlyOneApplicableStrategy';
 
 const dsl = `

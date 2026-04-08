@@ -1,4 +1,4 @@
-import { AbilityDSLLexer, AbilityDSLParser, AbilityResolver } from '../../src';
+import { AbilityDSLParser, AbilityResolver } from '../../src';
 import DenyOverridesStrategy from '../../src/strategy/DenyOverridesStrategy';
 
 

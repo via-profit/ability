@@ -47,7 +47,7 @@ describe('DSL annotations', () => {
       },
     });
 
-    console.log(result.explain().toString());
+    // console.log(result.explain().toString());
     //
     expect(result.isAllowed()).toBeTruthy();
     expect(result.isDenied()).toBeFalsy();

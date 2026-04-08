@@ -1,6 +1,6 @@
 import AbilityRule from '~/core/AbilityRule';
-import AbilityCondition from '~/core/AbilityCondition';
-import AbilityMatch from '~/core/AbilityMatch';
+import {AbilityCondition} from '~/core/AbilityCondition';
+import {AbilityMatch} from '~/core/AbilityMatch';
 
 describe('AbilityRule — environment support', () => {
   test('should extract value from environment (subject = env.*)', () => {

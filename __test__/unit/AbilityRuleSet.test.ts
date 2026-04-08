@@ -1,7 +1,7 @@
-import AbilityRule from '~/core/AbilityRule';
-import AbilityRuleSet from '~/core/AbilityRuleSet';
-import AbilityMatch from '~/core/AbilityMatch';
-import AbilityCompare from '~/core/AbilityCompare';
+import AbilityRule from '../../src/core/AbilityRule';
+import AbilityRuleSet from '../../src/core/AbilityRuleSet';
+import {AbilityMatch} from '../../src/core/AbilityMatch';
+import {AbilityCompare} from '../../src/core/AbilityCompare';
 
 describe('AbilityRuleSet', () => {
   describe('constructor', () => {

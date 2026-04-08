@@ -1,5 +1,5 @@
-import { AbilityDSLParser } from '~/parsers/dsl/AbilityDSLParser';
-import AbilityResolver from '~/core/AbilityResolver';
+import { AbilityDSLParser } from '../../src/parsers/dsl/AbilityDSLParser';
+import AbilityResolver from '../../src/core/AbilityResolver';
 import DenyOverridesStrategy from '../../src/strategy/DenyOverridesStrategy';
 
 describe('DSL Operators', () => {
@@ -650,7 +650,7 @@ describe('DSL Operators', () => {
         env: { hour: 16 },
       });
 
-      console.log(result.explain().toString());
+      // console.log(result.explain().toString());
 
       expect(result.isDenied()).toBeTruthy();
       expect(result.isAllowed()).toBeFalsy();
