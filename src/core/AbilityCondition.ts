@@ -1,5 +1,5 @@
-import AbilityCode from '~/core/AbilityCode';
-import { AbilityParserError } from '~/core/AbilityError';
+import AbilityCode from './AbilityCode';
+import { AbilityParserError } from './AbilityError';
 
 export type AbilityConditionCodeType =
   | '='

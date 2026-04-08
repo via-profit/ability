@@ -1,13 +1,13 @@
-import AbilityCompare from '~/core/AbilityCompare';
-import AbilityCondition from '~/core/AbilityCondition';
-import AbilityPolicy from '~/core/AbilityPolicy';
-import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
-import AbilityRule, { AbilityRuleConfig } from '~/core/AbilityRule';
-import AbilityRuleSet from '~/core/AbilityRuleSet';
-import { AbilityDSLLexer } from '~/parsers/dsl/AbilityDSLLexer';
-import { AbilityDSLToken, TokenType } from '~/parsers/dsl/AbilityDSLToken';
-import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
-import { AbilityDSLSyntaxError } from '~/parsers/dsl/AbilityDSLSyntaxError';
+import AbilityCompare from '../../core/AbilityCompare';
+import AbilityCondition from '../../core/AbilityCondition';
+import AbilityPolicy from '../../core/AbilityPolicy';
+import AbilityPolicyEffect from '../../core/AbilityPolicyEffect';
+import AbilityRule, { AbilityRuleConfig } from '../../core/AbilityRule';
+import AbilityRuleSet from '../../core/AbilityRuleSet';
+import { AbilityDSLLexer } from './AbilityDSLLexer';
+import { AbilityDSLToken, TokenType } from './AbilityDSLToken';
+import { EnvironmentObject, ResourceObject } from '../../core/AbilityTypeGenerator';
+import { AbilityDSLSyntaxError } from './AbilityDSLSyntaxError';
 import { AbilityDSLTokenStream } from './AbilityDSLTokenStream';
 
 /**

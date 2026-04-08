@@ -1,8 +1,8 @@
-import AbilityPolicy from '~/core/AbilityPolicy';
-import { AbilityError } from '~/core/AbilityError';
-import { AbilityResult } from '~/core/AbilityResult';
-import AbilityMatch from '~/core/AbilityMatch';
-import { AbilityStrategy } from '~/strategy/AbilityStrategy';
+import AbilityPolicy from './AbilityPolicy';
+import { AbilityError } from './AbilityError';
+import { AbilityResult } from './AbilityResult';
+import AbilityMatch from './AbilityMatch';
+import { AbilityStrategy } from '../strategy/AbilityStrategy';
 
 export interface AbilityResolverOptions<TTags extends string> {
   tags?: readonly TTags[];

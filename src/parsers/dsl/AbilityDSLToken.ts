@@ -1,4 +1,4 @@
-import AbilityCode from '~/core/AbilityCode';
+import AbilityCode from '../../core/AbilityCode';
 
 export type TokenType =
   // -------------------------------------------------------------------------

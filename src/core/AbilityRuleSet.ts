@@ -1,7 +1,7 @@
-import AbilityRule, { AbilityRuleConfig } from '~/core/AbilityRule';
-import AbilityCompare, { AbilityCompareCodeType } from '~/core/AbilityCompare';
-import AbilityMatch from '~/core/AbilityMatch';
-import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
+import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
+import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
+import AbilityMatch from './AbilityMatch';
+import { EnvironmentObject, ResourceObject } from './AbilityTypeGenerator';
 
 export type AbilityRuleSetConfig = {
   readonly id?: string | null;

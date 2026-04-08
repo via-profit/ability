@@ -1,6 +1,6 @@
-import AbilityPolicy from '~/core/AbilityPolicy';
-import AbilityCondition from '~/core/AbilityCondition';
-import AbilityRule from '~/core/AbilityRule';
+import AbilityPolicy from './AbilityPolicy';
+import AbilityCondition from './AbilityCondition';
+import AbilityRule from './AbilityRule';
 
 export type Primitive = string | number | boolean | null | undefined;
 export type NestedDict<T = Primitive> = {

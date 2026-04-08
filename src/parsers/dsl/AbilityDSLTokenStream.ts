@@ -1,5 +1,5 @@
-import { AbilityDSLToken, TokenType } from '~/parsers/dsl/AbilityDSLToken';
-import { AbilityDSLSyntaxError } from '~/parsers/dsl/AbilityDSLSyntaxError';
+import { AbilityDSLToken, TokenType } from './AbilityDSLToken';
+import { AbilityDSLSyntaxError } from './AbilityDSLSyntaxError';
 
 export class AbilityDSLTokenStream {
   private readonly tokens: AbilityDSLToken[];

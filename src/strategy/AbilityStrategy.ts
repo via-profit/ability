@@ -1,7 +1,7 @@
-import AbilityMatch from '~/core/AbilityMatch';
-import AbilityPolicy from '~/core/AbilityPolicy';
-import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
-import AbilityPolicyEffect from '~/core/AbilityPolicyEffect';
+import AbilityMatch from '../core/AbilityMatch';
+import AbilityPolicy from '../core/AbilityPolicy';
+import { EnvironmentObject, ResourceObject } from '../core/AbilityTypeGenerator';
+import AbilityPolicyEffect from '../core/AbilityPolicyEffect';
 
 export abstract class AbilityStrategy<
   Resource extends ResourceObject = Record<string, unknown>,

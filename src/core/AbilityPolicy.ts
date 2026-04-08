@@ -1,10 +1,10 @@
-import AbilityRuleSet, { AbilityRuleSetConfig } from '~/core/AbilityRuleSet';
-import AbilityMatch from '~/core/AbilityMatch';
-import AbilityCompare, { AbilityCompareCodeType } from '~/core/AbilityCompare';
-import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from '~/core/AbilityPolicyEffect';
-import { AbilityExplain, AbilityExplainPolicy } from '~/core/AbilityExplain';
-import { AbilityError } from '~/core/AbilityError';
-import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
+import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
+import AbilityMatch from './AbilityMatch';
+import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
+import AbilityPolicyEffect, { AbilityPolicyEffectCodeType } from './AbilityPolicyEffect';
+import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
+import { AbilityError } from './AbilityError';
+import { EnvironmentObject, ResourceObject } from './AbilityTypeGenerator';
 import { read } from 'node:fs';
 
 export type AbilityPolicyConfig<TTag extends string = string> = {

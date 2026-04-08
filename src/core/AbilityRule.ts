@@ -1,9 +1,9 @@
-import AbilityMatch from '~/core/AbilityMatch';
+import AbilityMatch from './AbilityMatch';
 import {
   AbilityCondition,
   AbilityConditionCodeType,
   AbilityConditionLiteralType,
-} from '~/core/AbilityCondition';
+} from './AbilityCondition';
 
 export type AbilityRuleConfig = {
   readonly id?: string | null;
