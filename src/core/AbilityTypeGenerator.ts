@@ -1,5 +1,5 @@
 import AbilityPolicy from './AbilityPolicy';
-import AbilityCondition from './AbilityCondition';
+import { AbilityCondition } from './AbilityCondition';
 import AbilityRule from './AbilityRule';
 
 export type Primitive = string | number | boolean | null | undefined;
@@ -24,7 +24,8 @@ export class AbilityTypeGenerator {
    */
   public generateTypeDefs(): string {
     // Structure to store types: { [action]: { [subjectPath]: type } }
-    const typeStructure: Record<string, Record<string, string>> = {};
+    const resorceStructure: Record<string, Record<string, string>> = {};
+    const environmentStructure: Record<string, Record<string, string>> = {};
 
     // tags
     const allTags = new Set<string>();
@@ -35,8 +36,8 @@ export class AbilityTypeGenerator {
       const action = policy.permission;
 
       // Initialize object for action if it doesn't exist
-      if (!typeStructure[action]) {
-        typeStructure[action] = {};
+      if (!resorceStructure[action]) {
+        resorceStructure[action] = {};
       }
 
       // Iterate through all ruleSets in the policy
@@ -44,24 +45,46 @@ export class AbilityTypeGenerator {
         // Iterate through all rules in the ruleSet
         ruleSet.rules.forEach(rule => {
           const subjectPath = rule.subject;
-          const existingType = typeStructure[action][subjectPath];
+
+          const existingType = resorceStructure[action][subjectPath];
           const ruleType = this.determineTypeFromRule(rule);
 
           if (!ruleType) {
             return;
           }
+
+          // -----------------------------
+          // ENVIRONMENT HANDLING
+          // -----------------------------
+          if (subjectPath.startsWith('env.')) {
+            const envPath = subjectPath.replace(/^env\./, '');
+
+            if (!environmentStructure[action]) {
+              environmentStructure[action] = {};
+            }
+
+            if (ruleType) {
+              environmentStructure[action][envPath] = ruleType;
+            }
+            return;
+          }
+
+          // -----------------------------
+          // RESOURCE HANDLING
+          // -----------------------------
+
           if (existingType && existingType !== ruleType) {
             // If a type already exists for this path, create a union
-            typeStructure[action][subjectPath] = `${existingType} | ${ruleType}`;
+            resorceStructure[action][subjectPath] = `${existingType} | ${ruleType}`;
           } else {
-            typeStructure[action][subjectPath] = ruleType;
+            resorceStructure[action][subjectPath] = ruleType;
           }
         });
       });
     });
 
     const filteredStructure: Record<string, Record<string, string>> = {};
-    Object.entries(typeStructure).forEach(([action, fields]) => {
+    Object.entries(resorceStructure).forEach(([action, fields]) => {
       if (!action.endsWith('.*')) {
         filteredStructure[action] = fields;
       }
@@ -69,8 +92,9 @@ export class AbilityTypeGenerator {
 
     // Transform flat structure into nested structure for easier use
     const nestedStructure = this.buildNestedStructure(filteredStructure);
+    const nestedEnvironment = this.buildNestedStructure(environmentStructure);
 
-    return this.formatTypeDefinitions(nestedStructure, allTags);
+    return this.formatTypeDefinitions(nestedStructure, nestedEnvironment, allTags);
   }
 
   /**
@@ -79,34 +103,28 @@ export class AbilityTypeGenerator {
    * @returns TypeScript type as string
    */
   private determineTypeFromRule(rule: AbilityRule): string | null {
-    if (
-      rule.condition.isEqual(AbilityCondition.never) ||
-      rule.condition.isEqual(AbilityCondition.always)
-    ) {
+    if (rule.condition === AbilityCondition.never || rule.condition === AbilityCondition.always) {
       return null;
     }
     // Numeric comparisons - always number
     if (
-      rule.condition.isEqual(AbilityCondition.greater_than) ||
-      rule.condition.isEqual(AbilityCondition.less_than) ||
-      rule.condition.isEqual(AbilityCondition.greater_or_equal) ||
-      rule.condition.isEqual(AbilityCondition.less_or_equal)
+      rule.condition === AbilityCondition.greater_than ||
+      rule.condition === AbilityCondition.less_than ||
+      rule.condition === AbilityCondition.greater_or_equal ||
+      rule.condition === AbilityCondition.less_or_equal
     ) {
       return 'number';
     }
 
     // Array operations
-    if (
-      rule.condition.isEqual(AbilityCondition.in) ||
-      rule.condition.isEqual(AbilityCondition.not_in)
-    ) {
+    if (rule.condition === AbilityCondition.in || rule.condition === AbilityCondition.not_in) {
       return this.getArrayType(rule.resource);
     }
 
     // Equality/Inequality operations
     if (
-      rule.condition.isEqual(AbilityCondition.equals) ||
-      rule.condition.isEqual(AbilityCondition.not_equals)
+      rule.condition === AbilityCondition.equals ||
+      rule.condition === AbilityCondition.not_equals
     ) {
       return this.getPrimitiveType(rule.resource);
     }
@@ -218,6 +236,7 @@ export class AbilityTypeGenerator {
    */
   private formatTypeDefinitions(
     structure: Record<string, NestedDict<string>>,
+    environment: NestedDict<string>,
     allTags: Set<string>,
   ): string {
     let output = '// Automatically generated by via-profit/ability\n';
@@ -243,7 +262,6 @@ export class AbilityTypeGenerator {
 
     output += '}\n';
 
-
     // tags
     const tagsUnion =
       allTags.size > 0
@@ -252,8 +270,26 @@ export class AbilityTypeGenerator {
             .map(tag => `'${tag}'`)
             .join(' | ')
         : 'never';
-    output += `export type PolicyTags = ${tagsUnion};\n`;
+    output += `\n\nexport type PolicyTags = ${tagsUnion};\n`;
 
+    // environments
+    output += '\n\nexport type Environment = {\n';
+
+    Object.entries(environment).forEach(([action, envObj]) => {
+      const isEmpty = Object.keys(envObj).length === 0;
+
+      if (isEmpty) {
+        output += `  ['${action}']: undefined;\n`;
+      } else {
+        output += `  ['${action}']: {\n`;
+        output += this.formatNestedObject(envObj as any, 4);
+        output += '  };\n';
+      }
+    });
+
+    output += '}\n';
+
+    // complex
     return output;
   }
 
