@@ -4,9 +4,13 @@ import DenyOverridesStrategy from '../../src/strategy/DenyOverridesStrategy';
 describe('Examples', () => {
   it('Example-02 (environment-sensitive deny)', () => {
     const dsl = `
+    
     permit permission.order.* if all:
+      @priority 2
+      @name is auth user
       user.authenticated equals true
 
+    @name lorem ipsum
     deny permission.order.update if all:
       user.role not equals 'admin'
       env.hour lt 21

@@ -14,7 +14,17 @@ export class AbilityDSLTokenStream {
     return token;
   }
 
-  public previous(): AbilityDSLToken | null {
+  public prev(): AbilityDSLToken | null {
+    if (this.pos === 0) {
+      return null;
+    }
+
+    const token = this.tokens[this.pos--];
+    this.lastToken = token;
+    return token;
+  }
+
+  public lookPrev(): AbilityDSLToken | null {
     return this.lastToken;
   }
 
@@ -32,7 +42,10 @@ export class AbilityDSLTokenStream {
   }
 
   public check(type: TokenType): boolean {
-    if (this.eof()) return false;
+    if (this.eof()) {
+      return false;
+    }
+
     return this.peek().code === type;
   }
 
