@@ -9,8 +9,6 @@ import { AbilityDSLToken, TokenType } from './AbilityDSLToken';
 import { EnvironmentObject, ResourceObject } from '../../core/AbilityTypeGenerator';
 import { AbilityDSLTokenStream } from './AbilityDSLTokenStream';
 import {
-  AbilityDSLAnnotation,
-  AbilityDSLAnnotationName,
   AbilityDSLAnnotationOwner,
   AbilityDSLAnnotations,
 } from '~/parsers/dsl/AbilityDSLAnnotations';
@@ -57,44 +55,7 @@ export class AbilityDSLParser<
 > {
   private readonly dsl: string;
   private stream!: AbilityDSLTokenStream;
-  private annotationBuffer: AnnotationBuffer = {
-    id: null,
-    name: null,
-    description: null,
-    priority: null,
-    disabled: null,
-    tags: [],
-  };
-
-  private annotationMatrix2 = {
-    [AbilityDSLAnnotationOwner.policy.code]: new Set([
-      AbilityDSLAnnotationName.id,
-      AbilityDSLAnnotationName.name,
-      AbilityDSLAnnotationName.disabled,
-      AbilityDSLAnnotationName.description,
-      AbilityDSLAnnotationName.priority,
-      AbilityDSLAnnotationName.tags,
-    ]),
-    [AbilityDSLAnnotationOwner.ruleSet.code]: new Set([
-      AbilityDSLAnnotationName.id,
-      AbilityDSLAnnotationName.name,
-      AbilityDSLAnnotationName.disabled,
-      AbilityDSLAnnotationName.description,
-    ]),
-    [AbilityDSLAnnotationOwner.rule.code]: new Set([
-      AbilityDSLAnnotationName.id,
-      AbilityDSLAnnotationName.name,
-      AbilityDSLAnnotationName.disabled,
-      AbilityDSLAnnotationName.description,
-    ]),
-  } as const;
-  private annBuffer : AbilityDSLAnnotations = new AbilityDSLAnnotations();
-  private annotationTokens: AnnotationTokens = {};
-  private annotationMatrix = {
-    policy: new Set(['id', 'name', 'disabled', 'description', 'priority', 'tags']),
-    ruleSet: new Set(['id', 'name', 'disabled', 'description']),
-    rule: new Set(['id', 'name', 'disabled', 'description']),
-  } as const;
+  private annBuffer: AbilityDSLAnnotations = new AbilityDSLAnnotations();
 
   constructor(dsl: string) {
     this.dsl = dsl;
@@ -870,15 +831,11 @@ export class AbilityDSLParser<
   // }
 
   private consumeLeadingAnnotations() {
-    // const annotationNames = Object.keys(this.annotationBuffer);
-    // console.log(`annotationNames: ${annotationNames}`);
-
     while (this.stream.check(AbilityDSLToken.ANNOTATION)) {
       const token = this.stream.next();
       const text = token.value.trim();
 
       if (text.startsWith('@id ')) {
-        this.annotationBuffer.id = text.slice(4).trim();
         this.annBuffer.setID(text.slice(4).trim(), token);
       }
 
@@ -915,46 +872,10 @@ export class AbilityDSLParser<
     }
   }
 
-  // private processAnnotationToken(token: AbilityDSLToken) {
-  //   const text = token.value.trim();
-  //
-  //   if (text.startsWith('@id ')) {
-  //     this.annotationBuffer.id = text.slice(4).trim();
-  //   }
-  //
-  //   if (text.startsWith('@name ')) {
-  //     this.annotationBuffer.name = text.slice(6).trim();
-  //   }
-  //
-  //   if (text.startsWith('@description ')) {
-  //     this.annotationBuffer.description = text.slice(13).trim();
-  //   }
-  //
-  //   if (text.startsWith('@priority ')) {
-  //     this.annotationBuffer.priority = parseInt(text.slice(10).trim(), 10);
-  //   }
-  //
-  //   if (text.startsWith('@disabled')) {
-  //     const value = text.slice(9).trim();
-  //     this.annotationBuffer.disabled = value.length === 0 ? true : text.slice(9).trim() === 'true';
-  //   }
-  //
-  //   if (text.startsWith('@tags ')) {
-  //     const value = text
-  //       .slice(6)
-  //       .trim()
-  //       .split(',')
-  //       .map(tag => tag.trim());
-  //     this.annotationBuffer.tags = this.annotationBuffer.tags.concat(value);
-  //   }
-  // }
-
   private takeAnnotations(owner: AbilityDSLAnnotationOwner): AbilityDSLAnnotations {
-    // const meta = { ...this.annotationBuffer };
-    // const tokens = { ...this.annotationTokens };
     const annBuffer = this.annBuffer.clone();
 
-    const allowed = this.annotationMatrix2[owner.code];
+    // const allowed = this.annotationMatrix2[owner.code];
     //
     // const checkField = (field: AbilityDSLAnnotationName) => {
     //   if (!allowed.has(field)) {
@@ -975,41 +896,7 @@ export class AbilityDSLParser<
 
     this.annBuffer.clear();
 
-    this.annotationBuffer = {
-      id: null,
-      name: null,
-      description: null,
-      priority: null,
-      disabled: null,
-      tags: [],
-    };
-    this.annotationTokens = {};
     return annBuffer;
-  }
-
-  // Метод validateAnnotations
-  private validateAnnotations(
-    type: keyof typeof this.annotationMatrix,
-    meta: typeof this.annotationBuffer,
-    tokens: typeof this.annotationTokens,
-  ): void {
-    const allowed = this.annotationMatrix[type];
-    const checkField = (field: keyof typeof meta, token?: AbilityDSLToken) => {
-      if (token && !allowed.has(field)) {
-        const msg = `Annotation @${field} is not allowed on ${type}. Allowed: ${Array.from(allowed)
-          .map(a => `@${a}`)
-          .join(', ')}`;
-        this.stream.syntaxError(msg, token);
-      }
-    };
-    checkField('id', tokens.id);
-    checkField('name', tokens.name);
-    checkField('description', tokens.description);
-    checkField('priority', tokens.priority);
-    checkField('disabled', tokens.disabled);
-    if (tokens.tags && meta.tags.length > 0) {
-      checkField('tags', tokens.tags);
-    }
   }
 
   // -------------------------------------------------------------------------
