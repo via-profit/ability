@@ -7,7 +7,6 @@ import AbilityRuleSet from '../../core/AbilityRuleSet';
 import { AbilityDSLLexer } from './AbilityDSLLexer';
 import { AbilityDSLToken, TokenType } from './AbilityDSLToken';
 import { EnvironmentObject, ResourceObject } from '../../core/AbilityTypeGenerator';
-import { AbilityDSLSyntaxError } from './AbilityDSLSyntaxError';
 import { AbilityDSLTokenStream } from './AbilityDSLTokenStream';
 
 /**
@@ -29,7 +28,7 @@ import { AbilityDSLTokenStream } from './AbilityDSLTokenStream';
 export class AbilityDSLParser<
   R extends ResourceObject = Record<string, unknown>,
   E extends EnvironmentObject = Record<string, unknown>,
-  T extends string = string
+  T extends string = string,
 > {
   private readonly dsl: string;
   private stream!: AbilityDSLTokenStream;
@@ -48,6 +47,12 @@ export class AbilityDSLParser<
     disabled: null,
     tags: [],
   };
+  private AnnotationMatrix = {
+    policy: new Set(['id', 'name', 'disabled', 'description', 'priority']),
+    group: new Set(['id', 'name', 'disabled', 'description']),
+    rule: new Set(['id', 'name', 'disabled', 'description']),
+    condition: new Set([]),
+  } as const;
 
   constructor(dsl: string) {
     this.dsl = dsl;
@@ -105,7 +110,7 @@ export class AbilityDSLParser<
     const permissionToken = this.stream.expect(AbilityDSLToken.PERMISSION, 'Expected permission');
     const permission = permissionToken.value;
     if (!permission.startsWith('permission.')) {
-      return this.syntaxError(
+      return this.stream.syntaxError(
         `Unexpected token. The permission key, must be starts with prefix \`permission.\`, but got \`${permission}\`.\nDid you mean \`permission.${permission}\`?`,
         permissionToken,
       );
@@ -193,7 +198,7 @@ export class AbilityDSLParser<
         ) {
           group.addRule(this.parseRule());
         } else {
-          this.syntaxError(
+          this.stream.syntaxError(
             `Unexpected token in implicit group: ${this.stream.peek().code}`,
             this.stream.peek(),
           );
@@ -250,7 +255,7 @@ export class AbilityDSLParser<
       if (this.stream.check(AbilityDSLToken.IDENTIFIER)) {
         group.addRule(this.parseRule());
       } else {
-        this.syntaxError(
+        this.stream.syntaxError(
           `Unexpected token in group: ${this.stream.peek().code}`,
           this.stream.peek(),
         );
@@ -310,7 +315,7 @@ export class AbilityDSLParser<
       if (this.stream.check(AbilityDSLToken.IDENTIFIER)) {
         group.addRule(this.parseRule());
       } else {
-        this.syntaxError(
+        this.stream.syntaxError(
           `Unexpected token in except group: ${this.stream.peek().code}`,
           this.stream.peek(),
         );
@@ -336,7 +341,7 @@ export class AbilityDSLParser<
       this.stream.check(AbilityDSLToken.ALWAYS) || this.stream.check(AbilityDSLToken.NEVER);
 
     if (!isNeverAlways && !this.stream.check(AbilityDSLToken.IDENTIFIER)) {
-      this.syntaxError(
+      this.stream.syntaxError(
         `Expected identifier, but got ${this.stream.peek().code}`,
         this.stream.peek(),
       );
@@ -378,7 +383,7 @@ export class AbilityDSLParser<
       valueToken.code === AbilityDSLToken.IDENTIFIER &&
       !valueToken.value.includes('.')
     ) {
-      this.syntaxError(`Expected comparison operator or value, got \`${resource}\``, valueToken, [
+      this.stream.syntaxError(`Expected comparison operator or value, got \`${resource}\``, valueToken, [
         AbilityDSLToken.KEYWORD,
       ]);
     }
@@ -616,7 +621,7 @@ export class AbilityDSLParser<
       token.code !== AbilityDSLToken.KEYWORD &&
       token.code !== AbilityDSLToken.NULL
     ) {
-      this.syntaxError(`Expected comparison operator, got \`${token.value}\``, token, [
+      this.stream.syntaxError(`Expected comparison operator, got \`${token.value}\``, token, [
         AbilityDSLToken.SYMBOL,
         AbilityDSLToken.KEYWORD,
         AbilityDSLToken.NULL,
@@ -670,7 +675,7 @@ export class AbilityDSLParser<
       default:
         break;
     }
-    return this.syntaxError(`Unexpected operator token \`${token.value}\``, token, [
+    return this.stream.syntaxError(`Unexpected operator token \`${token.value}\``, token, [
       AbilityDSLToken.SYMBOL,
       AbilityDSLToken.KEYWORD,
     ]);
@@ -732,7 +737,7 @@ export class AbilityDSLParser<
       token.code === AbilityDSLToken.ANY ||
       token.code === AbilityDSLToken.EFFECT
     ) {
-      this.syntaxError(`Unexpected ${token.code} in value position`, token);
+      this.stream.syntaxError(`Unexpected ${token.code} in value position`, token);
     }
 
     this.stream.next();
@@ -750,7 +755,7 @@ export class AbilityDSLParser<
       case AbilityDSLToken.IDENTIFIER:
         return token.value;
       default: {
-        this.syntaxError(`Unexpected value token "${token.value}"`, token, [
+        this.stream.syntaxError(`Unexpected value token "${token.value}"`, token, [
           AbilityDSLToken.KEYWORD,
         ]);
       }
@@ -784,7 +789,7 @@ export class AbilityDSLParser<
         arr.push(value);
       } else if (value === null) {
         // Null is allowed in arrays? Currently, we throw.
-        this.syntaxError('Unexpected null in array', this.stream.peek());
+        this.stream.syntaxError('Unexpected null in array', this.stream.peek());
       }
 
       // Optional comma between elements
@@ -843,21 +848,26 @@ export class AbilityDSLParser<
 
     if (text.startsWith('@disabled')) {
       const value = text.slice(9).trim();
-      this.annotationBuffer.disabled =
-        value.length === 0 ? true : text.slice(9).trim() === 'true';
+      this.annotationBuffer.disabled = value.length === 0 ? true : text.slice(9).trim() === 'true';
 
       return;
     }
 
     if (text.startsWith('@tags ')) {
-       const value = text.slice(6).trim().split(',').map(tag => tag.trim());
-       this.annotationBuffer.tags = this.annotationBuffer.tags.concat(value);
+      const value = text
+        .slice(6)
+        .trim()
+        .split(',')
+        .map(tag => tag.trim());
+      this.annotationBuffer.tags = this.annotationBuffer.tags.concat(value);
 
-       return;
+      return;
     }
 
     if (text.startsWith('@')) {
-      return this.stream.syntaxError(`Unexpected annotation "${text.trim()}"`, token, ['ANNOTATION']);
+      return this.stream.syntaxError(`Unexpected annotation "${text.trim()}"`, token, [
+        'ANNOTATION',
+      ]);
     }
   }
 
@@ -874,83 +884,20 @@ export class AbilityDSLParser<
     return meta;
   }
 
-  // -------------------------------------------------------------------------
-  // #region Errors
-  // -------------------------------------------------------------------------
 
-  private syntaxError(details: string, token: AbilityDSLToken, expected?: TokenType[]): never {
-    const lines = this.dsl.split(/\r?\n/);
-    const lineIdx = token.line - 1;
-    const lineBefore = lineIdx > 0 ? lines[lineIdx - 1] : '';
-    const current = lines[lineIdx];
-    const linesAfter = lineIdx + 1 < lines.length ? lines[lineIdx + 1] : '';
-    const wave = ' '.repeat(Math.max(0, token.column - 1)) + '~'.repeat(token.value.length);
 
-    const lineNumWidth = String(token.line + 1).length;
-    const num = (n: number) => String(n).padStart(lineNumWidth, ' ');
+  // private validateAnnotations(node: ASTNode) {
+  //   const allowed = AnnotationMatrix[node.type];
+  //   for (const ann of node.annotations) {
+  //     if (!allowed.has(ann.name)) {
+  //       throw new SyntaxError(
+  //         `Annotation @${ann.name} is not allowed on ${node.type}`
+  //       );
+  //     }
+  //   }
+  // }
 
-    let context = '';
-    if (lineBefore.trim() !== '') {
-      context += `${num(token.line - 1)} | ${lineBefore}\n`;
-    }
-    context += `${num(token.line)} | ${current}\n`;
-    context += `${' '.repeat(lineNumWidth)} | ${wave}\n`;
-    if (linesAfter.trim() !== '') {
-      context += `${num(token.line + 1)} | ${linesAfter}`;
-    }
 
-    let finalDetails = details;
-
-    if (expected && expected?.length > 0) {
-      const actual = token.value;
-      const suggestion = this.suggest(actual, expected);
-      const detailsMsg = `${details}\nDetails: Unexpected value token \`${actual}\``;
-      finalDetails = suggestion ? `${detailsMsg} Did you mean \`${suggestion}\`?` : detailsMsg;
-    }
-
-    throw new AbilityDSLSyntaxError(token.line, token.column, context + '\n', finalDetails);
-  }
-
-  private suggest(actual: string, expectedTypes: TokenType[]): string | null {
-    const candidates: string[] = [];
-    for (const type of expectedTypes) {
-      candidates.push(type);
-    }
-    const uniqueCandidates = [...new Set(candidates)];
-    let best: string | null = null;
-    let bestDist = 3;
-    for (const candidate of uniqueCandidates) {
-      const d = this.levenshteinDistance(actual.toLowerCase(), candidate.toLowerCase());
-      if (d < bestDist) {
-        bestDist = d;
-        best = candidate;
-      }
-    }
-    return best;
-  }
-
-  private levenshteinDistance(a: string, b: string): number {
-    const matrix: number[][] = Array.from({ length: b.length + 1 }, () =>
-      Array.from({ length: a.length + 1 }, () => 0),
-    );
-
-    for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
-    for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
-
-    for (let j = 1; j <= b.length; j++) {
-      for (let i = 1; i <= a.length; i++) {
-        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-
-        matrix[j][i] = Math.min(
-          matrix[j][i - 1] + 1,
-          matrix[j - 1][i] + 1,
-          matrix[j - 1][i - 1] + cost,
-        );
-      }
-    }
-
-    return matrix[b.length][a.length];
-  }
 
   // -------------------------------------------------------------------------
   // #region Helpers
