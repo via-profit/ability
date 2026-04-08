@@ -4,10 +4,11 @@ import DenyOverridesStrategy from '../../src/strategy/DenyOverridesStrategy';
 describe('Examples', () => {
   it('Example-02 (environment-sensitive deny)', () => {
     const dsl = `
-          @priority 2
-      @name is auth user
+    @priority 2
+    @name is auth user
+    @tags foo, bar, baz
     permit permission.order.* if all:
-
+      @name the rule
       user.authenticated equals true
 
     @name lorem ipsum

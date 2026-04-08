@@ -8,29 +8,26 @@ import { AbilityDSLLexer } from './AbilityDSLLexer';
 import { AbilityDSLToken, TokenType } from './AbilityDSLToken';
 import { EnvironmentObject, ResourceObject } from '../../core/AbilityTypeGenerator';
 import { AbilityDSLTokenStream } from './AbilityDSLTokenStream';
-import {
-  AbilityDSLAnnotationOwner,
-  AbilityDSLAnnotations,
-} from '~/parsers/dsl/AbilityDSLAnnotations';
+import { AbilityDSLAnnotations, AnnotationName } from '~/parsers/dsl/AbilityDSLAnnotations';
+import { AnnotationAllowed } from './AbilityDSLAnnotationMatrix';
 
+// type AnnotationBuffer = {
+//   id: string | null;
+//   name: string | null;
+//   description: string | null;
+//   priority: number | null;
+//   disabled: boolean | null;
+//   tags: readonly string[];
+// };
 
-type AnnotationBuffer = {
-  id: string | null;
-  name: string | null;
-  description: string | null;
-  priority: number | null;
-  disabled: boolean | null;
-  tags: readonly string[];
-};
-
-type AnnotationTokens = {
-  id?: AbilityDSLToken;
-  name?: AbilityDSLToken;
-  description?: AbilityDSLToken;
-  priority?: AbilityDSLToken;
-  disabled?: AbilityDSLToken;
-  tags?: AbilityDSLToken;
-};
+// type AnnotationTokens = {
+//   id?: AbilityDSLToken;
+//   name?: AbilityDSLToken;
+//   description?: AbilityDSLToken;
+//   priority?: AbilityDSLToken;
+//   disabled?: AbilityDSLToken;
+//   tags?: AbilityDSLToken;
+// };
 
 /**
  * Parser for the Ability DSL.
@@ -66,6 +63,7 @@ export class AbilityDSLParser<
    * @returns Array of AbilityPolicy instances.
    */
   public parse(): readonly AbilityPolicy<R, E, T>[] {
+    this.annBuffer.clear();
     // 1. Лексер → токены
     const tokens = new AbilityDSLLexer(this.dsl).tokenize();
 
@@ -103,7 +101,7 @@ export class AbilityDSLParser<
   private parsePolicy(): AbilityPolicy {
     this.consumeLeadingComments();
     this.consumeLeadingAnnotations();
-    const annotations = this.takeAnnotations(AbilityDSLAnnotationOwner.policy);
+    const annotations = this.takeAnnotations('policy');
     // this.validateAnnotations('policy', meta, tokens);
 
     // Effect: "permit" or "deny"
@@ -177,7 +175,7 @@ export class AbilityDSLParser<
         continue;
       }
 
-      const annotation = this.takeAnnotations(AbilityDSLAnnotationOwner.ruleSet);
+      const annotation = this.takeAnnotations('ruleSet');
       // this.validateAnnotations('ruleSet', meta, tokens);
       // this.validateAnnotations('ruleSet', meta);
 
@@ -223,7 +221,7 @@ export class AbilityDSLParser<
   private parseGroup(): AbilityRuleSet {
     this.consumeLeadingComments();
     this.consumeLeadingAnnotations();
-    const annotations = this.takeAnnotations(AbilityDSLAnnotationOwner.ruleSet);
+    const annotations = this.takeAnnotations('ruleSet');
     // this.validateAnnotations('ruleSet', meta, tokens);
 
     const compareToken = this.stream.expectOneOf(
@@ -278,7 +276,7 @@ export class AbilityDSLParser<
   private parseExceptGroup(policyCompareMethod: AbilityCompare): AbilityRuleSet {
     this.consumeLeadingComments();
     this.consumeLeadingAnnotations();
-    const annotations = this.takeAnnotations(AbilityDSLAnnotationOwner.ruleSet);
+    const annotations = this.takeAnnotations('ruleSet');
     // this.validateAnnotations('ruleSet', meta, tokens);
 
     // consume "except"
@@ -343,7 +341,7 @@ export class AbilityDSLParser<
   private parseRule(): AbilityRule {
     this.consumeLeadingComments();
     this.consumeLeadingAnnotations();
-    const annotations = this.takeAnnotations(AbilityDSLAnnotationOwner.rule);
+    const annotations = this.takeAnnotations('rule');
     // this.validateAnnotations('rule', meta, tokens);
 
     const isNeverAlways =
@@ -872,33 +870,27 @@ export class AbilityDSLParser<
     }
   }
 
-  private takeAnnotations(owner: AbilityDSLAnnotationOwner): AbilityDSLAnnotations {
-    const annBuffer = this.annBuffer.clone();
-
-    // const allowed = this.annotationMatrix2[owner.code];
-    //
-    // const checkField = (field: AbilityDSLAnnotationName) => {
-    //   if (!allowed.has(field)) {
-    //     const msg = `Annotation @${field} is not allowed on ${owner.code}. Allowed: ${Array.from(allowed)
-    //       .map(a => `@${a}`)
-    //       .join(', ')}`;
-    //     this.stream.syntaxError(msg, allo);
-    //   }
-    // };
-    // checkField(AbilityDSLAnnotationName.id, tokens.id);
-    // checkField('name', tokens.name);
-    // checkField('description', tokens.description);
-    // checkField('priority', tokens.priority);
-    // checkField('disabled', tokens.disabled);
-    // if (tokens.tags && meta.tags.length > 0) {
-    //   checkField('tags', tokens.tags);
-    // }
-
+  private takeAnnotations(owner: 'policy' | 'ruleSet' | 'rule'): AbilityDSLAnnotations {
+    const ann = this.annBuffer.clone();
     this.annBuffer.clear();
 
-    return annBuffer;
-  }
+    const allowed = AnnotationAllowed[owner];
+    for (const key of Object.keys(ann['store']) as AnnotationName[]) {
+      const entry = ann.get(key);
+      if (!entry) continue;
 
+      if (!allowed.has(key)) {
+        this.stream.syntaxError(
+          `Annotation @${key} is not allowed on ${owner}. Allowed: ${[...allowed]
+            .map(a => '@' + a)
+            .join(', ')}`,
+          entry.token ?? this.stream.peek(),
+        );
+      }
+    }
+
+    return ann;
+  }
   // -------------------------------------------------------------------------
   // #region Helpers
   // -------------------------------------------------------------------------
