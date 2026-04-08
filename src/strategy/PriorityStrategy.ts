@@ -1,5 +1,5 @@
 import { AbilityStrategy } from './AbilityStrategy';
-import AbilityPolicyEffect from '../core/AbilityPolicyEffect';
+import { AbilityPolicyEffect  } from '../core/AbilityPolicyEffect';
 import { EnvironmentObject, ResourceObject } from '../core/AbilityTypeGenerator';
 
 export class PriorityStrategy<R extends ResourceObject, E extends EnvironmentObject = Record<string, unknown>> extends AbilityStrategy<R, E> {

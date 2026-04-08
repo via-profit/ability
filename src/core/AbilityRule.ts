@@ -1,8 +1,9 @@
-import AbilityMatch from './AbilityMatch';
+import {AbilityMatch, AbilityMatchType} from './AbilityMatch';
 import {
   AbilityCondition,
-  AbilityConditionCodeType,
-  AbilityConditionLiteralType,
+  AbilityConditionType,
+  AbilityConditionLiteral,
+  toLiteral,
 } from './AbilityCondition';
 
 export type AbilityRuleConfig = {
@@ -18,13 +19,13 @@ export type AbilityRuleConfig = {
    */
   readonly resource: string | number | boolean | null | (string | number | boolean | null)[];
 
-  readonly condition: AbilityConditionCodeType;
+  readonly condition: AbilityConditionType;
 
   readonly disabled?: boolean;
 };
 
 export type AbilityRuleConstructorProps = Omit<AbilityRuleConfig, 'condition'> & {
-  readonly condition: AbilityCondition;
+  readonly condition: AbilityConditionType;
 };
 
 /**
@@ -40,10 +41,10 @@ export class AbilityRule<Resources extends object = object, Environment extends 
    */
   public resource: AbilityRuleConfig['resource'];
 
-  public condition: AbilityCondition;
+  public condition: AbilityConditionType;
   public name: string;
   public id: string;
-  public state: AbilityMatch = AbilityMatch.pending;
+  public state: AbilityMatchType = AbilityMatch.pending;
   public disabled: boolean;
 
   /**
@@ -58,7 +59,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
    */
   public constructor(params: AbilityRuleConstructorProps) {
     const { id, name, subject, resource, condition, disabled } = params;
-    this.name = name || `rule:${JSON.stringify(subject)}:${condition.code}:${JSON.stringify(resource)}`;
+    this.name = name || `rule:${JSON.stringify(subject)}:${condition}:${JSON.stringify(resource)}`;
     this.id = id || this.name;
     this.disabled = typeof disabled === 'boolean' ? disabled : false;
 
@@ -84,11 +85,11 @@ export class AbilityRule<Resources extends object = object, Environment extends 
     this.isString(v) || Array.isArray(v) ? v.length : null;
 
   private operatorHandlers = {
-    [AbilityCondition.always.literal]: () => true,
-    [AbilityCondition.never.literal]: () => false,
-    [AbilityCondition.equals.literal]: (a: unknown, b: unknown) => a === b,
-    [AbilityCondition.not_equals.literal]: (a: unknown, b: unknown) => a !== b,
-    [AbilityCondition.contains.literal]: (a: unknown, b: unknown) => {
+    [toLiteral(AbilityCondition.always)]: () => true,
+    [toLiteral(AbilityCondition.never)]: () => false,
+    [toLiteral(AbilityCondition.equals)]: (a: unknown, b: unknown) => a === b,
+    [toLiteral(AbilityCondition.not_equals)]: (a: unknown, b: unknown) => a !== b,
+    [toLiteral(AbilityCondition.contains)]: (a: unknown, b: unknown) => {
       if (Array.isArray(a) && this.isPrimitive(b)) {
         return a.includes(b);
       }
@@ -97,7 +98,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       }
       return false;
     },
-    [AbilityCondition.not_contains.literal]: (a: unknown, b: unknown) => {
+    [toLiteral(AbilityCondition.not_contains)]: (a: unknown, b: unknown) => {
       if (Array.isArray(a) && this.isPrimitive(b)) {
         return !a.includes(b);
       }
@@ -106,7 +107,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       }
       return false;
     },
-    [AbilityCondition.in.literal]: (a: unknown, b: unknown) => {
+    [toLiteral(AbilityCondition.in)]: (a: unknown, b: unknown) => {
       if (this.isPrimitive(a) && Array.isArray(b)) {
         return b.includes(a);
       }
@@ -115,7 +116,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       }
       return false;
     },
-    [AbilityCondition.not_in.literal]: (a: unknown, b: unknown) => {
+    [toLiteral(AbilityCondition.not_in)]: (a: unknown, b: unknown) => {
       if (this.isPrimitive(a) && Array.isArray(b)) {
         return !b.includes(a);
       }
@@ -124,19 +125,19 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       }
       return false;
     },
-    [AbilityCondition.greater_than.literal]: (a: unknown, b: unknown) => {
+    [toLiteral(AbilityCondition.greater_than)]: (a: unknown, b: unknown) => {
       return this.isNumber(a) && this.isNumber(b) ? a > b : false;
     },
-    [AbilityCondition.less_than.literal]: (a: unknown, b: unknown) => {
+    [toLiteral(AbilityCondition.less_than)]: (a: unknown, b: unknown) => {
       return this.isNumber(a) && this.isNumber(b) ? a < b : false;
     },
-    [AbilityCondition.greater_or_equal.literal]: (a: unknown, b: unknown) => {
+    [toLiteral(AbilityCondition.greater_or_equal)]: (a: unknown, b: unknown) => {
       return this.isNumber(a) && this.isNumber(b) ? a >= b : false;
     },
-    [AbilityCondition.less_or_equal.literal]: (a: unknown, b: unknown) => {
+    [toLiteral(AbilityCondition.less_or_equal)]: (a: unknown, b: unknown) => {
       return this.isNumber(a) && this.isNumber(b) ? a <= b : false;
     },
-    [AbilityCondition.length_greater_than.literal]: (a: unknown, b: unknown) => {
+    [toLiteral(AbilityCondition.length_greater_than)]: (a: unknown, b: unknown) => {
       const alen = this.valueLen(a);
       if (alen === null) {
         return false;
@@ -153,7 +154,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
 
       return false;
     },
-    [AbilityCondition.length_less_than.literal]: (a: unknown, b: unknown) => {
+    [toLiteral(AbilityCondition.length_less_than)]: (a: unknown, b: unknown) => {
       const alen = this.valueLen(a);
       if (alen === null) {
         return false;
@@ -169,7 +170,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       }
       return false;
     },
-    [AbilityCondition.length_equals.literal]: (a: unknown, b: unknown) => {
+    [toLiteral(AbilityCondition.length_equals)]: (a: unknown, b: unknown) => {
       const alen = this.valueLen(a);
       if (alen === null) {
         return false;
@@ -184,7 +185,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       return false;
     },
   } as {
-    [K in AbilityConditionLiteralType]: (a: unknown, b: unknown) => boolean;
+    [K in AbilityConditionLiteral]: (a: unknown, b: unknown) => boolean;
   };
 
   /**
@@ -192,7 +193,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
    * @param resource - The resource to check
    * @param environment
    */
-  public check(resource: Resources | null, environment?: Environment): AbilityMatch {
+  public check(resource: Resources | null, environment?: Environment): AbilityMatchType {
 
     if (this.disabled) {
       this.state = AbilityMatch.disabled;
@@ -200,7 +201,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
     }
 
     const [subjectValue, resourceValue] = this.extractValues(resource, environment);
-    const handler = this.operatorHandlers[this.condition.literal];
+    const handler = this.operatorHandlers[toLiteral(this.condition)];
     const result = handler(subjectValue, resourceValue);
 
     this.state = result ? AbilityMatch.match : AbilityMatch.mismatch;
@@ -300,7 +301,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
   }
 
   public toString(): string {
-    return `AbilityRule: ${this.name} condition: ${this.condition.code} subject: "${this.subject?.toString()}" resource: "${this.resource?.toString()}"`;
+    return `AbilityRule: ${this.name} condition: ${toLiteral(this.condition)} subject: "${this.subject?.toString()}" resource: "${this.resource?.toString()}"`;
   }
 
   public copyWith(
@@ -309,7 +310,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       name: string | null;
       subject: string;
       resource: AbilityRuleConfig['resource'];
-      condition: AbilityCondition;
+      condition: AbilityConditionType;
     }>,
   ): AbilityRule<Resources, Environment> {
     return new AbilityRule<Resources, Environment>({

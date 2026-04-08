@@ -1,10 +1,12 @@
-import AbilityCode from './AbilityCode';
+type AbilityPolicyEffectCode = 'deny' | 'permit';
 
-export type AbilityPolicyEffectCodeType = 'deny' | 'permit';
+export type AbilityPolicyEffectType = AbilityPolicyEffectCode & { __brand: 'AbilityPolicyEffect' };
 
-export class AbilityPolicyEffect extends AbilityCode<AbilityPolicyEffectCodeType> {
-  public static deny = new AbilityPolicyEffect('deny');
-  public static permit = new AbilityPolicyEffect('permit');
+function brand(code: AbilityPolicyEffectCode): AbilityPolicyEffectType {
+  return code as AbilityPolicyEffectType;
 }
 
-export default AbilityPolicyEffect;
+export const AbilityPolicyEffect = {
+  deny: brand('deny'),
+  permit: brand('permit'),
+} as const;

@@ -1,4 +1,4 @@
-import { AbilityDSLToken } from './AbilityDSLToken';
+import { AbilityDSLToken, TokenTypes } from './AbilityDSLToken';
 
 export class AbilityDSLLexer {
   private readonly input: string;
@@ -84,7 +84,7 @@ export class AbilityDSLLexer {
       throw new Error(`Unexpected character '${char}' at ${this.line}:${this.column}`);
     }
 
-    this.tokens.push(new AbilityDSLToken(AbilityDSLToken.EOF, '', this.line, this.column));
+    this.tokens.push(new AbilityDSLToken(TokenTypes.EOF, '', this.line, this.column));
     return this.tokens;
   }
 
@@ -96,7 +96,7 @@ export class AbilityDSLLexer {
     while (!this.isAtEnd() && !this.isNewline()) {
       value += this.advance();
     }
-    return new AbilityDSLToken(AbilityDSLToken.COMMENT, value.trim(), startLine, startColumn);
+    return new AbilityDSLToken(TokenTypes.COMMENT, value.trim(), startLine, startColumn);
   }
 
   private readAnnotation(): AbilityDSLToken {
@@ -108,7 +108,7 @@ export class AbilityDSLLexer {
     while (!this.isAtEnd() && !this.isNewline()) {
       value += this.advance();
     }
-    return new AbilityDSLToken(AbilityDSLToken.ANNOTATION, value.trim(), startLine, startColumn);
+    return new AbilityDSLToken(TokenTypes.ANNOTATION, value.trim(), startLine, startColumn);
   }
 
   private readString(): AbilityDSLToken {
@@ -130,7 +130,7 @@ export class AbilityDSLLexer {
         continue;
       }
       if (char === quote) {
-        return new AbilityDSLToken(AbilityDSLToken.STRING, value, startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.STRING, value, startLine, startColumn);
       }
       value += char;
     }
@@ -146,7 +146,7 @@ export class AbilityDSLLexer {
       this.advance();
     }
     const value = this.input.slice(start, this.pos);
-    return new AbilityDSLToken(AbilityDSLToken.NUMBER, value, startLine, startColumn);
+    return new AbilityDSLToken(TokenTypes.NUMBER, value, startLine, startColumn);
   }
 
   private readSymbol(): AbilityDSLToken {
@@ -156,44 +156,44 @@ export class AbilityDSLLexer {
 
     switch (char) {
       case '.':
-        return new AbilityDSLToken(AbilityDSLToken.DOT, char, startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.DOT, char, startLine, startColumn);
       case ':':
-        return new AbilityDSLToken(AbilityDSLToken.COLON, char, startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.COLON, char, startLine, startColumn);
       case ',':
-        return new AbilityDSLToken(AbilityDSLToken.COMMA, char, startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.COMMA, char, startLine, startColumn);
       case '[':
-        return new AbilityDSLToken(AbilityDSLToken.LBRACKET, char, startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.LBRACKET, char, startLine, startColumn);
       case ']':
-        return new AbilityDSLToken(AbilityDSLToken.RBRACKET, char, startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.RBRACKET, char, startLine, startColumn);
       case '>':
         if (this.peek() === '=') {
           this.advance();
-          return new AbilityDSLToken(AbilityDSLToken.SYMBOL, '>=', startLine, startColumn);
+          return new AbilityDSLToken(TokenTypes.SYMBOL, '>=', startLine, startColumn);
         }
-        return new AbilityDSLToken(AbilityDSLToken.SYMBOL, '>', startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.SYMBOL, '>', startLine, startColumn);
       case '<':
         if (this.peek() === '=') {
           this.advance();
-          return new AbilityDSLToken(AbilityDSLToken.SYMBOL, '<=', startLine, startColumn);
+          return new AbilityDSLToken(TokenTypes.SYMBOL, '<=', startLine, startColumn);
         }
 
         if (this.peek() === '>') {
           this.advance();
-          return new AbilityDSLToken(AbilityDSLToken.SYMBOL, '<>', startLine, startColumn);
+          return new AbilityDSLToken(TokenTypes.SYMBOL, '<>', startLine, startColumn);
         }
 
-        return new AbilityDSLToken(AbilityDSLToken.SYMBOL, '<', startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.SYMBOL, '<', startLine, startColumn);
       case '=':
         if (this.peek() === '=') {
           this.advance();
-          return new AbilityDSLToken(AbilityDSLToken.SYMBOL, '==', startLine, startColumn);
+          return new AbilityDSLToken(TokenTypes.SYMBOL, '==', startLine, startColumn);
         }
 
-        return new AbilityDSLToken(AbilityDSLToken.SYMBOL, '=', startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.SYMBOL, '=', startLine, startColumn);
       case '!':
         if (this.peek() === '=') {
           this.advance();
-          return new AbilityDSLToken(AbilityDSLToken.SYMBOL, '!=', startLine, startColumn);
+          return new AbilityDSLToken(TokenTypes.SYMBOL, '!=', startLine, startColumn);
         }
         throw new Error(`Unexpected symbol '!' at ${this.line}:${this.column}`);
       default:
@@ -224,69 +224,69 @@ export class AbilityDSLLexer {
     const word = this.input.slice(start, this.pos);
 
     if (word === 'always') {
-      return new AbilityDSLToken(AbilityDSLToken.ALWAYS, word, startLine, startColumn);
+      return new AbilityDSLToken(TokenTypes.ALWAYS, word, startLine, startColumn);
     }
 
     if (word === 'never') {
-      return new AbilityDSLToken(AbilityDSLToken.NEVER, word, startLine, startColumn);
+      return new AbilityDSLToken(TokenTypes.NEVER, word, startLine, startColumn);
     }
 
     // Если есть точка — это путь (identifier или permission)
     if (word.includes('.')) {
       const last = this.tokens[this.tokens.length - 1];
-      if (last?.code === AbilityDSLToken.EFFECT) {
+      if (last?.type === TokenTypes.EFFECT) {
         if (word.startsWith('permission.')) {
-          return new AbilityDSLToken(AbilityDSLToken.PERMISSION, word, startLine, startColumn);
+          return new AbilityDSLToken(TokenTypes.PERMISSION, word, startLine, startColumn);
         }
       }
-      return new AbilityDSLToken(AbilityDSLToken.IDENTIFIER, word, startLine, startColumn);
+      return new AbilityDSLToken(TokenTypes.IDENTIFIER, word, startLine, startColumn);
     }
 
     // Ключевые слова
     if (this.keywords.has(word)) {
       // Эффекты
       if (word === 'permit' || word === 'allow') {
-        return new AbilityDSLToken(AbilityDSLToken.EFFECT, 'permit', startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.EFFECT, 'permit', startLine, startColumn);
       }
       if (word === 'deny' || word === 'forbidden') {
-        return new AbilityDSLToken(AbilityDSLToken.EFFECT, 'deny', startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.EFFECT, 'deny', startLine, startColumn);
       }
       // Групповые ключевые слова
       if (word === 'all') {
-        return new AbilityDSLToken(AbilityDSLToken.ALL, word, startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.ALL, word, startLine, startColumn);
       }
       if (word === 'any') {
-        return new AbilityDSLToken(AbilityDSLToken.ANY, word, startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.ANY, word, startLine, startColumn);
       }
       if (word === 'of') {
-        return new AbilityDSLToken(AbilityDSLToken.OF, word, startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.OF, word, startLine, startColumn);
       }
       if (word === 'if') {
-        return new AbilityDSLToken(AbilityDSLToken.IF, word, startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.IF, word, startLine, startColumn);
       }
       // Булевы и null
       if (word === 'true' || word === 'false') {
-        return new AbilityDSLToken(AbilityDSLToken.BOOLEAN, word, startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.BOOLEAN, word, startLine, startColumn);
       }
       if (word === 'null') {
-        return new AbilityDSLToken(AbilityDSLToken.NULL, word, startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.NULL, word, startLine, startColumn);
       }
       if (word === 'except') {
-        return new AbilityDSLToken(AbilityDSLToken.EXCEPT, word, startLine, startColumn);
+        return new AbilityDSLToken(TokenTypes.EXCEPT, word, startLine, startColumn);
       }
 
       // Остальные ключевые слова (contains, in, equals, greater, less, not, is, or, than, equal)
-      return new AbilityDSLToken(AbilityDSLToken.KEYWORD, word, startLine, startColumn);
+      return new AbilityDSLToken(TokenTypes.KEYWORD, word, startLine, startColumn);
     }
 
     // Если после EFFECT и нет точки — действие (например, "create")
     const lastToken = this.tokens[this.tokens.length - 1];
-    if (lastToken?.code === AbilityDSLToken.EFFECT) {
-      return new AbilityDSLToken(AbilityDSLToken.PERMISSION, word, startLine, startColumn);
+    if (lastToken?.type === TokenTypes.EFFECT) {
+      return new AbilityDSLToken(TokenTypes.PERMISSION, word, startLine, startColumn);
     }
 
     // Обычный идентификатор
-    return new AbilityDSLToken(AbilityDSLToken.IDENTIFIER, word, startLine, startColumn);
+    return new AbilityDSLToken(TokenTypes.IDENTIFIER, word, startLine, startColumn);
   }
 
   private skipWhitespace(): void {

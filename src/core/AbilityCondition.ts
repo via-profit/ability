@@ -1,7 +1,6 @@
-import AbilityCode from './AbilityCode';
-import { AbilityParserError } from './AbilityError';
+import {AbilityParserError} from '../core/AbilityError'
 
-export type AbilityConditionCodeType =
+export type AbilityConditionCode =
   | '='
   | '<>'
   | '>'
@@ -18,7 +17,7 @@ export type AbilityConditionCodeType =
   | 'always'
   | 'never';
 
-export type AbilityConditionLiteralType =
+export type AbilityConditionLiteral =
   | 'equals'
   | 'not_equals'
   | 'contains'
@@ -35,103 +34,112 @@ export type AbilityConditionLiteralType =
   | 'always'
   | 'never';
 
-export class AbilityCondition extends AbilityCode<AbilityConditionCodeType> {
-  public static equals: AbilityCondition;
-  public static not_equals: AbilityCondition;
-  public static greater_than: AbilityCondition;
-  public static less_than: AbilityCondition;
-  public static less_or_equal: AbilityCondition;
-  public static greater_or_equal: AbilityCondition;
-  public static in: AbilityCondition;
-  public static not_in: AbilityCondition;
-  public static contains: AbilityCondition;
-  public static not_contains: AbilityCondition;
-  public static length_greater_than: AbilityCondition;
-  public static length_less_than: AbilityCondition;
-  public static length_equals: AbilityCondition;
-  public static always: AbilityCondition;
-  public static never: AbilityCondition;
 
-  static {
-    this.equals = new AbilityCondition('=');
-    this.not_equals = new AbilityCondition('<>');
-    this.greater_than = new AbilityCondition('>');
-    this.less_than = new AbilityCondition('<');
-    this.less_or_equal = new AbilityCondition('<=');
-    this.greater_or_equal = new AbilityCondition('>=');
-    this.in = new AbilityCondition('in');
-    this.not_in = new AbilityCondition('not in');
-    this.contains = new AbilityCondition('contains');
-    this.not_contains = new AbilityCondition('not contains');
-    this.length_greater_than = new AbilityCondition('length greater than');
-    this.length_less_than = new AbilityCondition('length less than');
-    this.length_equals = new AbilityCondition('length equals');
-    this.always = new AbilityCondition('always');
-    this.never = new AbilityCondition('never');
+export type AbilityConditionType = AbilityConditionCode & { __brand: 'AbilityCondition' };
+
+function brand(code: AbilityConditionCode): AbilityConditionType {
+  return code as AbilityConditionType;
+}
+
+export const AbilityCondition = {
+  equals: brand('='),
+  not_equals: brand('<>'),
+  greater_than: brand('>'),
+  less_than: brand('<'),
+  less_or_equal: brand('<='),
+  greater_or_equal: brand('>='),
+  in: brand('in'),
+  not_in: brand('not in'),
+  contains: brand('contains'),
+  not_contains: brand('not contains'),
+  length_greater_than: brand('length greater than'),
+  length_less_than: brand('length less than'),
+  length_equals: brand('length equals'),
+  always: brand('always'),
+  never: brand('never'),
+} as const;
+
+
+export function fromLiteral(literal: AbilityConditionLiteral): AbilityConditionType {
+  const map: Record<AbilityConditionLiteral, AbilityConditionType> = {
+    equals: AbilityCondition.equals,
+    not_equals: AbilityCondition.not_equals,
+    greater_than: AbilityCondition.greater_than,
+    less_than: AbilityCondition.less_than,
+    less_or_equal: AbilityCondition.less_or_equal,
+    greater_or_equal: AbilityCondition.greater_or_equal,
+    in: AbilityCondition.in,
+    not_in: AbilityCondition.not_in,
+    contains: AbilityCondition.contains,
+    not_contains: AbilityCondition.not_contains,
+    length_greater_than: AbilityCondition.length_greater_than,
+    length_less_than: AbilityCondition.length_less_than,
+    length_equals: AbilityCondition.length_equals,
+    always: AbilityCondition.always,
+    never: AbilityCondition.never,
+  };
+
+  const value = map[literal];
+
+  if (!value) {
+    const expected = Object.keys(map).join(', ');
+    throw new AbilityParserError(
+      `Literal "${literal}" does not found in AbilityCondition. Expected one of: ${expected}`
+    );
   }
 
-  public static fromLiteral(literal: AbilityConditionLiteralType): AbilityCondition {
-    const map: Record<AbilityConditionLiteralType, AbilityCondition> = {
-      equals: this.equals,
-      not_equals: this.not_equals,
-      greater_than: this.greater_than,
-      less_than: this.less_than,
-      less_or_equal: this.less_or_equal,
-      greater_or_equal: this.greater_or_equal,
-      in: this.in,
-      not_in: this.not_in,
-      contains: this.contains,
-      not_contains: this.not_contains,
-      length_greater_than: this.length_greater_than,
-      length_equals: this.length_equals,
-      always: this.always,
-      never: this.never,
-      length_less_than: this.length_less_than,
-    };
+  return value;
+}
 
-    const condition = map[literal];
-    if (!condition) {
-      throw new AbilityParserError(`Literal "${literal}" does not found in AbilityCondition class`);
-    }
-    return condition;
-  }
 
-  public get literal(): AbilityConditionLiteralType {
-    switch (this.code) {
-      case '=':
-        return 'equals';
-      case '<>':
-        return 'not_equals';
-      case '>':
-        return 'greater_than';
-      case '<':
-        return 'less_than';
-      case '>=':
-        return 'greater_or_equal';
-      case '<=':
-        return 'less_or_equal';
-      case 'in':
-        return 'in';
-      case 'not in':
-        return 'not_in';
-      case 'contains':
-        return 'contains';
-      case 'not contains':
-        return 'not_contains';
-      case 'length greater than':
-        return 'length_greater_than';
-      case 'length less than':
-        return 'length_less_than';
-      case 'length equals':
-        return 'length_equals';
-      case 'always':
-        return 'always';
-      case 'never':
-        return 'never';
+export function toLiteral(cond: AbilityConditionType): AbilityConditionLiteral {
+  switch (cond) {
+    case AbilityCondition.equals:
+      return 'equals';
+    case AbilityCondition.not_equals:
+      return 'not_equals';
+    case AbilityCondition.greater_than:
+      return 'greater_than';
+    case AbilityCondition.less_than:
+      return 'less_than';
+    case AbilityCondition.less_or_equal:
+      return 'less_or_equal';
+    case AbilityCondition.greater_or_equal:
+      return 'greater_or_equal';
+    case AbilityCondition.in:
+      return 'in';
+    case AbilityCondition.not_in:
+      return 'not_in';
+    case AbilityCondition.contains:
+      return 'contains';
+    case AbilityCondition.not_contains:
+      return 'not_contains';
+    case AbilityCondition.length_greater_than:
+      return 'length_greater_than';
+    case AbilityCondition.length_less_than:
+      return 'length_less_than';
+    case AbilityCondition.length_equals:
+      return 'length_equals';
+    case AbilityCondition.always:
+      return 'always';
+    case AbilityCondition.never:
+      return 'never';
       default:
-        throw new Error(`Unknown condition code: ${String(this.code)}`);
-    }
+        return 'never';
   }
 }
 
-export default AbilityCondition;
+
+export function isConditionEqual(
+  a: AbilityConditionType | null,
+  b: AbilityConditionType | null
+): boolean {
+  return a !== null && b !== null && a === b;
+}
+
+export function isConditionNotEqual(
+  a: AbilityConditionType | null,
+  b: AbilityConditionType | null
+): boolean {
+  return !isConditionEqual(a, b);
+}

@@ -1,13 +1,22 @@
-import AbilityCode from './AbilityCode';
+type AbilityMatchCode =
+  | 'pending'
+  | 'match'
+  | 'mismatch'
+  | 'except-mismatch'
+  | 'disabled';
 
-export type AbilityMatchCodeType = 'pending' | 'match' | 'mismatch' | 'except-mismatch' | 'disabled';
+export type AbilityMatchType = AbilityMatchCode & { __brand: 'AbilityMatch' };
 
-export class AbilityMatch extends AbilityCode<AbilityMatchCodeType> {
-  public static pending = new AbilityMatch('pending');
-  public static match = new AbilityMatch('match');
-  public static mismatch = new AbilityMatch('mismatch');
-  public static exceptMismatch = new AbilityMatch('except-mismatch');
-  public static disabled = new AbilityMatch('disabled');
+function brand(code: AbilityMatchCode): AbilityMatchType {
+  return code as AbilityMatchType;
 }
 
-export default AbilityMatch;
+export const AbilityMatch = {
+  pending: brand('pending'),
+  match: brand('match'),
+  mismatch: brand('mismatch'),
+  exceptMismatch: brand('except-mismatch'),
+  disabled: brand('disabled'),
+} as const;
+
+

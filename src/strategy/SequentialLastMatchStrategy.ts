@@ -1,5 +1,5 @@
 import { AbilityStrategy } from './AbilityStrategy';
-import AbilityPolicyEffect from '../core/AbilityPolicyEffect';
+import { AbilityPolicyEffect  } from '../core/AbilityPolicyEffect';
 import { EnvironmentObject, ResourceObject } from '../core/AbilityTypeGenerator';
 
 export class SequentialLastMatchStrategy<

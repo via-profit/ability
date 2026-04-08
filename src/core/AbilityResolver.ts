@@ -1,7 +1,7 @@
 import AbilityPolicy from './AbilityPolicy';
 import { AbilityError } from './AbilityError';
 import { AbilityResult } from './AbilityResult';
-import AbilityMatch from './AbilityMatch';
+import {AbilityMatch} from './AbilityMatch';
 import { AbilityStrategy } from '../strategy/AbilityStrategy';
 
 export interface AbilityResolverOptions<TTags extends string> {

@@ -1,9 +1,8 @@
-import AbilityCondition from '../../core/AbilityCondition';
+import { AbilityCondition } from '../../core/AbilityCondition';
 import { AbilityRule, AbilityRuleConfig } from '../../core/AbilityRule';
 import { AbilityRuleSet, AbilityRuleSetConfig } from '../../core/AbilityRuleSet';
 import { ResourceObject } from '../../core/AbilityTypeGenerator';
-import AbilityCompare from '../../core/AbilityCompare';
-import AbilityPolicyEffect from '../../core/AbilityPolicyEffect';
+import { AbilityPolicyEffect  } from '../../core/AbilityPolicyEffect';
 import { AbilityPolicy, AbilityPolicyConfig } from '../../core/AbilityPolicy';
 
 export class AbilityJSONParser {
@@ -29,12 +28,12 @@ export class AbilityJSONParser {
       id,
       permission: permission,
       priority: priority,
-      effect: new AbilityPolicyEffect(effect),
+      effect: effect,
       disabled,
       tags,
     });
 
-    policy.compareMethod = new AbilityCompare(compareMethod);
+    policy.compareMethod = compareMethod;
 
     ruleSet.forEach(ruleSetConfig => {
       policy.addRuleSet(AbilityJSONParser.parseRuleSet<Resource>(ruleSetConfig));
@@ -54,7 +53,7 @@ export class AbilityJSONParser {
       subject,
       resource,
       disabled,
-      condition: new AbilityCondition(condition),
+      condition,
     });
   }
 
@@ -68,7 +67,7 @@ export class AbilityJSONParser {
 
     const ruleSet = new AbilityRuleSet<Resource>({
       disabled,
-      compareMethod: new AbilityCompare(compareMethod),
+      compareMethod: compareMethod,
       name,
       id,
     });
@@ -91,7 +90,7 @@ export class AbilityJSONParser {
       name: rule.name,
       subject: rule.subject,
       resource: rule.resource,
-      condition: rule.condition.code,
+      condition: rule.condition,
       disabled: rule.disabled,
     };
   }
@@ -100,7 +99,7 @@ export class AbilityJSONParser {
     return {
       id: ruleSet.id.toString(),
       name: ruleSet.name.toString(),
-      compareMethod: ruleSet.compareMethod.code.toString() as AbilityRuleSetConfig['compareMethod'],
+      compareMethod: ruleSet.compareMethod,
       rules: ruleSet.rules.map(rule => AbilityJSONParser.ruleToJSON(rule)),
       disabled: ruleSet.disabled,
     };
@@ -110,10 +109,10 @@ export class AbilityJSONParser {
     return {
       id: policy.id.toString(),
       name: policy.name.toString(),
-      compareMethod: policy.compareMethod.code.toString() as AbilityPolicyConfig['compareMethod'],
+      compareMethod: policy.compareMethod,
       ruleSet: policy.ruleSet.map(ruleSet => AbilityJSONParser.ruleSetToJSON(ruleSet)),
       permission: policy.permission,
-      effect: policy.effect.code,
+      effect: policy.effect,
       priority: policy.priority,
       disabled: policy.disabled,
       tags: policy.tags,

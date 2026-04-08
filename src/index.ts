@@ -1,4 +1,3 @@
-export * from './core/AbilityCode';
 export * from './core/AbilityCompare';
 export * from './core/AbilityCondition';
 export * from './core/AbilityError';

@@ -1,12 +1,12 @@
 import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
-import AbilityCompare, { AbilityCompareCodeType } from './AbilityCompare';
-import AbilityMatch from './AbilityMatch';
+import { AbilityCompare, AbilityCompareType } from './AbilityCompare';
+import { AbilityMatch, AbilityMatchType } from './AbilityMatch';
 import { EnvironmentObject, ResourceObject } from './AbilityTypeGenerator';
 
 export type AbilityRuleSetConfig = {
   readonly id?: string | null;
   readonly name?: string | null;
-  readonly compareMethod: AbilityCompareCodeType;
+  readonly compareMethod: AbilityCompareType;
   readonly rules: readonly AbilityRuleConfig[];
   readonly disabled?: boolean;
 };
@@ -14,7 +14,7 @@ export type AbilityRuleSetConfig = {
 export type AbilityRuleSetConstructorProps = {
   readonly id?: string | null;
   readonly name?: string | null;
-  readonly compareMethod: AbilityCompare;
+  readonly compareMethod: AbilityCompareType;
   readonly isExcept?: boolean;
   readonly disabled?: boolean;
 };
@@ -23,7 +23,7 @@ export class AbilityRuleSet<
   R extends ResourceObject = Record<string, unknown>,
   E extends EnvironmentObject = Record<string, unknown>,
 > {
-  public state: AbilityMatch = AbilityMatch.pending;
+  public state: AbilityMatchType = AbilityMatch.pending;
   /**
    * List of rules
    */
@@ -35,7 +35,7 @@ export class AbilityRuleSet<
    * rules will be returns «permit» status and for the «or» - if\
    * one of the rules returns as «permit»
    */
-  public compareMethod: AbilityCompare = AbilityCompare.and;
+  public compareMethod: AbilityCompareType = AbilityCompare.and;
 
   /**
    * Group name
@@ -54,7 +54,7 @@ export class AbilityRuleSet<
   public constructor(params: AbilityRuleSetConstructorProps) {
     const { name, id, compareMethod, isExcept, disabled } = params;
 
-    this.name = name || `ruleset:${compareMethod.code}`;
+    this.name = name || `ruleset:${compareMethod}`;
     this.id = id || this.name;
     this.compareMethod = compareMethod;
     this.isExcept = isExcept;
@@ -74,7 +74,7 @@ export class AbilityRuleSet<
     return this;
   }
 
-  public check(resources: R | null, environment?: E): AbilityMatch {
+  public check(resources: R | null, environment?: E): AbilityMatchType {
     this.state = AbilityMatch.mismatch;
 
     if (this.disabled) {
@@ -86,10 +86,9 @@ export class AbilityRuleSet<
       return this.state;
     }
 
-    const ruleCheckStates: AbilityMatch[] = [];
+    const ruleCheckStates: AbilityMatchType[] = [];
 
     for (const rule of this.rules) {
-
       if (rule.disabled) {
         continue;
       }
@@ -97,24 +96,24 @@ export class AbilityRuleSet<
       const state = rule.check(resources, environment);
       ruleCheckStates.push(state);
 
-      if (AbilityCompare.and.isEqual(this.compareMethod) && AbilityMatch.mismatch.isEqual(state)) {
+      if (AbilityCompare.and === this.compareMethod && AbilityMatch.mismatch === state) {
         return this.state; // mismatch
       }
 
-      if (AbilityCompare.or.isEqual(this.compareMethod) && AbilityMatch.match.isEqual(state)) {
+      if (AbilityCompare.or === this.compareMethod && AbilityMatch.match === state) {
         this.state = AbilityMatch.match;
         return this.state;
       }
     }
 
-    if (AbilityCompare.and.isEqual(this.compareMethod)) {
-      if (ruleCheckStates.every(s => AbilityMatch.match.isEqual(s))) {
+    if (AbilityCompare.and === this.compareMethod) {
+      if (ruleCheckStates.every(s => AbilityMatch.match === s)) {
         this.state = AbilityMatch.match;
       }
     }
 
-    if (AbilityCompare.or.isEqual(this.compareMethod)) {
-      if (ruleCheckStates.some(s => AbilityMatch.match.isEqual(s))) {
+    if (AbilityCompare.or === this.compareMethod) {
+      if (ruleCheckStates.some(s => AbilityMatch.match === s)) {
         this.state = AbilityMatch.match;
       }
     }
@@ -123,14 +122,14 @@ export class AbilityRuleSet<
   }
 
   public toString(): string {
-    return `AbilityRuleSet: ${this.name} compareMethod: ${this.compareMethod.code}, rules: ${this.rules.map(rule => rule.toString()).join('\n')}`;
+    return `AbilityRuleSet: ${this.name} compareMethod: ${this.compareMethod}, rules: ${this.rules.map(rule => rule.toString()).join('\n')}`;
   }
 
   public copyWith(
     props: Partial<{
       id: string | null;
       name: string | null;
-      compareMethod: AbilityCompare;
+      compareMethod: AbilityCompareType;
       rules: AbilityRule<R, E>[];
     }>,
   ): AbilityRuleSet<R, E> {

@@ -1,4 +1,4 @@
-import { AbilityDSLToken, TokenType } from './AbilityDSLToken';
+import { AbilityDSLToken, TokenType, TokenTypes } from './AbilityDSLToken';
 import { AbilityDSLSyntaxError } from './AbilityDSLSyntaxError';
 
 export class AbilityDSLTokenStream {
@@ -38,7 +38,7 @@ export class AbilityDSLTokenStream {
   }
 
   public eof(): boolean {
-    return this.peek().code === AbilityDSLToken.EOF;
+    return this.peek().type === TokenTypes.EOF;
   }
 
   public check(type: TokenType): boolean {
@@ -46,7 +46,7 @@ export class AbilityDSLTokenStream {
       return false;
     }
 
-    return this.peek().code === type;
+    return this.peek().type === type;
   }
 
   public match(type: TokenType): AbilityDSLToken | null {
@@ -58,7 +58,7 @@ export class AbilityDSLTokenStream {
 
   public expect(type: TokenType, message: string): AbilityDSLToken {
     const token = this.peek();
-    if (token && token.code === type) {
+    if (token && token.type === type) {
       return this.next();
     }
     this.syntaxError(message, token, [type]);
@@ -67,7 +67,7 @@ export class AbilityDSLTokenStream {
   public expectOneOf(types: TokenType[], message: string): AbilityDSLToken {
     const token = this.peek();
     for (const t of types) {
-      if (token && token.code === t) {
+      if (token && token.type === t) {
         return this.next();
       }
     }

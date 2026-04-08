@@ -1,19 +1,19 @@
 import AbilityRule from './AbilityRule';
 import AbilityRuleSet from './AbilityRuleSet';
 import AbilityPolicy from './AbilityPolicy';
-import AbilityMatch from './AbilityMatch';
+import {AbilityMatchType, AbilityMatch} from './AbilityMatch';
 
 export type AbilityExplainConfig = {
   readonly type: AbilityExplainType;
   readonly name: string;
-  readonly match: AbilityMatch;
+  readonly match: AbilityMatchType;
 };
 
 export class AbilityExplain {
   readonly type: AbilityExplainType;
   readonly children: AbilityExplain[];
   readonly name: string;
-  readonly match: AbilityMatch;
+  readonly match: AbilityMatchType;
 
   constructor(config: AbilityExplainConfig, children: AbilityExplain[] = []) {
     this.type = config.type;
@@ -24,7 +24,7 @@ export class AbilityExplain {
 
   public toString(indent: number = 0): string {
     const pad = ' '.repeat(indent);
-    const mark = this.match.code === AbilityMatch.match.code ? '✓' : '✗';
+    const mark = this.match === AbilityMatch.match ? '✓' : '✗';
 
     let out = '';
 
@@ -32,7 +32,7 @@ export class AbilityExplain {
       out += '\n';
     }
 
-    out += `${pad}${mark} ${this.type} «${this.name}» is ${this.match.code}`;
+    out += `${pad}${mark} ${this.type} «${this.name}» is ${this.match}`;
 
     this.children.forEach(child => {
       out += '\n' + child.toString(indent + 1);

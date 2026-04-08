@@ -1,5 +1,5 @@
 import { AbilityStrategy } from './AbilityStrategy';
-import AbilityPolicyEffect from '../core/AbilityPolicyEffect';
+import { AbilityPolicyEffect  } from '../core/AbilityPolicyEffect';
 import { EnvironmentObject, ResourceObject } from '../core/AbilityTypeGenerator';
 
 export class AllMustPermitStrategy<R extends ResourceObject, E extends EnvironmentObject = Record<string, unknown>> extends AbilityStrategy<
@@ -12,7 +12,7 @@ export class AllMustPermitStrategy<R extends ResourceObject, E extends Environme
       return AbilityPolicyEffect.deny;
     }
 
-    const allPermit = matched.every(p => p.effect.isEqual(AbilityPolicyEffect.permit));
+    const allPermit = matched.every(p => p.effect === AbilityPolicyEffect.permit);
 
     return allPermit ? AbilityPolicyEffect.permit : AbilityPolicyEffect.deny;
   }

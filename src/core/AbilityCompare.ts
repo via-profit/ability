@@ -1,10 +1,12 @@
-import AbilityCode from './AbilityCode';
+type AbilityCompareCode = 'and' | 'or';
 
-export type AbilityCompareCodeType = 'and' | 'or'
+export type AbilityCompareType = AbilityCompareCode & { __brand: 'AbilityCompare' };
 
-export class AbilityCompare extends AbilityCode<AbilityCompareCodeType> {
-  public static and = new AbilityCompare('and');
-  public static or = new AbilityCompare('or');
+function brand(code: AbilityCompareCode): AbilityCompareType {
+  return code as AbilityCompareType;
 }
 
-export default AbilityCompare;
+export const AbilityCompare = {
+  or: brand('or'),
+  and: brand('and'),
+} as const;

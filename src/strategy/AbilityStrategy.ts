@@ -1,7 +1,7 @@
-import AbilityMatch from '../core/AbilityMatch';
+import {AbilityMatch} from '../core/AbilityMatch';
 import AbilityPolicy from '../core/AbilityPolicy';
 import { EnvironmentObject, ResourceObject } from '../core/AbilityTypeGenerator';
-import AbilityPolicyEffect from '../core/AbilityPolicyEffect';
+import { AbilityPolicyEffect, AbilityPolicyEffectType  } from '../core/AbilityPolicyEffect';
 
 export abstract class AbilityStrategy<
   Resource extends ResourceObject = Record<string, unknown>,
@@ -10,10 +10,10 @@ export abstract class AbilityStrategy<
   private readonly matched: readonly AbilityPolicy<Resource, Environment>[];
 
   constructor(public readonly policies: readonly AbilityPolicy<Resource, Environment>[]) {
-    this.matched = policies.filter(p => p.matchState.isEqual(AbilityMatch.match));
+    this.matched = policies.filter(p => p.matchState === AbilityMatch.match);
   }
 
-  abstract evaluate(): AbilityPolicyEffect;
+  abstract evaluate(): AbilityPolicyEffectType;
 
   public matchedPolicies() {
     return this.matched;
@@ -28,18 +28,18 @@ export abstract class AbilityStrategy<
   }
 
   protected hasPermit(): boolean {
-    return this.matched.some(p => p.effect.isEqual(AbilityPolicyEffect.permit));
+    return this.matched.some(p => p.effect === AbilityPolicyEffect.permit);
   }
 
   protected hasDeny(): boolean {
-    return this.matched.some(p => p.effect.isEqual(AbilityPolicyEffect.deny));
+    return this.matched.some(p => p.effect === AbilityPolicyEffect.deny);
   }
 
   public isAllowed(): boolean {
-    return this.evaluate().isEqual(AbilityPolicyEffect.permit);
+    return this.evaluate() === AbilityPolicyEffect.permit;
   }
 
   public isDenied(): boolean {
-    return this.evaluate().isEqual(AbilityPolicyEffect.deny);
+    return this.evaluate() === AbilityPolicyEffect.deny;
   }
 }
