@@ -106,11 +106,27 @@ export class AbilityTypeGenerator {
     if (rule.condition === AbilityCondition.never || rule.condition === AbilityCondition.always) {
       return null;
     }
+
+    if (
+      rule.condition === AbilityCondition.contains ||
+      rule.condition === AbilityCondition.not_contains
+    ) {
+      return this.getArrayType(rule.resource);
+    }
+
+    if (
+      rule.condition === AbilityCondition.length_equals ||
+      rule.condition === AbilityCondition.length_greater_than ||
+      rule.condition === AbilityCondition.length_less_than
+    ) {
+      return 'string | readonly unknown[]';
+    }
+
     // Numeric comparisons - always number
     if (
       rule.condition === AbilityCondition.greater_than ||
-      rule.condition === AbilityCondition.less_than ||
       rule.condition === AbilityCondition.greater_or_equal ||
+      rule.condition === AbilityCondition.less_than ||
       rule.condition === AbilityCondition.less_or_equal
     ) {
       return 'number';
@@ -118,7 +134,7 @@ export class AbilityTypeGenerator {
 
     // Array operations
     if (rule.condition === AbilityCondition.in || rule.condition === AbilityCondition.not_in) {
-      return this.getArrayType(rule.resource);
+      return this.getInArrayType(rule.resource);
     }
 
     // Equality/Inequality operations
@@ -138,9 +154,33 @@ export class AbilityTypeGenerator {
    * @returns TypeScript array type as string
    */
   private getArrayType(resource: unknown): string {
+    // if (Array.isArray(resource)) {
+    //   if (resource.length === 0) {
+    //     return 'readonly unknown[]';
+    //   }
+
+    //   // Determine types of array elements
+    //   const elementTypes = new Set(resource.map(item => this.getPrimitiveType(item)));
+    //   const elementType =
+    //     elementTypes.size === 1
+    //       ? Array.from(elementTypes)[0]
+    //       : `(${Array.from(elementTypes).join(' | ')})`;
+
+    //   return `readonly ${elementType}[]`;
+    // }
+
+    // // If resource is not an array but condition is in/not_in,
+    // // it expects an array of such elements
+    // return `readonly ${this.getPrimitiveType(resource)}[]`;
+  
+    const elementType = this.getInArrayType(resource);
+    return `readonly ${elementType}[]`;
+  }
+
+  private getInArrayType(resource: unknown): string {
     if (Array.isArray(resource)) {
       if (resource.length === 0) {
-        return 'any[]';
+        return 'unknown';
       }
 
       // Determine types of array elements
@@ -150,12 +190,12 @@ export class AbilityTypeGenerator {
           ? Array.from(elementTypes)[0]
           : `(${Array.from(elementTypes).join(' | ')})`;
 
-      return `readonly ${elementType}[]`;
+      return elementType;
     }
 
     // If resource is not an array but condition is in/not_in,
     // it expects an array of such elements
-    return `readonly ${this.getPrimitiveType(resource)}[]`;
+    return this.getPrimitiveType(resource);
   }
 
   /**
@@ -165,7 +205,7 @@ export class AbilityTypeGenerator {
    */
   private getPrimitiveType(value: unknown): string {
     if (value === null) {
-      return 'null';
+      return 'null | unknown';
     }
     if (value === undefined) {
       return 'undefined';
