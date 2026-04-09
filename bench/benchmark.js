@@ -63,10 +63,10 @@ const environment = {
 };
 
 // ----------------------------
-// 3. Создаём 50 тяжёлых политик
+// 3. Создаём 5000 политик
 // ----------------------------
 const [policy] = new AbilityDSLParser(dsl).parse();
-const policies = Array.from({ length: 50 }, (_, i) => {
+const policies = Array.from({ length: 5000 }, (_, i) => {
 
   return policy.copyWith({
     id: `policy-${i}`,
@@ -81,7 +81,7 @@ const policies = Array.from({ length: 50 }, (_, i) => {
 async function main() {
   const bench = new Bench({ time: 2000, warmup: 500 });
   const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
-  bench.add('resolve policies', async () => {
+  bench.add('resolve 5000 policies with 10 rules inside', async () => {
     await resolver.resolve('order.update', resource, environment);
   });
 
