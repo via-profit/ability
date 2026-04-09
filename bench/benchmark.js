@@ -81,7 +81,7 @@ const policies = Array.from({ length: 50 }, (_, i) => {
 async function main() {
   const bench = new Bench({ time: 2000, warmup: 500 });
   const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
-  bench.add('resolve() — no cache (heavy rules)', async () => {
+  bench.add('resolve policies', async () => {
     await resolver.resolve('order.update', resource, environment);
   });
 
