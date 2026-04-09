@@ -1,6 +1,12 @@
-import { AbilityDSLParser, AbilityTypeGenerator } from '../../src';
+import { AbilityDSLParser, AbilityResolver, AbilityTypeGenerator, DenyOverridesStrategy } from '../../src';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const dsl = `
+permit permission.document.read if all:
+  document.ownerId equals user.id
+  document.status in ["published", "archived"]
+
 # Пользователь должен быть аутентифицирован (токен обязателен)
 @name AuthenticationRequired
 @tags mutation
@@ -31,13 +37,113 @@ deny permission.mut.client.delete if all:
   deny permission.mut.order.delete if all:
     order.createdHourLef gte 12
     env.time.hour > 16
+
+
+      permit permission.equals if all:
+        user.name is equals 'Oleg'
+        user.age is equals 21
+        user.age = 21
+        user.age == 21
+        user.surname equals 'Ivanov'
+        user.stateOn equals true
+
+        permit permission.notEquals if all:
+      user.age is not equals 21
+      user.age != 16
+      user.age <> 16
+      user.age not equals 16
+
+      permit permission.gte if all:
+      user.age greater than 18
+      user.age > 18
+      user.age gt 18
+
+      permit permission.greaterThanOrEqual if all:
+      user.age greater than or equal 18
+
+       permit permission.less if all:
+        user.age less than or equal 30
+      user.vol <= 15
+      user.vol lte 15
+
+        permit permission.isnull if all:
+      user.middleName is null
+      user.surname = null
+
+       permit permission.isnotnull if all:
+      user.name is not null
+      user.surname is not null
+      user.surname != null
+      user.surname <> null
+
+        permit permission.in if all:
+      user.role in ['admin', 'manager']
+      user.age in [1, 4]
+
+       permit permission.notin if all:
+      user.role not in ['banned', 'blocked']
+
+
+          permit permission.contains if all:
+      user.tags contains 'vip'
+      user.tags includes 'vip'
+      user.tags has 'vip'
+
+         permit permission.notcontains if all:
+      user.tags not contains 'banned'
+      user.tags not includes 'banned'
+      user.tags not has 'banned'
+
+       permit permission.istrue if all:
+      user.statusOn is true
+      user.statusOn = true
+      user.statusOn == true
+
+      permit permission.length if all:
+      user.name length equals 4
+      user.name length = 4
+
+      permit permission.lengthGte if all:
+      user.name length greater than 3
+      user.name length > 3
+      user.roles length greater than 2
+      user.roles length > 2
+
+      permit permission.lengthLessThan if all:
+      user.name length less than 5
+      user.name length < 5
+      user.roles length less than 4
+      user.roles length < 4
+
+
+     permit permission.lessThan if all:
+      user.name less than 5
+
+      allow permission.always if all:
+        always
+
+      permit permission.never if all:
+        never
 `;
 
 describe('Type defs generation', () => {
-  const policies = new AbilityDSLParser(dsl).parse();
+    // type Res = import('../../__test__/integration/types.gen').Resources;
+    // type Env = import('../../__test__/integration/types.gen').Environment;
+    // type Tags = import('../../__test__/integration/types.gen').PolicyTags;
+
+  // const policies = new AbilityDSLParser<Res, Env, Tags>(dsl).parse();
 
   test('Type defs generation', () => {
-    const types = new AbilityTypeGenerator(policies).generateTypeDefs()
+    // const types = new AbilityTypeGenerator(policies).generateTypeDefs()
+
+    // fs.writeFileSync(path.resolve('./__test__/integration/types.gen.ts'),types, {encoding: 'utf-8'});
+
+    // const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+    // resolver.resolve('lessThan', {
+    //   user: {
+    //     name: 0
+    //   }
+    // });
 
     // console.log(types);
   });
