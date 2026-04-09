@@ -1,9 +1,5 @@
 import { Bench } from 'tinybench';
-import {
-  AbilityInMemoryCache,
-  AbilityResolver,
-  AbilityDSLParser,
-} from '../dist/index.js';
+import { AbilityDSLParser, AbilityResolver, DenyOverridesStrategy } from '../dist/index.js';
 
 /**
  * @param {string} id
@@ -84,24 +80,10 @@ const policies = Array.from({ length: 50 }, (_, i) => {
 
 async function main() {
   const bench = new Bench({ time: 2000, warmup: 500 });
-
-  const resolverNoCache = new AbilityResolver(policies, null);
-  const resolverColdCache = new AbilityResolver(policies, new AbilityInMemoryCache());
-  const resolverWarmCache = new AbilityResolver(policies, new AbilityInMemoryCache());
-
-  // Прогреваем warm cache
-  await resolverWarmCache.resolve('order.update', resource, environment);
-
-  bench
-    .add('resolve() — no cache (heavy rules)', async () => {
-      await resolverNoCache.resolve('order.update', resource, environment);
-    })
-    .add('resolve() — cold cache (heavy rules)', async () => {
-      await resolverColdCache.resolve('order.update', resource, environment);
-    })
-    .add('resolve() — warm cache (heavy rules)', async () => {
-      await resolverWarmCache.resolve('order.update', resource, environment);
-    });
+  const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+  bench.add('resolve() — no cache (heavy rules)', async () => {
+    await resolver.resolve('order.update', resource, environment);
+  });
 
   await bench.run();
 
