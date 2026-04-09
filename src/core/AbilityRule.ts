@@ -1,8 +1,8 @@
-import {AbilityMatch, AbilityMatchType} from './AbilityMatch';
+import { AbilityMatch, AbilityMatchType } from './AbilityMatch';
 import {
   AbilityCondition,
-  AbilityConditionType,
   AbilityConditionLiteral,
+  AbilityConditionType,
   toLiteral,
 } from './AbilityCondition';
 
@@ -67,30 +67,31 @@ export class AbilityRule<Resources extends object = object, Environment extends 
     this.resource = resource;
     this.condition = condition;
     this.state = this.disabled ? AbilityMatch.disabled : this.state;
+
   }
 
-  private isPrimitive(v: unknown): v is string | number | boolean | null {
+  public static isPrimitive(v: unknown): v is string | number | boolean | null {
     return typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' || v === null;
   }
 
-  private isNumber(v: unknown): v is number {
+  public static isNumber(v: unknown): v is number {
     return typeof v === 'number';
   }
 
-  private isString(v: unknown): v is string {
+  public static isString(v: unknown): v is string {
     return typeof v === 'string';
   }
 
-  private valueLen = (v: unknown): number | null =>
+  public static valueLen = (v: unknown): number | null =>
     this.isString(v) || Array.isArray(v) ? v.length : null;
 
-  private operatorHandlers = {
+  public static operatorHandlers = {
     [toLiteral(AbilityCondition.always)]: () => true,
     [toLiteral(AbilityCondition.never)]: () => false,
     [toLiteral(AbilityCondition.equals)]: (a: unknown, b: unknown) => a === b,
     [toLiteral(AbilityCondition.not_equals)]: (a: unknown, b: unknown) => a !== b,
     [toLiteral(AbilityCondition.contains)]: (a: unknown, b: unknown) => {
-      if (Array.isArray(a) && this.isPrimitive(b)) {
+      if (Array.isArray(a) && AbilityRule.isPrimitive(b)) {
         return a.includes(b);
       }
       if (Array.isArray(a) && Array.isArray(b)) {
@@ -99,7 +100,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       return false;
     },
     [toLiteral(AbilityCondition.not_contains)]: (a: unknown, b: unknown) => {
-      if (Array.isArray(a) && this.isPrimitive(b)) {
+      if (Array.isArray(a) && AbilityRule.isPrimitive(b)) {
         return !a.includes(b);
       }
       if (Array.isArray(a) && Array.isArray(b)) {
@@ -108,7 +109,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       return false;
     },
     [toLiteral(AbilityCondition.in)]: (a: unknown, b: unknown) => {
-      if (this.isPrimitive(a) && Array.isArray(b)) {
+      if (AbilityRule.isPrimitive(a) && Array.isArray(b)) {
         return b.includes(a);
       }
       if (Array.isArray(a) && Array.isArray(b)) {
@@ -117,7 +118,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       return false;
     },
     [toLiteral(AbilityCondition.not_in)]: (a: unknown, b: unknown) => {
-      if (this.isPrimitive(a) && Array.isArray(b)) {
+      if (AbilityRule.isPrimitive(a) && Array.isArray(b)) {
         return !b.includes(a);
       }
       if (Array.isArray(a) && Array.isArray(b)) {
@@ -126,28 +127,28 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       return false;
     },
     [toLiteral(AbilityCondition.greater_than)]: (a: unknown, b: unknown) => {
-      return this.isNumber(a) && this.isNumber(b) ? a > b : false;
+      return AbilityRule.isNumber(a) && AbilityRule.isNumber(b) ? a > b : false;
     },
     [toLiteral(AbilityCondition.less_than)]: (a: unknown, b: unknown) => {
-      return this.isNumber(a) && this.isNumber(b) ? a < b : false;
+      return AbilityRule.isNumber(a) && AbilityRule.isNumber(b) ? a < b : false;
     },
     [toLiteral(AbilityCondition.greater_or_equal)]: (a: unknown, b: unknown) => {
-      return this.isNumber(a) && this.isNumber(b) ? a >= b : false;
+      return AbilityRule.isNumber(a) && AbilityRule.isNumber(b) ? a >= b : false;
     },
     [toLiteral(AbilityCondition.less_or_equal)]: (a: unknown, b: unknown) => {
-      return this.isNumber(a) && this.isNumber(b) ? a <= b : false;
+      return AbilityRule.isNumber(a) && AbilityRule.isNumber(b) ? a <= b : false;
     },
     [toLiteral(AbilityCondition.length_greater_than)]: (a: unknown, b: unknown) => {
-      const alen = this.valueLen(a);
+      const alen = AbilityRule.valueLen(a);
       if (alen === null) {
         return false;
       }
 
-      if (this.isNumber(b)) {
+      if (AbilityRule.isNumber(b)) {
         return alen > b;
       }
 
-      const bLen = this.valueLen(b);
+      const bLen = AbilityRule.valueLen(b);
       if (bLen !== null) {
         return alen > bLen;
       }
@@ -155,30 +156,30 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       return false;
     },
     [toLiteral(AbilityCondition.length_less_than)]: (a: unknown, b: unknown) => {
-      const alen = this.valueLen(a);
+      const alen = AbilityRule.valueLen(a);
       if (alen === null) {
         return false;
       }
 
-      if (this.isNumber(b)) {
+      if (AbilityRule.isNumber(b)) {
         return alen < b;
       }
 
-      const bLen = this.valueLen(b);
+      const bLen = AbilityRule.valueLen(b);
       if (bLen !== null) {
         return alen < bLen;
       }
       return false;
     },
     [toLiteral(AbilityCondition.length_equals)]: (a: unknown, b: unknown) => {
-      const alen = this.valueLen(a);
+      const alen = AbilityRule.valueLen(a);
       if (alen === null) {
         return false;
       }
-      if (this.isNumber(b)) {
+      if (AbilityRule.isNumber(b)) {
         return alen === b;
       }
-      const bLen = this.valueLen(b);
+      const bLen = AbilityRule.valueLen(b);
       if (bLen !== null) {
         return alen === bLen;
       }
@@ -194,14 +195,13 @@ export class AbilityRule<Resources extends object = object, Environment extends 
    * @param environment
    */
   public check(resource: Resources | null, environment?: Environment): AbilityMatchType {
-
     if (this.disabled) {
       this.state = AbilityMatch.disabled;
       return this.state;
     }
 
     const [subjectValue, resourceValue] = this.extractValues(resource, environment);
-    const handler = this.operatorHandlers[toLiteral(this.condition)];
+    const handler = AbilityRule.operatorHandlers[toLiteral(this.condition)];
     const result = handler(subjectValue, resourceValue);
 
     this.state = result ? AbilityMatch.match : AbilityMatch.mismatch;
@@ -269,35 +269,58 @@ export class AbilityRule<Resources extends object = object, Environment extends 
     return [subjectValue, resourceValue];
   }
 
+  private static readonly _pathCache = new Map<
+    string,
+    (string | { prop: string; index: number })[]
+  >();
+
+  private static _parsePath(desc: string): (string | { prop: string; index: number })[] {
+    const cached = AbilityRule._pathCache.get(desc);
+    if (cached) return cached;
+
+    const parts = desc.split('.');
+    const segments: (string | { prop: string; index: number })[] = [];
+    for (const part of parts) {
+      const bracketIdx = part.indexOf('[');
+      if (bracketIdx !== -1) {
+        // формат: "prop[index]" (индекс может быть только числом)
+        const prop = part.slice(0, bracketIdx);
+        const indexStr = part.slice(bracketIdx + 1, -1);
+        const index = Number(indexStr);
+        segments.push({ prop, index });
+      } else {
+        segments.push(part);
+      }
+    }
+    AbilityRule._pathCache.set(desc, segments);
+    return segments;
+  }
+
   /**
    * Get the value of the object by dot notation
    * @param resource - The object to get the value from
    * @param desc - The dot notation string
    */
   public getDotNotationValue<T = unknown>(resource: unknown, desc: string): T | undefined {
-    const arr = desc.split('.');
-
-    while (arr.length && resource) {
-      const comp = arr.shift() || '';
-      const match = new RegExp('(.+)\\[([0-9]*)]').exec(comp);
-
-      if (match !== null && match.length == 3) {
-        const arrayData = {
-          arrName: match[1],
-          arrIndex: match[2],
-        };
-
-        if (resource[arrayData.arrName as keyof typeof resource] !== undefined) {
-          resource = resource[arrayData.arrName as keyof typeof resource][arrayData.arrIndex];
-        } else {
-          resource = undefined;
-        }
-      } else {
-        resource = resource[comp as keyof typeof resource];
-      }
+    if (resource == null) {
+      return undefined;
     }
 
-    return resource as T;
+    const segments = AbilityRule._parsePath(desc);
+    let current: any = resource;
+
+    for (const seg of segments) {
+      if (current == null) {
+        return undefined;
+      }
+      if (typeof seg === 'string') {
+        current = current[seg];
+      } else {
+        const arr = current[seg.prop];
+        current = Array.isArray(arr) ? arr[seg.index] : undefined;
+      }
+    }
+    return current as T;
   }
 
   public toString(): string {

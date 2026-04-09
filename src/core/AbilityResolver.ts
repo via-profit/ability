@@ -1,7 +1,7 @@
 import AbilityPolicy from './AbilityPolicy';
 import { AbilityError } from './AbilityError';
 import { AbilityResult } from './AbilityResult';
-import {AbilityMatch} from './AbilityMatch';
+import { AbilityMatch } from './AbilityMatch';
 import { AbilityStrategy } from '../strategy/AbilityStrategy';
 
 export interface AbilityResolverOptions<TTags extends string> {
@@ -20,15 +20,19 @@ type ExtractEnvironmentByPermission<P, Perm extends string> =
 
 
 export class AbilityResolver<
-  P extends AbilityPolicy<any, any, any>, // Политика
+  P extends AbilityPolicy<any, any, any>,
   S extends AbilityStrategy<
     P extends AbilityPolicy<infer R, infer E, any> ? R : never,
     P extends AbilityPolicy<any, infer E, any> ? E : never
   >,
   TTags extends string = P extends AbilityPolicy<any, any, infer T> ? T : never,
 > {
-  private readonly policies: readonly P[];
   private readonly StrategyClass: new (policies: readonly P[]) => S;
+  private readonly policyEntries: readonly {
+    policy: P;
+    normalizedPermission: string;
+    segments: string[];
+  }[];
 
   public constructor(
     /**
@@ -40,9 +44,17 @@ export class AbilityResolver<
   ) {
     const policies = this.toArray(policyOrListOfPolicies);
 
-    this.policies = options.tags
+    const filtered = options.tags
       ? policies.filter(p => p.tags.some(tag => options.tags!.includes(tag as TTags)))
       : policies;
+
+    this.policyEntries = filtered.map(policy => ({
+      policy,
+      normalizedPermission: this.normalizePermission(policy.permission),
+      segments: this.normalizePermission(policy.permission).split('.'),
+    }));
+
+
 
     this.StrategyClass = strategy;
   }
@@ -59,12 +71,13 @@ export class AbilityResolver<
     resource: ExtractResourceByPermission<P, Permission>,
     environment?: ExtractEnvironmentByPermission<P, Permission>,
   ): AbilityResult<ExtractResourceByPermission<P, Permission>, ExtractEnvironment<P>> {
-    const filteredPolicies = this.policies.filter(policy =>
-      AbilityResolver.isInPermissionContain(
-        policy.permission,
-        String(permission).replace(/^permission\./, ''),
-      ),
-    );
+
+    const inputNormalized = this.normalizePermission(String(permission));
+    const inputSegments = inputNormalized.split('.');
+
+    const filteredPolicies = this.policyEntries
+      .filter(entry => AbilityResolver.matchPermissions(entry.segments, inputSegments))
+      .map(entry => entry.policy);
 
     // 2. check the policies
     for (const policy of filteredPolicies) {
@@ -121,6 +134,27 @@ export class AbilityResolver<
 
   private toArray<T>(value: T | readonly T[]): readonly T[] {
     return [...(Array.isArray(value) ? value : [value])];
+  }
+
+  private normalizePermission(permission: string): string {
+    return permission
+      .trim()
+      .replace(/^permission\./, '') // remove prefix
+      .replace(/\.+/g, '.') // collapse multiple dots
+      .toLowerCase(); // optional: make case-insensitive
+  }
+
+  private static matchPermissions(policySegments: string[], inputSegments: string[]): boolean {
+    const maxLen = Math.max(policySegments.length, inputSegments.length);
+    for (let i = 0; i < maxLen; i++) {
+      const pSeg = policySegments[i];
+      const iSeg = inputSegments[i];
+      if (pSeg === undefined) return false; // policy короче – не матчит
+      if (pSeg === '*') continue; // '*' матчит любой сегмент
+      if (iSeg === undefined) return false; // входной permission короче
+      if (pSeg !== iSeg) return false;
+    }
+    return true;
   }
 }
 

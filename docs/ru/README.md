@@ -101,9 +101,9 @@ console.log(result.explain());
 ### Базовая структура
 
 ```
-<effect> <permission> if <all|any> of:
-    <subject> <operator> <value>
-    <subject> <operator> <value>
+<effect> <permission> if <all|any>:
+    <all|any> of: <subject> <operator> <value>
+    <all|any> of: <subject> <operator> <value>
     ...
 ```
 
