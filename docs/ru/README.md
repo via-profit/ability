@@ -61,7 +61,7 @@ import { AbilityDSLParser, AbilityResolver, DenyOverridesStrategy, DenyOverrides
 
 // DSL-описание политики
 const dsl = `
-  permit permission.document.read if all of:
+  permit permission.document.read if all:
     document.ownerId equals user.id
     document.status in ["published", "archived"]
 `;
