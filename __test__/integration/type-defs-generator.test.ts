@@ -39,7 +39,7 @@ describe('Type defs generation', () => {
   test('Type defs generation', () => {
     const types = new AbilityTypeGenerator(policies).generateTypeDefs()
 
-    console.log(types);
+    // console.log(types);
   });
 
 });

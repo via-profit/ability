@@ -12,8 +12,6 @@ type ExtractResources<P> = P extends AbilityPolicy<infer R, any, any> ? R : neve
 
 type ExtractEnvironment<P> = P extends AbilityPolicy<any, infer E, any> ? E : never;
 
-type ExtractTags<P> = P extends AbilityPolicy<any, any, infer T> ? T : never;
-
 type ExtractResourceByPermission<P, Perm extends string> =
   P extends AbilityPolicy<infer R, any, any> ? (Perm extends keyof R ? R[Perm] : never) : never;
 
