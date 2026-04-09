@@ -100,5 +100,5 @@
   },
   "include": ["src/**/*", "__test__/**/*"],
   "exclude": ["node_modules", "./node_modules", "./node_modules/*", "dist/**/*", "build/**/*",
-    "__test__", "src/playground.ts"]
+    "src/playground.ts"]
 }
