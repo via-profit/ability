@@ -1,26 +1,26 @@
 import { AbilityDSLParser, AbilityResolver } from '../../src';
 import DenyOverridesStrategy from '../../src/strategy/DenyOverridesStrategy';
+import { ability } from '../../src/parsers/dsl/ability';
 
 
 describe('multiple policies', () => {
   it('Multiple policies', () => {
-    const dsl = `
-  @name 1. Администраторы могут удалять любых клиентов
-  permit permission.client.delete if all:
-    user.roles contains 'admin'
-  
-  @name 2. Менеджеры могут удалять только клиентов, созданных не более 2 дней назад
-  permit permission.client.delete if all:
-    user.roles contains 'manager'
-    client.createdDaysAt >= 2
-  
- @name 3. Запрет менеджерам удалять клиентов, созданных более 2 дней назад
-  deny permission.client.delete if all:
-    user.roles contains 'manager'
-    client.createdDaysAt < 2
-`;
+    const policies = ability`
+      @name 1. Администраторы могут удалять любых клиентов
+      permit permission.client.delete if all:
+        user.roles contains 'admin'
+      
+      @name 2. Менеджеры могут удалять только клиентов, созданных не более 2 дней назад
+      permit permission.client.delete if all:
+        user.roles contains 'manager'
+        client.createdDaysAt >= 2
+      
+     @name 3. Запрет менеджерам удалять клиентов, созданных более 2 дней назад
+      deny permission.client.delete if all:
+        user.roles contains 'manager'
+        client.createdDaysAt < 2
+    `;
 
-    const policies = new AbilityDSLParser(dsl).parse();
     const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
     expect(() =>

@@ -5,11 +5,7 @@ import { PriorityStrategy } from '../../src/strategy/PriorityStrategy';
 
 
 const dsl = `
-# 1. Администраторы могут удалять любых клиентов
-@name admin_can_delete_any_client
-@priority 100
-permit permission.client.delete if all:
-  user.roles contains 'admin'
+
 
 
 # 2. Менеджеры
@@ -55,6 +51,12 @@ deny permission.client.delete if all:
 permit permission.client.delete if all:
   user.roles contains 'operator'
 
+
+# 1. Администраторы могут удалять любых клиентов
+@name admin_can_delete_any_client
+@priority 100
+permit permission.client.delete if all:
+  user.roles contains 'admin'
 `;
 
 describe('PriorityStrategy: permission.client.delete', () => {

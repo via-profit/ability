@@ -36,7 +36,9 @@ describe('DSL annotations', () => {
     expect(policy1ByID).not.toBeUndefined();
 
     // expect(policy1ByName);
-
+    new AbilityResolver(policies, DenyOverridesStrategy, {
+      tags: [''],
+    });
     const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
     const result = resolver.resolve('annotation.test', {

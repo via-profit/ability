@@ -1,4 +1,4 @@
-import { AbilityDSLParser, AbilityResolver } from '../../src';
+import { AbilityDSLParser, AbilityResolver, ability } from '../../src';
 import DenyOverridesStrategy from '../../src/strategy/DenyOverridesStrategy';
 
 describe('Examples', () => {
@@ -79,6 +79,34 @@ describe('Examples', () => {
         { hour: 10 }, // <‑‑ env не важен
       ),
     ).not.toThrow();
+  });
+
+  it('Example 333', () => {
+    const policies = ability`
+      permit permission.document.read if all:
+        document.ownerId equals user.id
+        document.status in ["published", "archived"]
+    `;
+
+    const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+    const resource = {
+      document: {
+        ownerId: 123,
+        status: 'published',
+      },
+      user: {
+        id: 123
+      },
+    };
+
+    const result = resolver.resolve('document.read', resource);
+    console.log(result.isAllowed()); // true
+
+    // Детализация результатов
+    console.log(result.explain().toString());
+
+    expect(result.isAllowed()).toBeTruthy();
   });
 
 });

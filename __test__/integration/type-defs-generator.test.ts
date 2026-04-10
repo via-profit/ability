@@ -1,8 +1,20 @@
-import { AbilityDSLParser, AbilityResolver, AbilityTypeGenerator, DenyOverridesStrategy } from '../../src';
+import { ability, AbilityResolver, AbilityTypeGenerator, DenyOverridesStrategy } from '../../src';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const dsl = `
+
+describe('Type defs generation', () => {
+
+  type Res = import('../../__test__/integration/types.gen').Resources;
+  type Env = import('../../__test__/integration/types.gen').Environment;
+  type Tags = import('../../__test__/integration/types.gen').PolicyTags;
+
+  const policies = ability<Res, Env, Tags>`
+    permit permission.document.create if all:
+      document.ownerId equals user.id
+      document.cteated equals env.createdAt
+      document.status in ["published", "archived"]
+      
 permit permission.document.read if all:
   document.ownerId equals user.id
   document.status in ["published", "archived"]
@@ -124,24 +136,31 @@ deny permission.mut.client.delete if all:
 
       permit permission.never if all:
         never
+        
+        
+  
+    
+    
+    
 `;
 
-describe('Type defs generation', () => {
-    // type Res = import('../../__test__/integration/types.gen').Resources;
-    // type Env = import('../../__test__/integration/types.gen').Environment;
-    // type Tags = import('../../__test__/integration/types.gen').PolicyTags;
 
-  // const policies = new AbilityDSLParser<Res, Env, Tags>(dsl).parse();
 
   test('Type defs generation', () => {
-    // const types = new AbilityTypeGenerator(policies).generateTypeDefs()
+    const types = new AbilityTypeGenerator(policies).generateTypeDefs();
 
-    // fs.writeFileSync(path.resolve('./__test__/integration/types.gen.ts'),types, {encoding: 'utf-8'});
+    fs.writeFileSync(path.resolve('./__test__/integration/types.gen.ts'), types, {
+      encoding: 'utf-8',
+    });
 
-    // const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
-    // resolver.resolve('lessThan', {
+    const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+    // resolver.resolve('document.read', {
+    //   document: {
+    //     ownerId: '',
+    //     status: '',
+    //   },
     //   user: {
-    //     name: 0
+    //     id: ''
     //   }
     // });
 

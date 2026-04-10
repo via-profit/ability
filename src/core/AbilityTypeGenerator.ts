@@ -44,9 +44,10 @@ export class AbilityTypeGenerator {
       policy.ruleSet.forEach(ruleSet => {
         // Iterate through all rules in the ruleSet
         ruleSet.rules.forEach(rule => {
-          const subjectPath = rule.subject;
 
-          const existingType = resorceStructure[action][subjectPath];
+
+
+          const subjectPath = rule.subject;
           const ruleType = this.determineTypeFromRule(rule);
 
           if (!ruleType) {
@@ -54,7 +55,7 @@ export class AbilityTypeGenerator {
           }
 
           // -----------------------------
-          // ENVIRONMENT HANDLING
+          // ENVIRONMENT HANDLING (subject)
           // -----------------------------
           if (subjectPath.startsWith('env.')) {
             const envPath = subjectPath.replace(/^env\./, '');
@@ -63,21 +64,54 @@ export class AbilityTypeGenerator {
               environmentStructure[action] = {};
             }
 
-            if (ruleType) {
-              environmentStructure[action][envPath] = ruleType;
+            environmentStructure[action][envPath] = ruleType;
+          } else {
+            const existingType = resorceStructure[action][subjectPath];
+
+            if (existingType && existingType !== ruleType) {
+              resorceStructure[action][subjectPath] = `${existingType} | ${ruleType}`;
+            } else {
+              resorceStructure[action][subjectPath] = ruleType;
             }
-            return;
           }
 
           // -----------------------------
-          // RESOURCE HANDLING
+          // RESOURCE PATH HANDLING (right side)
           // -----------------------------
+          if (typeof rule.resource === 'string' && this.isPath(rule.resource)) {
+            const resourcePath = rule.resource;
 
-          if (existingType && existingType !== ruleType) {
-            // If a type already exists for this path, create a union
-            resorceStructure[action][subjectPath] = `${existingType} | ${ruleType}`;
-          } else {
-            resorceStructure[action][subjectPath] = ruleType;
+            // env.* справа
+            if (resourcePath.startsWith('env.')) {
+              const envPath = resourcePath.replace(/^env\./, '');
+
+              if (!environmentStructure[action]) {
+                environmentStructure[action] = {};
+              }
+
+              const existingEnvType = environmentStructure[action][envPath];
+              const targetType = ruleType; // или 'unknown', если хочешь жёстко
+
+              if (existingEnvType && existingEnvType !== targetType) {
+                environmentStructure[action][envPath] = `${existingEnvType} | ${targetType}`;
+              } else {
+                environmentStructure[action][envPath] = targetType;
+              }
+            } else {
+              // обычный ресурс справа
+              if (!resorceStructure[action]) {
+                resorceStructure[action] = {};
+              }
+
+              const existingResType = resorceStructure[action][resourcePath];
+              const targetType = ruleType; // или 'unknown'
+
+              if (existingResType && existingResType !== targetType) {
+                resorceStructure[action][resourcePath] = `${existingResType} | ${targetType}`;
+              } else {
+                resorceStructure[action][resourcePath] = targetType;
+              }
+            }
           }
         });
       });
@@ -97,12 +131,26 @@ export class AbilityTypeGenerator {
     return this.formatTypeDefinitions(nestedStructure, nestedEnvironment, allTags);
   }
 
+  private isPath(value: unknown) : boolean {
+
+    if (typeof value !== 'string') {
+      return false;
+    }
+
+    if (value.startsWith('"') || value.startsWith("'")) {
+      return false;
+    }
+
+    return value.includes('.');
+  }
+
   /**
    * Determines TypeScript type based on the rule
    * @param rule - The rule to analyze
    * @returns TypeScript type as string
    */
   private determineTypeFromRule(rule: AbilityRule): string | null {
+
     if (rule.condition === AbilityCondition.never || rule.condition === AbilityCondition.always) {
       return null;
     }
@@ -142,6 +190,7 @@ export class AbilityTypeGenerator {
       rule.condition === AbilityCondition.equals ||
       rule.condition === AbilityCondition.not_equals
     ) {
+
       return this.getPrimitiveType(rule.resource);
     }
 
@@ -172,7 +221,7 @@ export class AbilityTypeGenerator {
     // // If resource is not an array but condition is in/not_in,
     // // it expects an array of such elements
     // return `readonly ${this.getPrimitiveType(resource)}[]`;
-  
+
     const elementType = this.getInArrayType(resource);
     return `readonly ${elementType}[]`;
   }
@@ -185,12 +234,10 @@ export class AbilityTypeGenerator {
 
       // Determine types of array elements
       const elementTypes = new Set(resource.map(item => this.getPrimitiveType(item)));
-      const elementType =
-        elementTypes.size === 1
-          ? Array.from(elementTypes)[0]
-          : `(${Array.from(elementTypes).join(' | ')})`;
 
-      return elementType;
+      return elementTypes.size === 1
+        ? Array.from(elementTypes)[0]
+        : `(${Array.from(elementTypes).join(' | ')})`;
     }
 
     // If resource is not an array but condition is in/not_in,
@@ -209,6 +256,11 @@ export class AbilityTypeGenerator {
     }
     if (value === undefined) {
       return 'undefined';
+    }
+
+    if (typeof value === 'string' && this.isPath(value)) {
+      // This is not a string literal, but a path to another field.
+      return 'unknown';
     }
 
     switch (typeof value) {
@@ -272,6 +324,8 @@ export class AbilityTypeGenerator {
   /**
    * Formats type structure into a string
    * @param structure - Nested type structure
+   * @param environment
+   * @param allTags
    * @returns Formatted TypeScript type definition string
    */
   private formatTypeDefinitions(

@@ -15,6 +15,7 @@ export * from './parsers/json/AbilityJSONParser';
 export * from './parsers/dsl/AbilityDSLParser';
 export * from './parsers/dsl/AbilityDSLLexer';
 export * from './parsers/dsl/AbilityDSLToken';
+export * from './parsers/dsl/ability';
 
 export * from './strategy/AllMustPermitStrategy';
 export * from './strategy/AnyPermitStrategy';

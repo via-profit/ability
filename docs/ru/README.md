@@ -1,7 +1,8 @@
 # @via-profit/Ability
 
 > Набор сервисов, частично реализующих принцип [Attribute Based Access Control](https://en.wikipedia.org/wiki/Attribute-based_access_control)
-> Пакет позволяет описывать правила, объединять их в группы, формировать политики и применять их к данным для определения разрешений.
+> Позволяет описывать правила, объединять их в группы, формировать политики и применять их к данным для определения
+> разрешений.
 
 ![npm version](https://img.shields.io/npm/v/%40via-profit/ability)
 ![npm downloads](https://img.shields.io/npm/dm/%40via-profit/ability)
@@ -21,64 +22,55 @@
 
 Проект задумывался для того, чтобы закрыть типовые сценарии контроля доступа без лишних сложностей. Нам потребовался лёгкий ABAC-движок с простым DSL, автоматической генерацией TypeScript-типов — и без внешних зависимостей.
 
----
-
-# @via-profit/ability
-
-**Гибкий ABAC (Attribute-Based Access Control) движок для TypeScript/JavaScript.**  
-Позволяет декларативно описывать политики доступа через встроенный DSL или JSON, комбинировать правила с помощью `all`/`any`, использовать различные стратегии принятия решений и автоматически генерировать TypeScript-типы для ресурсов.
-
-
 ## Основные возможности
 
-1. Скорость — данные подготавливаются до проверки, нет асинхронных операций внутри движка.
-2. Простой и выразительный DSL — правила читаются как естественный язык, поддержка группировки all of: / any of:, оператор except для описания исключений.
-3. 9 встроенных стратегий — DenyOverrides, PermitOverrides, FirstMatch, Priority и другие. Возможно добавление собственных стратегий.
-4. Кроссплатформенность — работает в Node.js и браузере.
-5. TypeScript-first — автоматическая генерация типов ресурсов из политик.
-6. Ноль зависимостей — лёгкий вес и отсутствие внешних библиотек.
-7. Встроенный explain — дерево решений с результатами каждого правила для отладки.
-8. Сериализация — экспорт и импорт политик в JSON.
-9. Генерация DSL из политик — обратное преобразование (в разработке).
-10. Лёгкая интеграция — библиотека, а не сервис; работает в браузере и Node.js.
-
+1. Простой и выразительный DSL — правила читаются как естественный язык.
+2. Поддержка группировки правил all of: / any of:
+3. Оператор except для описания исключений внутри политики.
+4. 9 встроенных стратегий — DenyOverrides, PermitOverrides, FirstMatch, Priority и другие. Возможно добавление
+   собственных стратегий.
+5. Кроссплатформенность — работает в Node.js и браузере.
+6. TypeScript-first — автоматическая генерация типов ресурсов из политик.
+7. Ноль зависимостей — лёгкий вес и отсутствие внешних библиотек.
+8. Встроенный explain — дерево решений с результатами каждого правила для отладки.
+9. Сериализация — экспорт и импорт политик в JSON.
 
 
 ## Установка
 
 ```bash
 npm install @via-profit/ability
-# или
-yarn add @via-profit/ability
-# или
-pnpm add @via-profit/ability
 ```
 
-## Краткий пример
+## Быстрый старт
 
 ```typescript
-import { AbilityDSLParser, AbilityResolver, DenyOverridesStrategy, DenyOverridesStrategy } from '@via-profit/ability';
+import {
+  AbilityDSLParser,
+  AbilityResolver,
+  DenyOverridesStrategy,
+  DenyOverridesStrategy,
+  ability
+} from '@via-profit/ability';
 
-// DSL-описание политики
-const dsl = `
+const policies = ability`
+  @name Разрешено чтение только
   permit permission.document.read if all:
-    document.ownerId equals user.id
+    document.ownerId equals 123
     document.status in ["published", "archived"]
 `;
 
-// Парсим политики
-const parser = new AbilityDSLParser(dsl);
-const policies = parser.parse();
-
-// Создаём резолвер (по умолчанию стратегия DenyOverrides)
 const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
-// Данные для проверки
-const resource = { ownerId: 123, status: 'published' };
-const user = { id: 123 };
 
 // Проверяем разрешение
-const result = resolver.resolve('document.read', resource, user);
+const result = resolver.resolve('document.read', {
+  document: {
+    ownerId: 123,
+    status: 'published',
+  },
+});
+
 console.log(result.isAllowed()); // true
 
 // Детализация результатов
@@ -96,24 +88,163 @@ console.log(result.explain());
 | `AbilityMatch`  | Состояние проверки: `match`, `mismatch`, `pending`, `except-mismatch`.   |
 | `AbilityStrategy` | Алгоритм выбора финального эффекта из множества сработавших политик.   |
 
-## DSL синтаксис
+## DSL
+
+Ability DSL — это декларативный язык для описания политик доступа.  
+Он позволяет описывать правила в человекочитаемом виде, а затем использовать их в рантайме для принятия решений.
+
+Ability поддерживает два способа создания политик из DSL:
+
+1. **Через DSL literal**
+2. **Через обычную строку + AbilityDSLParser**
+
+### Создание политик через DSL literal
+
+```ts
+import { ability } from '@via-profit/ability';
+
+const policies = ability`
+  permit permission.document.read if all:
+    document.ownerId equals user.id
+    document.status in ["published", "archived"]
+`;
+```
+
+- строка внутри `ability``…`` парсится AbilityDSLParser
+- возвращается массив политик (`AbilityPolicy[]`)
+
+### Создание политик через обычную строку
+
+Если literal недоступен (например, в динамическом окружении):
+
+```ts
+import { AbilityDSLParser } from '@via-profit-ability';
+
+const dsl = `
+  permit permission.document.read if all:
+    document.ownerId equals user.id
+    document.status in ["published", "archived"]
+`;
+
+const policies = new AbilityDSLParser(dsl).parse();
+```
+
+Оба способа дают одинаковый результат.
+
+### Типизация DSL через дженерики
+
+DSL literal может принимать типы:
+
+```ts
+const policies = ability<Resources, Environment, PolicyTags>`
+  permit permission.document.read if all:
+    document.ownerId equals user.id
+    document.status in ["published", "archived"]
+`;
+```
+
+### Что дают эти типы:
+
+| Тип           | Описание                                                        |
+|---------------|-----------------------------------------------------------------|
+| `Resources`   | Тип ресурса, доступного в DSL (`document.*`, `order.*`, и т.д.) |
+| `Environment` | Тип environment‑данных (`env.time.*`, `env.user.*`)             |
+| `PolicyTags`  | Типы тегов политик (если используются)                          |
+
+### Генерация типов из политик
+
+Ability может автоматически генерировать типы на основе политик:
+
+```ts
+import { AbilityTypeGenerator } from '@via-profit/ability';
+
+const typeDefs = new AbilityTypeGenerator(policies).generateTypeDefs();
+
+fs.writeFileSync('types.gen.ts', typeDefs, { encoding: 'utf-8' });
+```
+
+Это создаёт файл:
+
+```
+types.gen.ts
+```
+
+В нём будут:
+
+```ts
+export type Resources = { ... };
+export type Environment = { ... };
+export type PolicyTags = "myTag1" | "myTag2" |
+...
+;
+```
+
+### Использование сгенерированных типов
+
+После генерации типов:
+
+```ts
+import { ability, AbilityResolver, DenyOverridesStrategy } from '@via-profit/ability';
+import type { Resources, Environment, PolicyTags } from './types.gen';
+
+const policies = ability<Resources, Environment, PolicyTags>`
+  permit permission.document.read if all:
+    document.ownerId equals '1'
+    document.status in ["published", "archived"]
+`;
+const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+resolver.enforce('document.read', {
+  document: {
+    ownerId: 1, // ❌  Type number is not assignable to type string
+    status: 'published'
+  },
+});
+
+```
+
+Теперь:
+
+- `document.ownerId` и `document.status` проверяется на существование и типы
+- `document.read` проверяется на корректность
+- операторы (`equals`, `in` и т.д.) проверяются на совместимость типов
 
 ### Базовая структура
 
 ```
+# <comment-line>
+@<annotation> <annotation-value>
 <effect> <permission> if <all|any>:
-    <all|any> of: <subject> <operator> <value>
-    <all|any> of: <subject> <operator> <value>
+    <all|any> of: <subject> <operator> <value|resource|env>
+    <all|any> of: <subject> <operator> <value|resource|env>
     ...
+    except <all|any> of:
+      <subject> <operator> <value|resource|env>
+      <subject> <operator> <value|resource|env>
+      ...
 ```
 
+- `comment-line` - комментарий
+- `annotation` - аннотация (`id`, `name`, `diasbled`, `tags`, `priority`)
 - `effect` – `permit` или `deny`
 - `permission` – ключ разрешения с префиксом `permission.` (например, `permission.order.update`)
 - `all` / `any` – логический оператор для группы правил
+- `except` - начало блока исключений
 
-### Примеры правил
+### Правило
 
-```ruby
+Правило - это простейшая структура, которая описывает что с чем и как сравнивается.
+
+Каждое правило должно начинаться с пути ресурса (dot-notation), далее идет оператор сравнения и значение, с которым
+будет сравниваться ресурс
+
+*Структура правил*:
+
+```
+<subject> <operator> <value|resource|env>
+```
+
+```
 # Простое правило
 user.role equals "admin"
 
@@ -124,7 +255,7 @@ user.age >= 18
 user.status in ["active", "verified"]
 
 # Работа с длиной массива/строки
-length user.roles > 2
+user.roles length greater than 2
 
 # Проверка на null
 user.deletedAt is null
@@ -135,7 +266,9 @@ user.banned not equals true
 
 ### Группы и исключения
 
-```ruby
+Группа правил - это блок, содержащий одно или более правил.
+
+```
 permit permission.article.edit if all of:
     article.authorId equals user.id
     any of:
@@ -148,7 +281,7 @@ except any of:
 
 ### Аннотации
 
-```ruby
+```
 @name "Высокий приоритет"
 @priority 100
 @disabled true
@@ -194,7 +327,7 @@ const typeDefs = generator.generateTypeDefs();
 
 Полученные типы можно использовать для строгой типизации ресурсов при вызове `resolver.resolve()`.
 
-## API Reference (кратко)
+## API Reference
 
 ### `AbilityPolicy`
 

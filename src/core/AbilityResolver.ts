@@ -48,7 +48,9 @@ export class AbilityResolver<
       ? policies.filter(p => p.tags.some(tag => options.tags!.includes(tag as TTags)))
       : policies;
 
-    this.policyEntries = filtered.map(policy => ({
+    const sorted = [...filtered].sort((a, b) => b.priority - a.priority);
+
+    this.policyEntries = sorted.map(policy => ({
       policy,
       normalizedPermission: this.normalizePermission(policy.permission),
       segments: this.normalizePermission(policy.permission).split('.'),
