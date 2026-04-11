@@ -93,10 +93,6 @@ permit permission.order.update if any:
 | `user.profile.*`      | `user.profile.update`  | да        |
 | `user.profile.*`      | `user.settings.update` | нет       |
 
-Конечно, вот улучшенная версия раздела README об аннотациях политик, где чётко указан синтаксис, тип значения,
-обязательность и значение по умолчанию.
-
----
 
 ### Аннотации политик
 
