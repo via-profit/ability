@@ -9,6 +9,7 @@ import {
 export type AbilityRuleConfig = {
   readonly id?: string | null;
   readonly name?: string | null;
+  readonly description?: string | null;
 
   /**
    * Subject key path like a 'user.name'
@@ -43,6 +44,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
 
   public condition: AbilityConditionType;
   public name: string;
+  public description?: string | null;
   public id: string;
   public state: AbilityMatchType = AbilityMatch.pending;
   public disabled: boolean;
@@ -58,16 +60,16 @@ export class AbilityRule<Resources extends object = object, Environment extends 
    * @param params
    */
   public constructor(params: AbilityRuleConstructorProps) {
-    const { id, name, subject, resource, condition, disabled } = params;
+    const { id, name, subject, resource, condition, disabled, description } = params;
     this.name = name || `rule:${JSON.stringify(subject)}:${condition}:${JSON.stringify(resource)}`;
     this.id = id || this.name;
+    this.description = description;
     this.disabled = typeof disabled === 'boolean' ? disabled : false;
 
     this.subject = subject;
     this.resource = resource;
     this.condition = condition;
     this.state = this.disabled ? AbilityMatch.disabled : this.state;
-
   }
 
   public static isPrimitive(v: unknown): v is string | number | boolean | null {
@@ -331,6 +333,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
     props: Partial<{
       id: string | null;
       name: string | null;
+      description: string | null;
       subject: string;
       resource: AbilityRuleConfig['resource'];
       condition: AbilityConditionType;
@@ -339,6 +342,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
     return new AbilityRule<Resources, Environment>({
       id: props.id ?? this.id,
       name: props.name ?? this.name,
+      description: props.description ?? this.description,
       subject: props.subject ?? this.subject,
       resource: props.resource ?? this.resource,
       condition: props.condition ?? this.condition,

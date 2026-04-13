@@ -1,11 +1,11 @@
 import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
-import {AbilityMatch, AbilityMatchType} from './AbilityMatch';
+import { AbilityMatch, AbilityMatchType } from './AbilityMatch';
 import { AbilityCompare, AbilityCompareType } from './AbilityCompare';
-import { AbilityPolicyEffect, AbilityPolicyEffectType } from './AbilityPolicyEffect';
+import { AbilityPolicyEffectType } from './AbilityPolicyEffect';
 import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
 import { AbilityError } from './AbilityError';
 import { EnvironmentObject, ResourceObject } from './AbilityTypeGenerator';
-import { read } from 'node:fs';
+import AbilityRule from '~/core/AbilityRule';
 
 export type AbilityPolicyConfig<TTag extends string = string> = {
   readonly permission: string;
@@ -14,6 +14,7 @@ export type AbilityPolicyConfig<TTag extends string = string> = {
   readonly ruleSet: readonly AbilityRuleSetConfig[];
   readonly id: string;
   readonly name: string;
+  readonly description?: string | null;
   readonly priority: number;
   readonly disabled?: boolean;
   readonly tags?: readonly TTag[];
@@ -22,6 +23,7 @@ export type AbilityPolicyConfig<TTag extends string = string> = {
 export type AbilityPolicyConstructorProps<TTag extends string = string> = {
   id: string | null;
   name: string | null;
+  description?: string | null;
   permission: string;
   effect: AbilityPolicyEffectType;
   compareMethod?: AbilityCompareType;
@@ -59,6 +61,8 @@ export class AbilityPolicy<
    */
   public name: string;
 
+  public description?: string | null;
+
   /**
    * Policy ID
    */
@@ -79,6 +83,7 @@ export class AbilityPolicy<
   public constructor(params: AbilityPolicyConstructorProps) {
     const {
       name,
+      description,
       id,
       permission,
       effect,
@@ -90,6 +95,7 @@ export class AbilityPolicy<
     this.id = id || `policy:${effect}:${permission}`;
     this.name = name || this.id;
     this.permission = permission;
+    this.description = description;
     this.effect = effect;
     this.compareMethod = compareMethod;
     this.priority = typeof priority === 'number' ? priority : -1;
@@ -117,6 +123,20 @@ export class AbilityPolicy<
     }
 
     return this;
+  }
+
+  /**
+   * Extract all rules of all ruleSets of this policy
+   */
+  public extractRules(): readonly AbilityRule[] {
+    const rules: AbilityRule[] = [];
+    for (const ruleSet of this.ruleSet) {
+      for (const rule of ruleSet.rules) {
+        rules.push(rule);
+      }
+    }
+
+    return rules;
   }
 
   /**
@@ -204,6 +224,7 @@ export class AbilityPolicy<
     props: Partial<{
       id: string;
       name: string;
+      description?: string | null;
       priority: number;
       permission: string;
       effect: AbilityPolicyEffectType;
@@ -214,6 +235,7 @@ export class AbilityPolicy<
     const policy = new AbilityPolicy<R, E>({
       id: props.id ?? this.id,
       name: props.name ?? this.name,
+      description: props.description ?? this.description,
       priority: typeof props.priority !== 'undefined' ? props.priority : this.priority,
       permission: props.permission ?? this.permission,
       effect: props.effect ?? this.effect,

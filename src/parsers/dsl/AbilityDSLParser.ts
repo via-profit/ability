@@ -1,7 +1,7 @@
-import {AbilityCompare, AbilityCompareType} from '../../core/AbilityCompare';
+import { AbilityCompare, AbilityCompareType } from '../../core/AbilityCompare';
 import { AbilityCondition, AbilityConditionType } from '../../core/AbilityCondition';
 import AbilityPolicy from '../../core/AbilityPolicy';
-import {AbilityPolicyEffect} from '../../core/AbilityPolicyEffect';
+import { AbilityPolicyEffect } from '../../core/AbilityPolicyEffect';
 import AbilityRule, { AbilityRuleConfig } from '../../core/AbilityRule';
 import AbilityRuleSet from '../../core/AbilityRuleSet';
 import { AbilityDSLLexer } from './AbilityDSLLexer';
@@ -10,6 +10,7 @@ import { EnvironmentObject, ResourceObject } from '../../core/AbilityTypeGenerat
 import { AbilityDSLTokenStream } from './AbilityDSLTokenStream';
 import { AbilityDSLAnnotations, AnnotationName } from '~/parsers/dsl/AbilityDSLAnnotations';
 import { AnnotationAllowed } from './AbilityDSLAnnotationMatrix';
+import { AbilityDSLAliases } from '~/parsers/dsl/AbilityDSLAliases';
 
 /**
  * Parser for the Ability DSL.
@@ -35,6 +36,7 @@ export class AbilityDSLParser<
   private readonly dsl: string;
   private stream!: AbilityDSLTokenStream;
   private annBuffer: AbilityDSLAnnotations = new AbilityDSLAnnotations();
+  private aliasBuffer: AbilityDSLAliases = new AbilityDSLAliases();
 
   constructor(dsl: string) {
     this.dsl = dsl;
@@ -54,10 +56,10 @@ export class AbilityDSLParser<
 
     const policies: AbilityPolicy<R, E, T>[] = [];
 
-    // 3. Парсим политики
     while (!this.stream.eof()) {
       this.consumeLeadingComments();
       this.consumeLeadingAnnotations();
+      this.consumeLeadingAliases();
 
       if (!this.isStartOfPolicy()) {
         const token = this.stream.peek();
@@ -83,8 +85,8 @@ export class AbilityDSLParser<
   private parsePolicy(): AbilityPolicy {
     this.consumeLeadingComments();
     this.consumeLeadingAnnotations();
+    this.consumeLeadingAliases();
     const annotations = this.takeAnnotations('policy');
-    // this.validateAnnotations('policy', meta, tokens);
 
     // Effect: "permit" or "deny"
     const effectToken = this.stream.expect(TokenTypes.EFFECT, 'Expected effect');
@@ -122,6 +124,7 @@ export class AbilityDSLParser<
     return new AbilityPolicy<R, E, T>({
       id: annotations.id?.value || null,
       name: annotations.name?.value || null,
+      description: annotations.description?.value || null,
       priority: annotations.priority?.value || null,
       permission: permission.replace(/^permission\./, ''),
       effect: effect === 'permit' ? AbilityPolicyEffect.permit : AbilityPolicyEffect.deny,
@@ -158,13 +161,12 @@ export class AbilityDSLParser<
       }
 
       const annotation = this.takeAnnotations('ruleSet');
-      // this.validateAnnotations('ruleSet', meta, tokens);
-      // this.validateAnnotations('ruleSet', meta);
 
       const group = new AbilityRuleSet({
         id: annotation.id?.value || null,
         compareMethod: policyCompareMethod,
         name: annotation.name?.value ?? null,
+        description: annotation.description?.value || null,
         disabled: annotation.disabled?.value ?? undefined,
       });
 
@@ -204,7 +206,6 @@ export class AbilityDSLParser<
     this.consumeLeadingComments();
     this.consumeLeadingAnnotations();
     const annotations = this.takeAnnotations('ruleSet');
-    // this.validateAnnotations('ruleSet', meta, tokens);
 
     const compareToken = this.stream.expectOneOf(
       [TokenTypes.ALL, TokenTypes.ANY, TokenTypes.ALWAYS, TokenTypes.NEVER],
@@ -224,6 +225,7 @@ export class AbilityDSLParser<
       id: annotations.id?.value || null,
       compareMethod,
       name: annotations.name?.value || null,
+      description: annotations.description?.value || null,
       disabled: annotations.disabled?.value ?? undefined,
     });
 
@@ -259,7 +261,6 @@ export class AbilityDSLParser<
     this.consumeLeadingComments();
     this.consumeLeadingAnnotations();
     const annotations = this.takeAnnotations('ruleSet');
-    // this.validateAnnotations('ruleSet', meta, tokens);
 
     // consume "except"
     this.stream.expect(TokenTypes.EXCEPT, 'Expected "except"');
@@ -269,8 +270,7 @@ export class AbilityDSLParser<
     // optional: "all" / "any"
     if (this.stream.check(TokenTypes.ALL) || this.stream.check(TokenTypes.ANY)) {
       const compareToken = this.stream.next();
-      compareMethod =
-        compareToken.type === TokenTypes.ALL ? AbilityCompare.and : AbilityCompare.or;
+      compareMethod = compareToken.type === TokenTypes.ALL ? AbilityCompare.and : AbilityCompare.or;
 
       if (this.stream.check(TokenTypes.OF)) {
         this.stream.next();
@@ -287,6 +287,7 @@ export class AbilityDSLParser<
       id: annotations.id?.value || null,
       compareMethod,
       name: annotations.name?.value || null,
+      description: annotations.description?.value || null,
       isExcept: true,
       disabled: annotations.disabled?.value ?? undefined,
     });
@@ -324,10 +325,13 @@ export class AbilityDSLParser<
     this.consumeLeadingComments();
     this.consumeLeadingAnnotations();
     const annotations = this.takeAnnotations('rule');
-    // this.validateAnnotations('rule', meta, tokens);
 
     const isNeverAlways =
       this.stream.check(TokenTypes.ALWAYS) || this.stream.check(TokenTypes.NEVER);
+
+
+
+
 
     if (!isNeverAlways && !this.stream.check(TokenTypes.IDENTIFIER)) {
       this.stream.syntaxError(
@@ -341,8 +345,13 @@ export class AbilityDSLParser<
       ? ''
       : this.stream.expect(TokenTypes.IDENTIFIER, 'Expected field').value;
 
-    // operator
-    const { condition, operator } = this.parseConditionOperator();
+
+    // check alias
+    if (this.aliasBuffer.has(subject)) {
+      return this.aliasBuffer.get(subject)!;
+    }
+      // operator
+      const { condition, operator } = this.parseConditionOperator();
 
     // value
     let resource: AbilityRuleConfig['resource'] = null;
@@ -364,6 +373,7 @@ export class AbilityDSLParser<
 
     this.consumeLeadingComments();
     this.consumeLeadingAnnotations();
+    this.consumeLeadingAliases();
 
     // validation: identifier without dot → error
     if (
@@ -385,6 +395,7 @@ export class AbilityDSLParser<
       resource,
       condition,
       name: annotations.name?.value || null,
+      description: annotations.description?.value || null,
       disabled: annotations.disabled?.value ?? undefined,
     });
   }
@@ -810,6 +821,32 @@ export class AbilityDSLParser<
   //   }
   // }
 
+  private consumeLeadingAliases() {
+    while (this.stream.check(TokenTypes.ALIAS)) {
+      this.stream.next(); // consume "alias"
+
+      const nameToken = this.stream.expect(TokenTypes.IDENTIFIER, `Expected alias name`);
+      const aliasKey = nameToken.value;
+
+      this.stream.expect(TokenTypes.COLON, `Expected colon after an alias`);
+
+
+      const annotations = this.takeAnnotations('alias');
+
+      while (!this.stream.eof() && !this.isStartOfAlias() && !this.isStartOfPolicy()) {
+        const rule = this.parseRule();
+        rule.name = annotations.get('name')?.value || aliasKey;
+        rule.description = annotations.get('description')?.value;
+        if (annotations.get('disabled')?.value === true) {
+          rule.disabled = true;
+        }
+
+        this.aliasBuffer.set(aliasKey, rule);
+      }
+
+    }
+  }
+
   private consumeLeadingAnnotations() {
     while (this.stream.check(TokenTypes.ANNOTATION)) {
       const token = this.stream.next();
@@ -852,7 +889,7 @@ export class AbilityDSLParser<
     }
   }
 
-  private takeAnnotations(owner: 'policy' | 'ruleSet' | 'rule'): AbilityDSLAnnotations {
+  private takeAnnotations(owner: 'policy' | 'ruleSet' | 'rule' | 'alias'): AbilityDSLAnnotations {
     const ann = this.annBuffer.clone();
     this.annBuffer.clear();
 
@@ -887,5 +924,9 @@ export class AbilityDSLParser<
 
   private isStartOfExcept(): boolean {
     return this.stream.check(TokenTypes.EXCEPT);
+  }
+
+  private isStartOfAlias(): boolean {
+    return this.stream.check(TokenTypes.ALIAS);
   }
 }

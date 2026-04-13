@@ -6,6 +6,7 @@ import { EnvironmentObject, ResourceObject } from './AbilityTypeGenerator';
 export type AbilityRuleSetConfig = {
   readonly id?: string | null;
   readonly name?: string | null;
+  readonly description?: string | null;
   readonly compareMethod: AbilityCompareType;
   readonly rules: readonly AbilityRuleConfig[];
   readonly disabled?: boolean;
@@ -14,6 +15,7 @@ export type AbilityRuleSetConfig = {
 export type AbilityRuleSetConstructorProps = {
   readonly id?: string | null;
   readonly name?: string | null;
+  readonly description?: string | null;
   readonly compareMethod: AbilityCompareType;
   readonly isExcept?: boolean;
   readonly disabled?: boolean;
@@ -41,6 +43,7 @@ export class AbilityRuleSet<
    * Group name
    */
   public name: string;
+  public description?: string | null;
 
   /**
    * Group ID
@@ -52,10 +55,11 @@ export class AbilityRuleSet<
   public disabled: boolean;
 
   public constructor(params: AbilityRuleSetConstructorProps) {
-    const { name, id, compareMethod, isExcept, disabled } = params;
+    const { name, id, compareMethod, isExcept, disabled, description } = params;
 
     this.name = name || `ruleset:${compareMethod}`;
     this.id = id || this.name;
+    this.description = description;
     this.compareMethod = compareMethod;
     this.isExcept = isExcept;
     this.disabled = typeof disabled === 'boolean' ? disabled : false;
@@ -129,6 +133,7 @@ export class AbilityRuleSet<
     props: Partial<{
       id: string | null;
       name: string | null;
+      description: string | null;
       compareMethod: AbilityCompareType;
       rules: AbilityRule<R, E>[];
     }>,
@@ -136,6 +141,7 @@ export class AbilityRuleSet<
     const next = new AbilityRuleSet<R, E>({
       id: props.id ?? this.id,
       name: props.name ?? this.name,
+      description: props.description ?? this.description,
       compareMethod: props.compareMethod ?? this.compareMethod,
     });
 

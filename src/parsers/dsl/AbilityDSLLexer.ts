@@ -38,6 +38,7 @@ export class AbilityDSLLexer {
     'always',
     'never',
     'except',
+    'alias',
   ]);
 
   constructor(input: string) {
@@ -98,6 +99,22 @@ export class AbilityDSLLexer {
     }
     return new AbilityDSLToken(TokenTypes.COMMENT, value.trim(), startLine, startColumn);
   }
+
+  // private readAlias(): AbilityDSLToken {
+  //   const startLine = this.line;
+  //   const startColumn = this.column;
+  //
+  //   this.advance(); // skip "alias" keyword
+  //
+  //   // Read colon
+  //   this.readSymbol();
+  //
+  //   let value = '';
+  //   while (!this.isAtEnd() && !this.isNewline()) {
+  //     value += this.advance();
+  //   }
+  //   return new AbilityDSLToken(TokenTypes.ALIAS, value.trim(), startLine, startColumn);
+  // }
 
   private readAnnotation(): AbilityDSLToken {
     const startLine = this.line;
@@ -273,6 +290,9 @@ export class AbilityDSLLexer {
       }
       if (word === 'except') {
         return new AbilityDSLToken(TokenTypes.EXCEPT, word, startLine, startColumn);
+      }
+      if (word === 'alias') {
+        return new AbilityDSLToken(TokenTypes.ALIAS, word, startLine, startColumn);
       }
 
       // Остальные ключевые слова (contains, in, equals, greater, less, not, is, or, than, equal)

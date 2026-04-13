@@ -38,6 +38,7 @@ export type TokenTypeCode =
   | 'BOOLEAN'
   | 'SYMBOL'
   | 'KEYWORD'
+  | 'ALIAS'
   | 'UNKNOWN';
 
 export type TokenType = TokenTypeCode & { __brand: 'TokenType' };
@@ -87,6 +88,7 @@ export const TokenTypes = {
   BOOLEAN: brand('BOOLEAN'),
   SYMBOL: brand('SYMBOL'),
   KEYWORD: brand('KEYWORD'),
+  ALIAS: brand('ALIAS'),
   UNKNOWN: brand('UNKNOWN'),
 } as const;
 
