@@ -15,7 +15,8 @@ Ability DSL — это декларативный язык для описани
     - [Оператор](#оператор)
     - [Значение](#значение)
     - [Аннотации правил](#аннотации-правил)
-- [EBNF](#ebnf)
+- [Алиасы](#алиасы)
+- [Environments (Окружение)](#environments-окружение)
 
 ## Базовая структура
 
@@ -35,7 +36,7 @@ Ability DSL — это декларативный язык для описани
 где:
 
 - `comment-line` - комментарий
-- `annotation` - аннотация (`@id`, `@name`, `@diasbled`, `@tags`, `@priority`)
+- `annotation` - аннотация (`@id`, `@name`, `@description`, `@diasbled`, `@tags`, `@priority`)
 - `effect` – `permit` или `deny`
 - `permission` – ключ разрешения с префиксом `permission.` (например, `permission.order.update`)
 - `all` / `any` – логический оператор для группы правил
@@ -54,7 +55,7 @@ Ability DSL — это декларативный язык для описани
 
 где:
 
-- **annotation** - аннотация (`@id`, `@name`, `@diasbled`, `@tags`, `@priority`);
+- **annotation** - аннотация (`@id`, `@name`, `@diasbled`, `@description`, `@tags`, `@priority`);
 - **effect** — `permit` | `allow` или `deny` | `forbidden`
 - **permission** — ключ разрешения (permission key) - строка вида `permission.foo.bar`  
   (префикс `permission.` обязателен в DSL, но автоматически удаляется парсером)
@@ -204,18 +205,31 @@ _Замечание: Неявная группа всегда соответст
 
 ### Исключающая группа (except)
 
-Любая политика может содержать одно или несколько исключающих групп правил, для этого перед группой следует указать
-ключевое слово `except`. Исключающая группа работает так же, как работала бы противоположная политика с таким же ключом
-разрешения.
+Блок `except` определяет условия, которые отменяют действие политики, даже если основная группа правил выполнена.
+
+- Если основная группа истинна и хотя бы одно условие из `except` истинно → политика не применяется (эффект
+  инвертируется).
+- Если основная группа ложна → `except` не проверяется.
+
 
 ```dsl
-deny permission.order.update if all:
+# Разрешаем редактировать заказ менеджеру, 
+# но запрещаем, если заказ уже оплачен или отменён
+permit permission.order.update if all:
   all of:
-    user.roles not contains 'admin'
-    
+    user.roles contains 'manager'
   except any of:
-    user.type equals 'developer'
+    order.status equals 'paid'
+    order.status equals 'cancelled'
 ```
+
+**Как это работает:**
+
+1. Проверяется `user.roles contains 'manager'` — если менеджер, переходим к `except`.
+2. Если статус заказа `paid` или `cancelled` — разрешение не даётся.
+3. Иначе — разрешаем.
+
+
 
 ## Правило
 
@@ -342,9 +356,6 @@ order.tag in ['vip', 'priority']
 
 # токен пользователя не null
 user.token is not null
-
-# логин пользователя длиннее 12 символов
-user.login length greater than 12
 ```
 
 ### Аннотации правил
@@ -361,166 +372,75 @@ user.login length greater than 12
 | `@description` | строка             | нет          | –                          | Подробное описание того, что проверяет правило. |
 | `@disabled`    | `true` или `false` | нет          | `false`                    | Если `true`, правило игнорируется при проверке. |
 
+## Алиасы
 
+Алиасы — это заранее определённые правила, которым присваивается уникальный ключ.
+Алиас можно использовать в политике по имени, без необходимости повторять само правило.
 
+Алиас всегда представляет одно правило.
 
-## EBNF
+**Пример:**
+```
+@name is user administrator
+alias isAdmin:
+  user.roles.contains 'admin'
 
-```ebnf
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Лексический уровень
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-identifier      = letter , { letter | digit | "_" | "-" } ;
-string_literal  = "'" , { character - "'" } , "'" ;
-number_literal  = digit , { digit } ;
-boolean_literal = "true" | "false" ;
-null_literal    = "null" ;
-
-comment         = "#" , { any_char } ;
-
-whitespace      = { " " | "\t" | "\r" | "\n" } ;
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Верхний уровень
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-document        = whitespace , { policy } ;
-
-policy          = { comment }
-                  , { annotation }
-                  , effect , permission_key
-                  , "if" , aggregator , ":"
-                  , group_block
-                  , { group_block }
-                  , { except_block }
-                  ;
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Аннотации
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-annotation      = "@" , identifier , [ annotation_value ] ;
-
-annotation_value =
-        string_literal
-      | number_literal
-      | boolean_literal
-      | identifier
-      | tag_list ;
-
-tag_list        = identifier , { "," , identifier } ;
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Политика: effect + permission
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-effect          = "permit" | "allow" | "deny" | "forbidden" ;
-
-permission_key  = "permission." , identifier , { "." , identifier } ;
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Группы
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-group_block     =
-      implicit_group
-    | explicit_group ;
-
-implicit_group  =
-      { comment }
-      , { annotation }
-      , rule , { rule } ;
-
-explicit_group  =
-      { comment }
-      , { annotation }
-      , aggregator , "of:" , rule , { rule } ;
-
-except_block    =
-      { comment }
-      , "except"
-      , aggregator , "of:"
-      , rule , { rule } ;
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Агрегаторы
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-aggregator      = "all" | "any" ;
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Правила
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-rule            =
-      { comment }
-      , { annotation }
-      , condition ;
-
-condition       =
-      special_operator
-    | subject , operator , rhs ;
-
-subject         = identifier , { "." , identifier } ;
-
-rhs             =
-      literal
-    | subject ;
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Операторы
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-operator =
-      "is" , "equals"
-    | "is" , "not" , "equals"
-    | "equals"
-    | "not" , "equals"
-    | ">"
-    | "<"
-    | ">="
-    | "<="
-    | "greater" , "than"
-    | "greater" , "than" , "or" , "equal"
-    | "less" , "than"
-    | "less" , "than" , "or" , "equal"
-    | "in"
-    | "not" , "in"
-    | "contains"
-    | "not" , "contains"
-    | "is" , "null"
-    | "is" , "not" , "null"
-    | "is" , "true"
-    | "is" , "false"
-    | "length" , "equals"
-    | "length" , "greater" , "than"
-    | "length" , "less" , "than"
-    ;
-
-special_operator = "always" | "never" ;
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Значения
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-literal =
-      string_literal
-    | number_literal
-    | boolean_literal
-    | null_literal
-    | list_literal ;
-
-list_literal     = "[" , [ literal , { "," , literal } ] , "]" ;
-
+permit permission.order.update if any:
+  user.rules.contains 'writer'
+  isAdmin
 ```
 
-```mermaid
+Алиас должен быть определён **до** его использования в политике.
+
+### Аннотации алиасов
+
+Аннотации указываются **непосредственно перед определением алиаса** (каждая на отдельной строке). Формат:
+`@имя_аннотации значение`.
+
+#### Поддерживаемые аннотации
+
+| Аннотация      | Тип значения | Обязательная | Значение по умолчанию       | Описание                                              |
+|----------------|--------------|--------------|-----------------------------|-------------------------------------------------------|
+| `@name`        | строка       | нет          | формируется из ключа алиаса | Человекочитаемое название алиаса/правила.             |
+| `@description` | строка       | нет          | –                           | Подробное описание того, что проверяет алиас/правило. |
+
+
+## Environments (Окружение)
+
+В правой части правила можно ссылаться не только на литералы или поля ресурса, но и на **переменные окружения** — данные, которые передаются в момент проверки политики (например, IP-адрес запроса, текущее время, параметры сессии).
+
+### Синтаксис
+
+Используйте префикс `env.` перед dot‑notation путём:
 
 ```
+<subject> <operator> env.<path>
+```
+
+### Примеры
+
+```
+# Разрешить доступ только с локального хоста
+permit permission.admin if all:
+  env.request.ip equals '127.0.0.1'
+
+# Запретить операции после рабочего времени
+deny permission.order.create if all:
+  env.current_time greater_than '18:00'
+
+# Проверка роли из контекста аутентификации
+permit permission.report.view if all:
+  env.auth.roles contains 'analyst'
+```
+
+### Где используются environment‑переменные?
+
+ - В `resource` (правая часть правила)
+ - В `subject`, если указано `env`.
+ - в левой части (например, `env.user.id equals resource.owner_id`)
+
+### Примечания
+
+ - Environment передаётся отдельно от основного ресурса при вызове `resolve()` или `enforce()`.
+ - Если путь в `env.` не существует, значение считается `undefined` (правило не срабатывает, если оператор не проверяет `is null`).
+ - Не путайте `env.` с полями самого ресурса — они относятся к разным контекстам.

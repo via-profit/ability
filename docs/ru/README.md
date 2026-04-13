@@ -12,7 +12,6 @@
 ![issues](https://img.shields.io/github/issues/via-profit/ability)
 ![stars](https://img.shields.io/github/stars/via-profit/ability?style=social)
 
-
 ## Language / Язык
 
 - [🇬🇧 English](/docs/en/README.md)
@@ -21,6 +20,14 @@
 ## Для чего
 
 Проект задумывался для того, чтобы закрыть типовые сценарии контроля доступа без лишних сложностей. Нам потребовался лёгкий ABAC-движок с простым DSL, автоматической генерацией TypeScript-типов — и без внешних зависимостей.
+
+
+- [Основные возможности](#основные-возможности)
+- [Установка](#установка)
+- [Быстрый старт](#быстрый-старт)
+- [Основные понятия](#основные-понятия)
+- [DSL](./dsl.md)
+
 
 ## Основные возможности
 
@@ -283,6 +290,7 @@ except any of:
 
 ```
 @name "Высокий приоритет"
+@description "Описание"
 @priority 100
 @disabled true
 deny permission.admin.all if always:
@@ -378,5 +386,5 @@ MIT
 ## Ссылки
 
 - [GitHub репозиторий](https://github.com/via-profit/ability)
-- [Примеры использования](./examples) (добавить по необходимости)
-- [Полная документация API](./docs) (опционально)
+- [DSL](./dsl.md)
+- [Примеры использования](./examples) (todo: examples)
