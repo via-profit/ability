@@ -14,7 +14,7 @@
 
 ## Language / Язык
 
-- [🇬🇧 English](/docs/en/README.md)
+[//]: # (- [🇬🇧 English]&#40;/docs/en/README.md&#41;)
 - [🇷🇺 Русский](/docs/ru/README.md)
 
 ## Для чего
