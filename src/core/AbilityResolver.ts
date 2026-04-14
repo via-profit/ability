@@ -8,14 +8,18 @@ export interface AbilityResolverOptions<TTags extends string> {
   tags?: readonly TTags[];
 }
 
-type ExtractResources<P> = P extends AbilityPolicy<infer R, any, any> ? R : never;
+export type ExtractResources<P> = P extends AbilityPolicy<infer R, any, any> ? R : never;
 
-type ExtractEnvironment<P> = P extends AbilityPolicy<any, infer E, any> ? E : never;
+export type ExtractEnvironment<P> = P extends AbilityPolicy<any, infer E, any> ? E : never;
 
-type ExtractResourceByPermission<P, Perm extends string> =
+export type ExtractPermission<R> =
+  R extends AbilityResolver<infer P, any, any> ? keyof ExtractResources<P> & string : never;
+
+
+export type ExtractResourceByPermission<P, Perm extends string> =
   P extends AbilityPolicy<infer R, any, any> ? (Perm extends keyof R ? R[Perm] : never) : never;
 
-type ExtractEnvironmentByPermission<P, Perm extends string> =
+export type ExtractEnvironmentByPermission<P, Perm extends string> =
   P extends AbilityPolicy<any, infer E, any> ? (Perm extends keyof E ? E[Perm] : never) : never;
 
 
