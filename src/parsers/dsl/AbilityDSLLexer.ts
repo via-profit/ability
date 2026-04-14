@@ -120,12 +120,54 @@ export class AbilityDSLLexer {
     const startLine = this.line;
     const startColumn = this.column;
 
-    let value = '';
+    let raw = '';
 
+    // читаем всю строку после @
     while (!this.isAtEnd() && !this.isNewline()) {
-      value += this.advance();
+      raw += this.advance();
     }
-    return new AbilityDSLToken(TokenTypes.ANNOTATION, value.trim(), startLine, startColumn);
+
+    raw = raw.trim();
+
+    // parse literals
+    let result = '';
+    let i = 0;
+    let inString = false;
+    let quote: string | null = null;
+    let escaped = false;
+
+    while (i < raw.length) {
+      const ch = raw[i];
+
+      if (inString) {
+        if (escaped) {
+          result += ch;
+          escaped = false;
+        } else if (ch === '\\') {
+          escaped = true;
+        } else if (ch === quote) {
+          inString = false;
+          quote = null;
+        } else {
+          result += ch;
+        }
+        i++;
+        continue;
+      }
+
+      // start of string
+      if (ch === '"' || ch === "'") {
+        inString = true;
+        quote = ch;
+        i++;
+        continue;
+      }
+
+      result += ch;
+      i++;
+    }
+
+    return new AbilityDSLToken(TokenTypes.ANNOTATION, result.trim(), startLine, startColumn);
   }
 
   private readString(): AbilityDSLToken {
