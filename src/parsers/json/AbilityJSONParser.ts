@@ -1,8 +1,6 @@
-import { AbilityCondition } from '../../core/AbilityCondition';
 import { AbilityRule, AbilityRuleConfig } from '../../core/AbilityRule';
 import { AbilityRuleSet, AbilityRuleSetConfig } from '../../core/AbilityRuleSet';
-import { ResourceObject } from '../../core/AbilityTypeGenerator';
-import { AbilityPolicyEffect  } from '../../core/AbilityPolicyEffect';
+import { EnvironmentObject, ResourceObject } from '../../core/AbilityTypeGenerator';
 import { AbilityPolicy, AbilityPolicyConfig } from '../../core/AbilityPolicy';
 
 export class AbilityJSONParser {
@@ -11,19 +9,20 @@ export class AbilityJSONParser {
    * @param configs - Array of policy configurations
    * @returns Array of AbilityPolicy instances
    */
-  public static parse<Resource extends ResourceObject>(
+  public static parse<R extends ResourceObject, E extends  EnvironmentObject, T extends string = string>(
     configs: readonly AbilityPolicyConfig[],
-  ): AbilityPolicy<Resource>[] {
-    return configs.map(config => AbilityJSONParser.parsePolicy<Resource>(config));
+  ): AbilityPolicy<R, E, T>[] {
+    return configs.map(config => AbilityJSONParser.parsePolicy<R, E, T>(config));
   }
 
-  public static parsePolicy<
-    Resource extends ResourceObject = Record<string, unknown>,
-  >(config: AbilityPolicyConfig): AbilityPolicy<Resource> {
-    const { id, name, ruleSet, compareMethod, permission, effect, priority, disabled, tags } = config;
+  public static parsePolicy<R extends ResourceObject, E extends  EnvironmentObject, T extends string = string>(
+    config: AbilityPolicyConfig,
+  ): AbilityPolicy<R, E, T> {
+    const { id, name, ruleSet, compareMethod, permission, effect, priority, disabled, tags } =
+      config;
 
     // Create the empty policy
-    const policy = new AbilityPolicy<Resource>({
+    const policy = new AbilityPolicy<R, E, T>({
       name,
       id,
       permission: permission,
@@ -36,18 +35,18 @@ export class AbilityJSONParser {
     policy.compareMethod = compareMethod;
 
     ruleSet.forEach(ruleSetConfig => {
-      policy.addRuleSet(AbilityJSONParser.parseRuleSet<Resource>(ruleSetConfig));
+      policy.addRuleSet(AbilityJSONParser.parseRuleSet<R, E>(ruleSetConfig));
     });
 
     return policy;
   }
 
-  public static parseRule<Resources extends object>(
+  public static parseRule<R extends ResourceObject, E extends  EnvironmentObject>(
     config: AbilityRuleConfig,
-  ): AbilityRule<Resources> {
+  ): AbilityRule<R, E> {
     const { id, name, subject, resource, condition, disabled } = config;
 
-    return new AbilityRule<Resources>({
+    return new AbilityRule<R, E>({
       id,
       name,
       subject,
@@ -60,12 +59,12 @@ export class AbilityJSONParser {
   /**
    * Parse the config JSON format to Group class instance
    */
-  public static parseRuleSet<
-    Resource extends ResourceObject = Record<string, unknown>
-  >(config: AbilityRuleSetConfig): AbilityRuleSet<Resource> {
+  public static parseRuleSet<R extends ResourceObject, E extends  EnvironmentObject>(
+    config: AbilityRuleSetConfig,
+  ): AbilityRuleSet<R, E> {
     const { id, name, rules, compareMethod, disabled } = config;
 
-    const ruleSet = new AbilityRuleSet<Resource>({
+    const ruleSet = new AbilityRuleSet<R, E>({
       disabled,
       compareMethod: compareMethod,
       name,
@@ -74,9 +73,7 @@ export class AbilityJSONParser {
 
     // Adding rules if exists
     if (rules && rules.length > 0) {
-      const abilityRules = rules.map(ruleConfig =>
-       AbilityJSONParser.parseRule(ruleConfig),
-      );
+      const abilityRules = rules.map(ruleConfig => AbilityJSONParser.parseRule(ruleConfig));
 
       ruleSet.addRules(abilityRules);
     }
