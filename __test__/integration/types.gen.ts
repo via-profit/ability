@@ -4,129 +4,129 @@ export type Resources = {
   ['always']: undefined;
   ['contains']: {
     readonly user: {
-      readonly tags: readonly string[];
-    };
-  };
+      readonly tags: readonly string[] | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
   ['document.create']: {
     readonly document: {
-      readonly cteated: unknown;
-      readonly ownerId: unknown;
-      readonly status: string;
-    };
+      readonly cteated: unknown 
+      readonly ownerId: unknown 
+      readonly status: string | null | undefined 
+    } | null | undefined;
     readonly user: {
-      readonly id: unknown;
-    };
-  };
+      readonly id: unknown 
+    } | null | undefined;
+  } | null | undefined;
   ['document.read']: {
     readonly document: {
-      readonly ownerId: unknown;
-      readonly status: string;
-    };
+      readonly ownerId: unknown 
+      readonly status: string | null | undefined 
+    } | null | undefined;
     readonly user: {
-      readonly id: unknown;
-    };
-  };
+      readonly id: unknown 
+    } | null | undefined;
+  } | null | undefined;
   ['equals']: {
     readonly user: {
-      readonly age: number;
-      readonly name: string;
-      readonly stateOn: boolean;
-      readonly surname: string;
-    };
-  };
+      readonly age: number | null | undefined 
+      readonly name: string | null | undefined 
+      readonly stateOn: boolean | null | undefined 
+      readonly surname: string | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
   ['greaterThanOrEqual']: {
     readonly user: {
-      readonly age: number;
-    };
-  };
+      readonly age: number | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
   ['gte']: {
     readonly user: {
-      readonly age: number;
-    };
-  };
+      readonly age: number | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
   ['in']: {
     readonly user: {
-      readonly age: number;
-      readonly role: string;
-    };
-  };
+      readonly age: number | null | undefined 
+      readonly role: string | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
   ['isnotnull']: {
     readonly user: {
-      readonly name: null | unknown;
-      readonly surname: null | unknown;
-    };
-  };
+      readonly name: null | unknown 
+      readonly surname: null | unknown 
+    } | null | undefined;
+  } | null | undefined;
   ['isnull']: {
     readonly user: {
-      readonly middleName: null | unknown;
-      readonly surname: null | unknown;
-    };
-  };
+      readonly middleName: null | unknown 
+      readonly surname: null | unknown 
+    } | null | undefined;
+  } | null | undefined;
   ['istrue']: {
     readonly user: {
-      readonly statusOn: boolean;
-    };
-  };
+      readonly statusOn: boolean | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
   ['length']: {
     readonly user: {
-      readonly name: string | readonly unknown[];
-    };
-  };
+      readonly name: string | readonly unknown[] 
+    } | null | undefined;
+  } | null | undefined;
   ['lengthGte']: {
     readonly user: {
-      readonly name: string | readonly unknown[];
-      readonly roles: string | readonly unknown[];
-    };
-  };
+      readonly name: string | readonly unknown[] 
+      readonly roles: string | readonly unknown[] 
+    } | null | undefined;
+  } | null | undefined;
   ['lengthLessThan']: {
     readonly user: {
-      readonly name: string | readonly unknown[];
-      readonly roles: string | readonly unknown[];
-    };
-  };
+      readonly name: string | readonly unknown[] 
+      readonly roles: string | readonly unknown[] 
+    } | null | undefined;
+  } | null | undefined;
   ['less']: {
     readonly user: {
-      readonly age: number;
-      readonly vol: number;
-    };
-  };
+      readonly age: number | null | undefined 
+      readonly vol: number | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
   ['lessThan']: {
     readonly user: {
-      readonly name: number;
-    };
-  };
+      readonly name: number | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
   ['mut.client.delete']: {
     readonly account: {
-      readonly roles: readonly string[];
-    };
+      readonly roles: readonly string[] | null | undefined 
+    } | null | undefined;
     readonly client: {
-      readonly name: string;
-    };
-  };
+      readonly name: string | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
   ['mut.order.delete']: {
     readonly account: {
-      readonly roles: readonly string[];
-    };
+      readonly roles: readonly string[] | null | undefined 
+    } | null | undefined;
     readonly order: {
-      readonly createdHourLef: number;
-    };
-  };
+      readonly createdHourLef: number | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
   ['never']: undefined;
   ['notEquals']: {
     readonly user: {
-      readonly age: number;
-    };
-  };
+      readonly age: number | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
   ['notcontains']: {
     readonly user: {
-      readonly tags: readonly string[];
-    };
-  };
+      readonly tags: readonly string[] | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
   ['notin']: {
     readonly user: {
-      readonly role: string;
-    };
-  };
+      readonly role: string | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
 }
 
 
@@ -135,12 +135,12 @@ export type PolicyTags = 'client' | 'mutation' | 'order';
 
 export type Environment = {
   ['document.create']: {
-    readonly createdAt: unknown;
-  };
+    readonly createdAt: unknown 
+  } | null | undefined;
   ['mut.order.delete']: {
-    readonly hour: number;
+    readonly hour: number | null | undefined 
     readonly time: {
-      readonly hour: number;
-    };
-  };
+      readonly hour: number | null | undefined 
+    } | null | undefined;
+  } | null | undefined;
 }

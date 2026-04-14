@@ -203,25 +203,6 @@ export class AbilityTypeGenerator {
    * @returns TypeScript array type as string
    */
   private getArrayType(resource: unknown): string {
-    // if (Array.isArray(resource)) {
-    //   if (resource.length === 0) {
-    //     return 'readonly unknown[]';
-    //   }
-
-    //   // Determine types of array elements
-    //   const elementTypes = new Set(resource.map(item => this.getPrimitiveType(item)));
-    //   const elementType =
-    //     elementTypes.size === 1
-    //       ? Array.from(elementTypes)[0]
-    //       : `(${Array.from(elementTypes).join(' | ')})`;
-
-    //   return `readonly ${elementType}[]`;
-    // }
-
-    // // If resource is not an array but condition is in/not_in,
-    // // it expects an array of such elements
-    // return `readonly ${this.getPrimitiveType(resource)}[]`;
-
     const elementType = this.getInArrayType(resource);
     return `readonly ${elementType}[]`;
   }
@@ -350,7 +331,7 @@ export class AbilityTypeGenerator {
         // Непустой объект → как раньше
         output += `  ['${action}']: {\n`;
         output += this.formatNestedObject(actionObj, 4);
-        output += '  };\n';
+        output += '  } | null | undefined;\n';
       }
     });
 
@@ -377,7 +358,7 @@ export class AbilityTypeGenerator {
       } else {
         output += `  ['${action}']: {\n`;
         output += this.formatNestedObject(envObj as any, 4);
-        output += '  };\n';
+        output += '  } | null | undefined;\n';
       }
     });
 
@@ -407,10 +388,23 @@ export class AbilityTypeGenerator {
         // Nested object
         output += `${spaces}readonly ${key}: {\n`;
         output += this.formatNestedObject(value, indent + 2);
-        output += `${spaces}};\n`;
+        output += `${spaces}} | null | undefined;\n`;
       } else {
         // Primitive type
-        output += `${spaces}readonly ${key}: ${value};\n`;
+        const va = [String(value)];
+        let v = String(value);
+        if (!v.match(/unknown/)) {
+          if (!v.match(/null/)) {
+            va.push('null');
+          }
+
+          if (!v.match(/undefined/)) {
+            va.push('undefined');
+          }
+        }
+
+
+        output += `${spaces}readonly ${key}: ${va.join(' | ')} \n`;
       }
     });
 
