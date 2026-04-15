@@ -24,11 +24,11 @@ export class AbilityResult<R extends ResourceObject = Record<string, unknown>, E
     });
   }
 
-  public isAllowed() {
+  public isAllowed = () => {
     return this.strategy.isAllowed();
   }
 
-  public isDenied() {
+  public isDenied = () => {
     return this.strategy.isDenied();
   }
 }
