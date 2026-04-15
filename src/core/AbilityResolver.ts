@@ -56,11 +56,9 @@ export class AbilityResolver<
 
     this.policyEntries = sorted.map(policy => ({
       policy,
-      normalizedPermission: this.normalizePermission(policy.permission),
-      segments: this.normalizePermission(policy.permission).split('.'),
+      normalizedPermission: AbilityResolver.normalizePermission(policy.permission),
+      segments: AbilityResolver.normalizePermission(policy.permission).split('.'),
     }));
-
-
 
     this.StrategyClass = strategy;
   }
@@ -77,8 +75,7 @@ export class AbilityResolver<
     resource: ExtractResourceByPermission<P, Permission>,
     environment?: ExtractEnvironmentByPermission<P, Permission>,
   ): AbilityResult<ExtractResourceByPermission<P, Permission>, ExtractEnvironment<P>> {
-
-    const inputNormalized = this.normalizePermission(String(permission));
+    const inputNormalized = AbilityResolver.normalizePermission(String(permission));
     const inputSegments = inputNormalized.split('.');
 
     const filteredPolicies = this.policyEntries
@@ -123,6 +120,8 @@ export class AbilityResolver<
   }
 
   /**
+   * @deprecated - will be removed
+   *
    * Check if the permission key is contained in another permission key
    * @param permissionA - The first permission to check
    * @param permissionB - The second permission to check
@@ -142,7 +141,7 @@ export class AbilityResolver<
     return [...(Array.isArray(value) ? value : [value])];
   }
 
-  private normalizePermission(permission: string): string {
+  public static normalizePermission(permission: string): string {
     return permission
       .trim()
       .replace(/^permission\./, '') // remove prefix
@@ -150,15 +149,24 @@ export class AbilityResolver<
       .toLowerCase(); // optional: make case-insensitive
   }
 
-  private static matchPermissions(policySegments: string[], inputSegments: string[]): boolean {
+  public static matchPermissions(policySegments: string[], inputSegments: string[]): boolean {
     const maxLen = Math.max(policySegments.length, inputSegments.length);
     for (let i = 0; i < maxLen; i++) {
       const pSeg = policySegments[i];
       const iSeg = inputSegments[i];
-      if (pSeg === undefined) return false; // policy короче – не матчит
-      if (pSeg === '*') continue; // '*' матчит любой сегмент
-      if (iSeg === undefined) return false; // входной permission короче
-      if (pSeg !== iSeg) return false;
+
+      if (pSeg === undefined) {
+        return false;
+      }
+      if (pSeg === '*') {
+        continue; // '*'
+      }
+      if (iSeg === undefined) {
+        return false;
+      }
+      if (pSeg !== iSeg) {
+        return false;
+      }
     }
     return true;
   }

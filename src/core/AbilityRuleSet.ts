@@ -2,6 +2,7 @@ import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
 import { AbilityCompare, AbilityCompareType } from './AbilityCompare';
 import { AbilityMatch, AbilityMatchType } from './AbilityMatch';
 import { EnvironmentObject, ResourceObject } from './AbilityTypeGenerator';
+import { AbilityHash } from '~/core/AbilityHash';
 
 export type AbilityRuleSetConfig = {
   readonly id?: string | null;
@@ -57,13 +58,14 @@ export class AbilityRuleSet<
   public constructor(params: AbilityRuleSetConstructorProps) {
     const { name, id, compareMethod, isExcept, disabled, description } = params;
 
-    this.name = name || `ruleset:${compareMethod}`;
-    this.id = id || this.name;
+
     this.description = description;
     this.compareMethod = compareMethod;
     this.isExcept = isExcept;
     this.disabled = typeof disabled === 'boolean' ? disabled : false;
     this.state = this.disabled ? AbilityMatch.disabled : this.state;
+    this.id = id || `g_${this.hash().slice(0, 10)}`;
+    this.name = name || this.id;
   }
 
   public addRule(rule: AbilityRule<R, E>): this {
@@ -152,6 +154,18 @@ export class AbilityRuleSet<
     }
 
     return next;
+  }
+
+  public hash(): string {
+    const ruleHashes = this.rules.map(r => r.hash()).sort();
+    const parts = [
+      `compareMethod:${this.compareMethod}`,
+      `isExcept:${this.isExcept}`,
+      `disabled:${this.disabled}`,
+      `rules:${ruleHashes.join('|')}`,
+    ];
+
+    return AbilityHash.sha1(parts.join(';'));
   }
 
   static and(rules: AbilityRule[]) {

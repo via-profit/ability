@@ -6,6 +6,7 @@ import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
 import { AbilityError } from './AbilityError';
 import { EnvironmentObject, ResourceObject } from './AbilityTypeGenerator';
 import AbilityRule from '~/core/AbilityRule';
+import { AbilityHash } from '~/core/AbilityHash';
 
 export type AbilityPolicyConfig<TTag extends string = string> = {
   readonly permission: string;
@@ -57,16 +58,16 @@ export class AbilityPolicy<
   public compareMethod: AbilityCompareType = AbilityCompare.and;
 
   /**
+   * Policy ID
+   */
+  public id: string;
+
+  /**
    * Policy name
    */
   public name: string;
 
   public description?: string | null;
-
-  /**
-   * Policy ID
-   */
-  public id: string;
 
   /**
    * Running the `enforce` or `resolve` method
@@ -92,8 +93,6 @@ export class AbilityPolicy<
       disabled,
       tags,
     } = params;
-    this.id = id || `policy:${effect}:${permission}`;
-    this.name = name || this.id;
     this.permission = permission;
     this.description = description;
     this.effect = effect;
@@ -101,6 +100,9 @@ export class AbilityPolicy<
     this.priority = typeof priority === 'number' ? priority : -1;
     this.disabled = typeof disabled === 'boolean' ? disabled : false;
     this.tags = (tags || []) as readonly TTag[];
+
+    this.id = id || `p_${this.hash().slice(0, 10)}`;
+    this.name = name || this.id;
   }
 
   /**
@@ -249,6 +251,29 @@ export class AbilityPolicy<
     }
 
     return policy;
+  }
+
+  public hash(): string {
+    const parts: string[] = [
+      `permission:${this.permission}`,
+      `effect:${this.effect}`,
+      `compareMethod:${this.compareMethod}`,
+      `priority:${this.priority}`,
+      `disabled:${this.disabled}`,
+    ];
+
+    if (this.tags && this.tags.length > 0) {
+      parts.push(`tags:${[...this.tags].sort().join(',')}`);
+    }
+
+    if (this.ruleSet && this.ruleSet.length > 0) {
+      const ruleHashes = this.ruleSet.map(r => r.hash());
+      parts.push(`rules:${ruleHashes.sort().join('|')}`);
+    }
+
+    const str = parts.join(';');
+
+    return AbilityHash.sha1(str);
   }
 }
 

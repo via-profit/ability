@@ -1,6 +1,7 @@
 import AbilityPolicy from './AbilityPolicy';
 import { AbilityCondition } from './AbilityCondition';
 import AbilityRule from './AbilityRule';
+import AbilityResolver from '~/core/AbilityResolver';
 
 export type Primitive = string | number | boolean | null | undefined;
 export type NestedDict<T = Primitive> = {
@@ -14,9 +15,20 @@ export type ResourcesMap = Record<string, ResourceObject>;
 
 export class AbilityTypeGenerator {
   readonly policies: readonly AbilityPolicy[];
+  private readonly policyEntries: readonly {
+    policy: AbilityPolicy;
+    normalizedPermission: string;
+    segments: string[];
+  }[];
 
   constructor(policies: readonly AbilityPolicy[]) {
     this.policies = policies;
+
+    this.policyEntries = policies.map(policy => ({
+      policy,
+      normalizedPermission: AbilityResolver.normalizePermission(policy.permission),
+      segments: AbilityResolver.normalizePermission(policy.permission).split('.'),
+    }));
   }
   /**
    * Generates TypeScript type definitions based on the provided policies.
@@ -44,9 +56,6 @@ export class AbilityTypeGenerator {
       policy.ruleSet.forEach(ruleSet => {
         // Iterate through all rules in the ruleSet
         ruleSet.rules.forEach(rule => {
-
-
-
           const subjectPath = rule.subject;
           const ruleType = this.determineTypeFromRule(rule);
 
@@ -131,8 +140,7 @@ export class AbilityTypeGenerator {
     return this.formatTypeDefinitions(nestedStructure, nestedEnvironment, allTags);
   }
 
-  private isPath(value: unknown) : boolean {
-
+  private isPath(value: unknown): boolean {
     if (typeof value !== 'string') {
       return false;
     }
@@ -150,7 +158,6 @@ export class AbilityTypeGenerator {
    * @returns TypeScript type as string
    */
   private determineTypeFromRule(rule: AbilityRule): string | null {
-
     if (rule.condition === AbilityCondition.never || rule.condition === AbilityCondition.always) {
       return null;
     }
@@ -190,7 +197,6 @@ export class AbilityTypeGenerator {
       rule.condition === AbilityCondition.equals ||
       rule.condition === AbilityCondition.not_equals
     ) {
-
       return this.getPrimitiveType(rule.resource);
     }
 
@@ -320,16 +326,44 @@ export class AbilityTypeGenerator {
 
     const sortedActions = Object.keys(structure).sort();
 
-    sortedActions.forEach(action => {
-      const actionObj = structure[action];
+    sortedActions.forEach(permission => {
+      const actionObj = structure[permission];
       const isEmpty = Object.keys(actionObj).length === 0;
 
+      const inputNormalized = AbilityResolver.normalizePermission(permission);
+      const inputSegments = inputNormalized.split('.');
+      const filteredPolicies = this.policyEntries
+        .filter(entry => AbilityResolver.matchPermissions(entry.segments, inputSegments))
+        .map(entry => entry.policy);
+
+      // Effects
+      const effects = [...new Set(filteredPolicies.map(p => p.effect))].sort();
+
+      // Policies list
+      const items = filteredPolicies
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .map(p => {
+          const effect = p.effect.padEnd(6, ' '); // permit / deny / audit
+          const displayName = p.name === p.id ? 'Unnamed policy' : p.name;
+          return `  *   - ${effect} ${p.id}  "${displayName}"`;
+        })
+        .join('\n');
+      //
+      output += `
+ /**
+  * Permission: ${permission}
+  * Effects: ${effects.join(', ')}
+  * Policies:
+${items}
+  */
+`;
+
       if (isEmpty) {
-        // Пустой объект → undefined
-        output += `  ['${action}']: undefined;\n`;
+        // empty object → undefined
+        output += `  ['${permission}']: undefined;\n`;
       } else {
-        // Непустой объект → как раньше
-        output += `  ['${action}']: {\n`;
+        // not empty object
+        output += `  ['${permission}']: {\n`;
         output += this.formatNestedObject(actionObj, 4);
         output += '  } | null | undefined;\n';
       }
@@ -350,13 +384,38 @@ export class AbilityTypeGenerator {
     // environments
     output += '\n\nexport type Environment = {\n';
 
-    Object.entries(environment).forEach(([action, envObj]) => {
+    Object.entries(environment).forEach(([permission, envObj]) => {
       const isEmpty = Object.keys(envObj).length === 0;
 
+      const inputNormalized = AbilityResolver.normalizePermission(permission);
+      const inputSegments = inputNormalized.split('.');
+      const filteredPolicies = this.policyEntries
+        .filter(entry => AbilityResolver.matchPermissions(entry.segments, inputSegments))
+        .map(entry => entry.policy);
+
+      const effects = [...new Set(filteredPolicies.map(p => p.effect))].sort();
+
+      const items = filteredPolicies
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .map(p => {
+          const effect = p.effect.padEnd(6, ' ');
+          const displayName = p.name === p.id ? 'Unnamed policy' : p.name;
+          return `  *   - ${effect} ${p.id}  "${displayName}"`;
+        })
+        .join('\n');
+
+      output += `
+ /**
+  * Permission: ${permission}
+  * Effects: ${effects.join(', ')}
+  * Policies:
+${items}
+  */
+`;
       if (isEmpty) {
-        output += `  ['${action}']: undefined;\n`;
+        output += `  ['${permission}']: undefined;\n`;
       } else {
-        output += `  ['${action}']: {\n`;
+        output += `  ['${permission}']: {\n`;
         output += this.formatNestedObject(envObj as any, 4);
         output += '  } | null | undefined;\n';
       }
@@ -402,7 +461,6 @@ export class AbilityTypeGenerator {
             va.push('undefined');
           }
         }
-
 
         output += `${spaces}readonly ${key}: ${va.join(' | ')} \n`;
       }

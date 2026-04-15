@@ -5,6 +5,7 @@ import {
   AbilityConditionType,
   toLiteral,
 } from './AbilityCondition';
+import { AbilityHash } from '~/core/AbilityHash';
 
 export type AbilityRuleConfig = {
   readonly id?: string | null;
@@ -61,15 +62,15 @@ export class AbilityRule<Resources extends object = object, Environment extends 
    */
   public constructor(params: AbilityRuleConstructorProps) {
     const { id, name, subject, resource, condition, disabled, description } = params;
-    this.name = name || `rule:${JSON.stringify(subject)}:${condition}:${JSON.stringify(resource)}`;
-    this.id = id || this.name;
     this.description = description;
     this.disabled = typeof disabled === 'boolean' ? disabled : false;
-
     this.subject = subject;
     this.resource = resource;
     this.condition = condition;
     this.state = this.disabled ? AbilityMatch.disabled : this.state;
+
+    this.id = id || `r_${this.hash().slice(0, 10)}`;
+    this.name = name || this.id;
   }
 
   public static isPrimitive(v: unknown): v is string | number | boolean | null {
@@ -347,6 +348,17 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       resource: props.resource ?? this.resource,
       condition: props.condition ?? this.condition,
     });
+  }
+
+  public hash(): string {
+    const parts: string[] = [];
+
+    parts.push(`subject:${this.subject}`);
+    parts.push(`resource:${JSON.stringify(this.resource)}`);
+    parts.push(`condition:${this.condition}`);
+    parts.push(`disabled:${this.disabled}`);
+
+    return AbilityHash.sha1(parts.join(';'));
   }
 
   static equals<Resources extends object = object, Environment extends object = object>(
