@@ -29,6 +29,20 @@ export class AbilityResult<
       .join('\n');
   }
 
+  public decisivePolicy() {
+    return this.strategy.decisivePolicy();
+  }
+
+  public explainDecisive(): string | null {
+    const policy = this.decisivePolicy();
+
+    if (!policy) {
+      return null;
+    }
+
+    return new AbilityExplainPolicy(policy).toString();
+  }
+
   public isAllowed = () => {
     return this.strategy.isAllowed();
   };

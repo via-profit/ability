@@ -1,6 +1,7 @@
 import { AbilityStrategy } from './AbilityStrategy';
-import { AbilityPolicyEffect  } from '../core/AbilityPolicyEffect';
+import { AbilityPolicyEffect } from '../core/AbilityPolicyEffect';
 import { EnvironmentObject, ResourceObject } from '../core/AbilityTypeGenerator';
+import AbilityPolicy from '../core/AbilityPolicy';
 
 /**
  * PermitOverridesStrategy
@@ -20,20 +21,38 @@ import { EnvironmentObject, ResourceObject } from '../core/AbilityTypeGenerator'
  *     P3 → deny
  *   Result: permit (permit overrides deny)
  */
-export class PermitOverridesStrategy<R extends ResourceObject, E extends EnvironmentObject = Record<string, unknown>> extends AbilityStrategy<
-  R,
-  E
-> {
+export class PermitOverridesStrategy<
+  R extends ResourceObject,
+  E extends EnvironmentObject = Record<string, unknown>,
+> extends AbilityStrategy<R, E> {
+  private _decisive: AbilityPolicy<R, E> | null = null;
+
   evaluate() {
-    if (this.hasPermit()) {
+    // 1. Если есть permit — он выигрывает
+    const permit = this.matchedPolicies().find(p => p.effect === AbilityPolicyEffect.permit);
+
+    if (permit) {
+      this._decisive = permit;
       return AbilityPolicyEffect.permit;
     }
-    if (this.hasDeny()) {
+
+    // 2. Если permit нет — ищем deny
+    const deny = this.matchedPolicies().find(p => p.effect === AbilityPolicyEffect.deny);
+
+    if (deny) {
+      this._decisive = deny;
       return AbilityPolicyEffect.deny;
     }
 
+    // 3. Нет ни permit, ни deny → deny по умолчанию
+    this._decisive = null;
     return AbilityPolicyEffect.deny;
+  }
+
+  decisivePolicy() {
+    return this._decisive;
   }
 }
 
-export default PermitOverridesStrategy;
+
+export  default PermitOverridesStrategy;

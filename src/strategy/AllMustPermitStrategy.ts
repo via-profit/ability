@@ -1,6 +1,7 @@
 import { AbilityStrategy } from './AbilityStrategy';
-import { AbilityPolicyEffect  } from '../core/AbilityPolicyEffect';
+import { AbilityPolicyEffect } from '../core/AbilityPolicyEffect';
 import { EnvironmentObject, ResourceObject } from '../core/AbilityTypeGenerator';
+import AbilityPolicy from '../core/AbilityPolicy';
 
 /**
  * AllMustPermitStrategy
@@ -19,19 +20,33 @@ import { EnvironmentObject, ResourceObject } from '../core/AbilityTypeGenerator'
  *     P3 → deny
  *   Result: deny (because not all policies permitted)
  */
-export class AllMustPermitStrategy<R extends ResourceObject, E extends EnvironmentObject = Record<string, unknown>> extends AbilityStrategy<
-  R,
-  E
-> {
+export class AllMustPermitStrategy<
+  R extends ResourceObject,
+  E extends EnvironmentObject = Record<string, unknown>,
+> extends AbilityStrategy<R, E> {
+  private _decisive: AbilityPolicy<R, E> | null = null;
+
   evaluate() {
-    const matched = this.matchedPolicies();
-    if (matched.length === 0) {
+    // 1. Нет совпавших политик → deny, но решающей политики нет
+    if (!this.hasMatched()) {
+      this._decisive = null;
       return AbilityPolicyEffect.deny;
     }
 
-    const allPermit = matched.every(p => p.effect === AbilityPolicyEffect.permit);
+    // 2. Если есть deny — она решающая
+    const deny = this.firstDenied();
+    if (deny) {
+      this._decisive = deny;
+      return AbilityPolicyEffect.deny;
+    }
 
-    return allPermit ? AbilityPolicyEffect.permit : AbilityPolicyEffect.deny;
+    this._decisive = this.firstPermitted();
+
+    return AbilityPolicyEffect.permit;
+  }
+
+  decisivePolicy() {
+    return this._decisive;
   }
 }
 

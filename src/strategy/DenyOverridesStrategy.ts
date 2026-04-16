@@ -1,6 +1,7 @@
 import { AbilityStrategy } from './AbilityStrategy';
 import { AbilityPolicyEffect  } from '../core/AbilityPolicyEffect';
 import { EnvironmentObject, ResourceObject } from '../core/AbilityTypeGenerator';
+import AbilityPolicy from '../core/AbilityPolicy';
 
 /**
  * DenyOverridesStrategy
@@ -20,19 +21,36 @@ import { EnvironmentObject, ResourceObject } from '../core/AbilityTypeGenerator'
  *     P3 → permit
  *   Result: deny (because deny overrides everything)
  */
-export class DenyOverridesStrategy<R extends ResourceObject, E extends EnvironmentObject = Record<string, unknown>> extends AbilityStrategy<
-  R,
-  E
-> {
+export class DenyOverridesStrategy<
+  R extends ResourceObject,
+  E extends EnvironmentObject = Record<string, unknown>,
+> extends AbilityStrategy<R, E> {
+  private _decisive: AbilityPolicy<R, E> | null = null;
+
   evaluate() {
-    if (this.hasDeny()) {
+    // 1. Если есть deny — он решающий
+    const deny = this.firstDenied();
+    if (deny) {
+      this._decisive = deny;
       return AbilityPolicyEffect.deny;
     }
-    if (this.hasPermit()) {
+
+    // 2. Если есть permit — он решающий
+    const permit = this.firstPermitted();
+    if (permit) {
+      this._decisive = permit;
       return AbilityPolicyEffect.permit;
     }
+
+    // 3. Нет ни permit, ни deny → deny по умолчанию
+    this._decisive = null;
     return AbilityPolicyEffect.deny;
+  }
+
+  decisivePolicy() {
+    return this._decisive;
   }
 }
 
 export default DenyOverridesStrategy;
+

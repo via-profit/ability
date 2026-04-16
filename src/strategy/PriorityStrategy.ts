@@ -1,6 +1,7 @@
 import { AbilityStrategy } from './AbilityStrategy';
 import { AbilityPolicyEffect  } from '../core/AbilityPolicyEffect';
 import { EnvironmentObject, ResourceObject } from '../core/AbilityTypeGenerator';
+import AbilityPolicy from '../core/AbilityPolicy';
 
 /**
  * PriorityStrategy
@@ -19,16 +20,35 @@ import { EnvironmentObject, ResourceObject } from '../core/AbilityTypeGenerator'
  *     P2 (priority 1)  → permit
  *   Result: permit (P2 has higher priority)
  */
-export class PriorityStrategy<R extends ResourceObject, E extends EnvironmentObject = Record<string, unknown>> extends AbilityStrategy<R, E> {
+export class PriorityStrategy<
+  R extends ResourceObject,
+  E extends EnvironmentObject = Record<string, unknown>,
+> extends AbilityStrategy<R, E> {
+  private _decisive: AbilityPolicy<R, E> | null = null;
+
   evaluate() {
     const matched = this.matchedPolicies();
+
+    // 1. Нет совпавших политик → deny, решающей политики нет
     if (matched.length === 0) {
+      this._decisive = null;
       return AbilityPolicyEffect.deny;
     }
 
+    // 2. Сортируем по приоритету (больший приоритет — выше)
     const sorted = [...matched].sort((a, b) => b.priority - a.priority);
-    return sorted[0].effect;
+
+    // 3. Самая приоритетная политика — решающая
+    const top = sorted[0];
+    this._decisive = top;
+
+    return top.effect;
+  }
+
+  decisivePolicy() {
+    return this._decisive;
   }
 }
 
 export default PriorityStrategy;
+
