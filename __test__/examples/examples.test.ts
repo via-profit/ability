@@ -83,8 +83,12 @@ describe('Examples', () => {
 
   it('Example 333', () => {
     const policies = ability`
+      @name "Read the document can only owner or published doc"
       permit permission.document.read if all:
+        @name "only owner"
         document.ownerId equals user.id
+        
+        @name "published"
         document.status in ["published", "archived"]
     `;
 

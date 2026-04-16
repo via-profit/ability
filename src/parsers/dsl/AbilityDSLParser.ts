@@ -143,34 +143,40 @@ export class AbilityDSLParser<
    */
   private parseRuleSets(policyCompareMethod: AbilityCompareType): AbilityRuleSet[] {
     const sets: AbilityRuleSet[] = [];
-
-    while (!this.stream.eof() && !this.isStartOfPolicy()) {
       this.consumeLeadingComments();
       this.consumeLeadingAnnotations();
 
-      // Если начинается новая except группа — парсим её
+    while (!this.stream.eof() && !this.isStartOfPolicy()) {
+      // maybe except ruleSet
       if (this.isStartOfExcept()) {
         sets.push(this.parseExceptGroup(policyCompareMethod));
         continue;
       }
 
-      // Если начинается новая группа — парсим её
+      // maybe ruleSet
       if (this.isStartOfGroup()) {
         sets.push(this.parseGroup());
         continue;
       }
 
-      const annotation = this.takeAnnotations('ruleSet');
+      // implicit ruleSet
+      // if (!this.isStartOfRule()) {
+      //   this.consumeLeadingComments();
+      //   this.consumeLeadingAnnotations();
+      // }
+
+      // is implicit group
+      // const annotation = this.takeAnnotations('ruleSet');
 
       const group = new AbilityRuleSet({
-        id: annotation.id?.value || null,
+        // id: annotation.id?.value || null,
         compareMethod: policyCompareMethod,
-        name: annotation.name?.value ?? null,
-        description: annotation.description?.value || null,
-        disabled: annotation.disabled?.value ?? undefined,
+        // name: annotation.name?.value ?? null,
+        // description: annotation.description?.value || null,
+        // disabled: annotation.disabled?.value ?? undefined,
       });
 
-      // Читаем правила implicit-группы
+      // Read rules of implicit-группы
       while (!this.stream.eof()) {
         this.consumeLeadingComments();
         this.consumeLeadingAnnotations();
@@ -329,10 +335,6 @@ export class AbilityDSLParser<
     const isNeverAlways =
       this.stream.check(TokenTypes.ALWAYS) || this.stream.check(TokenTypes.NEVER);
 
-
-
-
-
     if (!isNeverAlways && !this.stream.check(TokenTypes.IDENTIFIER)) {
       this.stream.syntaxError(
         `Expected identifier, but got ${this.stream.peek().type}`,
@@ -345,13 +347,12 @@ export class AbilityDSLParser<
       ? ''
       : this.stream.expect(TokenTypes.IDENTIFIER, 'Expected field').value;
 
-
     // check alias
     if (this.aliasBuffer.has(subject)) {
       return this.aliasBuffer.get(subject)!;
     }
-      // operator
-      const { condition, operator } = this.parseConditionOperator();
+    // operator
+    const { condition, operator } = this.parseConditionOperator();
 
     // value
     let resource: AbilityRuleConfig['resource'] = null;
@@ -830,7 +831,6 @@ export class AbilityDSLParser<
 
       this.stream.expect(TokenTypes.COLON, `Expected colon after an alias`);
 
-
       const annotations = this.takeAnnotations('alias');
 
       while (!this.stream.eof() && !this.isStartOfAlias() && !this.isStartOfPolicy()) {
@@ -843,7 +843,6 @@ export class AbilityDSLParser<
 
         this.aliasBuffer.set(aliasKey, rule);
       }
-
     }
   }
 
@@ -920,6 +919,14 @@ export class AbilityDSLParser<
 
   private isStartOfGroup(): boolean {
     return this.stream.check(TokenTypes.ALL) || this.stream.check(TokenTypes.ANY);
+  }
+
+  private isStartOfRule(): boolean {
+    return (
+      this.stream.check(TokenTypes.IDENTIFIER) ||
+      this.stream.check(TokenTypes.ALWAYS) ||
+      this.stream.check(TokenTypes.NEVER)
+    );
   }
 
   private isStartOfExcept(): boolean {

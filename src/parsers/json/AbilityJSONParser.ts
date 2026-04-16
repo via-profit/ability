@@ -85,10 +85,10 @@ export class AbilityJSONParser {
     return {
       id: rule.id,
       name: rule.name,
+      disabled: rule.disabled,
       subject: rule.subject,
       resource: rule.resource,
       condition: rule.condition,
-      disabled: rule.disabled,
     };
   }
 
@@ -96,9 +96,9 @@ export class AbilityJSONParser {
     return {
       id: ruleSet.id.toString(),
       name: ruleSet.name.toString(),
+      disabled: ruleSet.disabled,
       compareMethod: ruleSet.compareMethod,
       rules: ruleSet.rules.map(rule => AbilityJSONParser.ruleToJSON(rule)),
-      disabled: ruleSet.disabled,
     };
   }
 
@@ -106,13 +106,13 @@ export class AbilityJSONParser {
     return {
       id: policy.id.toString(),
       name: policy.name.toString(),
-      compareMethod: policy.compareMethod,
-      ruleSet: policy.ruleSet.map(ruleSet => AbilityJSONParser.ruleSetToJSON(ruleSet)),
+      disabled: policy.disabled,
+      priority: policy.priority,
       permission: policy.permission,
       effect: policy.effect,
-      priority: policy.priority,
-      disabled: policy.disabled,
+      compareMethod: policy.compareMethod,
       tags: policy.tags,
+      ruleSet: policy.ruleSet.map(ruleSet => AbilityJSONParser.ruleSetToJSON(ruleSet)),
     };
   }
 
