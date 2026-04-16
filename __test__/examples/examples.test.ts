@@ -108,7 +108,8 @@ describe('Examples', () => {
     console.log(result.isAllowed()); // true
 
     // Детализация результатов
-    console.log(result.explain().toString());
+    // console.log(result.decisive()?.name);
+    // console.log(result.explain());
 
     expect(result.isAllowed()).toBeTruthy();
   });

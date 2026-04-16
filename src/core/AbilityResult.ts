@@ -29,12 +29,12 @@ export class AbilityResult<
       .join('\n');
   }
 
-  public decisivePolicy() {
+  public decisive() {
     return this.strategy.decisivePolicy();
   }
 
   public explainDecisive(): string | null {
-    const policy = this.decisivePolicy();
+    const policy = this.decisive();
 
     if (!policy) {
       return null;
