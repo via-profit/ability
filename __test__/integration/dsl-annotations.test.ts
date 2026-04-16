@@ -42,7 +42,7 @@ describe('DSL annotations', () => {
     expect(policy1ByName).not.toBeUndefined();
     expect(policy1ByID).not.toBeUndefined();
 
-    console.log(JSON.stringify(AbilityJSONParser.toJSON(policies), null, 2));
+    // console.log(JSON.stringify(AbilityJSONParser.toJSON(policies), null, 2));
     // expect(policy1ByName);
     new AbilityResolver(policies, DenyOverridesStrategy, {
       tags: [''],
