@@ -150,25 +150,30 @@ export class AbilityResolver<
   }
 
   public static matchPermissions(policySegments: string[], inputSegments: string[]): boolean {
-    const maxLen = Math.max(policySegments.length, inputSegments.length);
-    for (let i = 0; i < maxLen; i++) {
+    let i = 0;
+
+    for (; i < policySegments.length; i++) {
       const pSeg = policySegments[i];
       const iSeg = inputSegments[i];
 
-      if (pSeg === undefined) {
-        return false;
-      }
+      // '*' — глобальный wildcard: матчим всё, что дальше
       if (pSeg === '*') {
-        continue; // '*'
+        return true;
       }
+
+      // input закончился раньше — mismatch
       if (iSeg === undefined) {
         return false;
       }
+
+      // обычное сравнение
       if (pSeg !== iSeg) {
         return false;
       }
     }
-    return true;
+
+    // Если политика закончилась, но input длиннее — match только если последний сегмент был '*'
+    return i === inputSegments.length;
   }
 }
 
