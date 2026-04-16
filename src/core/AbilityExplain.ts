@@ -1,13 +1,13 @@
 import AbilityRule from './AbilityRule';
 import AbilityRuleSet from './AbilityRuleSet';
 import AbilityPolicy from './AbilityPolicy';
-import {AbilityMatchType, AbilityMatch} from './AbilityMatch';
+import { AbilityMatch, AbilityMatchType } from './AbilityMatch';
 
 export type AbilityExplainConfig = {
   readonly type: AbilityExplainType;
   readonly name: string;
   readonly match: AbilityMatchType;
-  readonly debugInfo?: boolean;
+  readonly debugInfo?: string;
 };
 
 
@@ -22,12 +22,13 @@ const colors = {
   gray: '\x1b[90m',
 };
 
+
 export class AbilityExplain {
   readonly type: AbilityExplainType;
   readonly children: AbilityExplain[];
   readonly name: string;
   readonly match: AbilityMatchType;
-  readonly debugInfo?: boolean;
+  readonly debugInfo?: string;
 
   constructor(config: AbilityExplainConfig, children: AbilityExplain[] = []) {
     this.type = config.type;
@@ -39,36 +40,30 @@ export class AbilityExplain {
 
   public toString(indentPrefix: string = '', isLast: boolean = true): string {
     const isMatch = this.match === AbilityMatch.match;
-
     const mark = isMatch ? `${colors.green}✓${colors.reset}` : `${colors.red}✗${colors.reset}`;
-
-    const label =
-      this.type === 'policy'
-        ? `${colors.blue}POLICY${colors.reset}`
-        : this.type === 'ruleSet'
-          ? `${colors.yellow}RULESET${colors.reset}`
-          : `${colors.white}RULE${colors.reset}`;
-
+    let label: string;
+    switch (this.type) {
+      case 'policy':
+        label = `${colors.blue}POLICY${colors.reset}`;
+        break;
+      case 'ruleSet':
+        label = `${colors.yellow}RULESET${colors.reset}`;
+        break;
+      default:
+        label = `${colors.white}RULE${colors.reset}`;
+    }
     const branch =
       indentPrefix.length === 0
         ? ''
         : isLast
           ? `${colors.gray}└─${colors.reset} `
           : `${colors.gray}├─${colors.reset} `;
-
     let out = `${indentPrefix}${branch}${label} ${this.name} — ${mark}`;
-
-    if (this.debugInfo) {
-      out += ` ${colors.gray}(${this.debugInfo})${colors.reset}`;
-    }
-
+    if (this.debugInfo) out += ` ${colors.gray}(${this.debugInfo})${colors.reset}`;
     const nextIndent = indentPrefix + (isLast ? '   ' : `${colors.gray}│  ${colors.reset}`);
-
-    this.children.forEach((child, index) => {
-      const last = index === this.children.length - 1;
-      out += '\n' + child.toString(nextIndent, last);
+    this.children.forEach((child, idx) => {
+      out += '\n' + child.toString(nextIndent, idx === this.children.length - 1);
     });
-
     return out;
   }
 }

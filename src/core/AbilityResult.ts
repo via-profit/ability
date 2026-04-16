@@ -1,9 +1,12 @@
-import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
+import { AbilityExplainPolicy } from './AbilityExplain';
 import { EnvironmentObject, ResourceObject } from './AbilityTypeGenerator';
-import {AbilityPolicyEffect, AbilityPolicyEffectType} from './AbilityPolicyEffect';
+import { AbilityPolicyEffectType } from './AbilityPolicyEffect';
 import { AbilityStrategy } from '../strategy/AbilityStrategy';
 
-export class AbilityResult<R extends ResourceObject = Record<string, unknown>, E extends EnvironmentObject = Record<string, unknown>> {
+export class AbilityResult<
+  R extends ResourceObject = Record<string, unknown>,
+  E extends EnvironmentObject = Record<string, unknown>,
+> {
   protected readonly effect: AbilityPolicyEffectType;
   protected readonly strategy: AbilityStrategy<R, E>;
 
@@ -18,17 +21,19 @@ export class AbilityResult<R extends ResourceObject = Record<string, unknown>, E
    *
    * Useful for debugging, logging, or building UI tools that visualize permission logic.
    */
-  public explain(): readonly AbilityExplain[] {
-    return this.strategy.policies.map(policy => {
-      return new AbilityExplainPolicy(policy);
-    });
+  public explain(): string {
+    return this.strategy.policies
+      .map(policy => {
+        return new AbilityExplainPolicy(policy).toString();
+      })
+      .join('\n');
   }
 
   public isAllowed = () => {
     return this.strategy.isAllowed();
-  }
+  };
 
   public isDenied = () => {
     return this.strategy.isDenied();
-  }
+  };
 }
