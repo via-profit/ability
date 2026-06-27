@@ -317,6 +317,75 @@ describe('DSL Operators', () => {
     });
   });
 
+  // #region Operator "is defined"
+  describe('Operator "is defined"', () => {
+    it('operator "is defined" should allow when value is defined', () => {
+      const dsl = `
+    permit permission.test if all:
+      user.middleName is defined
+  `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: {
+          middleName: 'Ivan',
+        },
+      });
+
+      expect(result.isAllowed()).toBeTruthy();
+    });
+
+    it('operator "is defined" should deny when value is not defined', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.middleName is defined
+
+  `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', { user: { middleName: undefined } });
+
+      expect(result.isDenied()).toBeTruthy();
+    });
+  });
+
+
+  // #region Operator "is not defined"
+  describe('Operator "is not defined"', () => {
+    it('operator "is not defined" should allow when value is not defined', () => {
+      const dsl = `
+    permit permission.test if all:
+      user.middleName is not defined
+  `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: {
+          middleName: undefined,
+        },
+      });
+
+      expect(result.isAllowed()).toBeTruthy();
+    });
+
+    it('operator "is not defined" should deny when value is not defined', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.middleName is not defined
+
+  `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', { user: { middleName: 'Oleg' } });
+
+      expect(result.isDenied()).toBeTruthy();
+    });
+  });
+
   // -----------------------------
   // #region Operator "in [...]"
   // -----------------------------

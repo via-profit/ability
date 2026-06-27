@@ -19,6 +19,7 @@ export class AbilityDSLLexer {
     'true',
     'false',
     'null',
+    'defined',
     'contains',
     'includes',
     'length',
@@ -265,11 +266,11 @@ export class AbilityDSLLexer {
     const startColumn = this.column;
     const start = this.pos;
 
-    // Первый сегмент
+    // First segment
     while (!this.isAtEnd() && /[a-zA-Z0-9_*]/.test(this.peek())) {
       this.advance();
     }
-    // Сегменты через точку
+    // dots segments
     while (!this.isAtEnd() && this.peek() === '.') {
       this.advance(); // dot
       if (!/[a-zA-Z_*]/.test(this.peek())) {
@@ -290,7 +291,7 @@ export class AbilityDSLLexer {
       return new AbilityDSLToken(TokenTypes.NEVER, word, startLine, startColumn);
     }
 
-    // Если есть точка — это путь (identifier или permission)
+    // (identifier or permission)
     if (word.includes('.')) {
       const last = this.tokens[this.tokens.length - 1];
       if (last?.type === TokenTypes.EFFECT) {
@@ -301,16 +302,14 @@ export class AbilityDSLLexer {
       return new AbilityDSLToken(TokenTypes.IDENTIFIER, word, startLine, startColumn);
     }
 
-    // Ключевые слова
+
     if (this.keywords.has(word)) {
-      // Эффекты
       if (word === 'permit' || word === 'allow') {
         return new AbilityDSLToken(TokenTypes.EFFECT, 'permit', startLine, startColumn);
       }
       if (word === 'deny' || word === 'forbidden') {
         return new AbilityDSLToken(TokenTypes.EFFECT, 'deny', startLine, startColumn);
       }
-      // Групповые ключевые слова
       if (word === 'all') {
         return new AbilityDSLToken(TokenTypes.ALL, word, startLine, startColumn);
       }
@@ -323,12 +322,14 @@ export class AbilityDSLLexer {
       if (word === 'if') {
         return new AbilityDSLToken(TokenTypes.IF, word, startLine, startColumn);
       }
-      // Булевы и null
       if (word === 'true' || word === 'false') {
         return new AbilityDSLToken(TokenTypes.BOOLEAN, word, startLine, startColumn);
       }
       if (word === 'null') {
         return new AbilityDSLToken(TokenTypes.NULL, word, startLine, startColumn);
+      }
+      if (word === 'defined') {
+        return new AbilityDSLToken(TokenTypes.DEFINED, word, startLine, startColumn);
       }
       if (word === 'except') {
         return new AbilityDSLToken(TokenTypes.EXCEPT, word, startLine, startColumn);

@@ -46,7 +46,9 @@ export class AbilityDSLTokenStream {
       return false;
     }
 
-    return this.peek().type === type;
+    const p = this.peek().type;
+    
+    return p === type;
   }
 
   public match(type: TokenType): AbilityDSLToken | null {

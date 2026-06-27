@@ -25,6 +25,7 @@ export type TokenTypeCode =
   | 'NULL'
   | 'EQ_NULL'
   | 'NOT_EQ_NULL'
+  | 'DEFINED'
   | 'NOT_EQ'
   | 'LEN_GT'
   | 'LEN_LT'
@@ -75,6 +76,7 @@ export const TokenTypes = {
   NULL: brand('NULL'),
   EQ_NULL: brand('EQ_NULL'),
   NOT_EQ_NULL: brand('NOT_EQ_NULL'),
+  DEFINED: brand('DEFINED'),
   NOT_EQ: brand('NOT_EQ'),
   LEN_GT: brand('LEN_GT'),
   LEN_LT: brand('LEN_LT'),

@@ -15,7 +15,9 @@ export type AbilityConditionCode =
   | 'length less than'
   | 'length equals'
   | 'always'
-  | 'never';
+  | 'never'
+  | 'defined'
+  | 'not_defined';
 
 export type AbilityConditionLiteral =
   | 'equals'
@@ -32,7 +34,9 @@ export type AbilityConditionLiteral =
   | 'length_less_than'
   | 'length_equals'
   | 'always'
-  | 'never';
+  | 'never'
+  | 'defined'
+  | 'not_defined';
 
 
 export type AbilityConditionType = AbilityConditionCode & { __brand: 'AbilityCondition' };
@@ -43,6 +47,8 @@ function brand(code: AbilityConditionCode): AbilityConditionType {
 
 export const AbilityCondition = {
   equals: brand('='),
+  defined: brand('defined'),
+  not_defined: brand('not_defined'),
   not_equals: brand('<>'),
   greater_than: brand('>'),
   less_than: brand('<'),
@@ -77,6 +83,8 @@ export function fromLiteral(literal: AbilityConditionLiteral): AbilityConditionT
     length_equals: AbilityCondition.length_equals,
     always: AbilityCondition.always,
     never: AbilityCondition.never,
+    defined: AbilityCondition.defined,
+    not_defined: AbilityCondition.not_defined,
   };
 
   const value = map[literal];
@@ -124,6 +132,10 @@ export function toLiteral(cond: AbilityConditionType): AbilityConditionLiteral {
       return 'always';
     case AbilityCondition.never:
       return 'never';
+    case AbilityCondition.defined:
+      return 'defined';
+      case AbilityCondition.not_defined:
+        return 'not_defined';
       default:
         return 'never';
   }

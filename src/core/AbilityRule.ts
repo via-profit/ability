@@ -90,6 +90,8 @@ export class AbilityRule<Resources extends object = object, Environment extends 
 
   public static operatorHandlers = {
     [toLiteral(AbilityCondition.always)]: () => true,
+    [toLiteral(AbilityCondition.defined)]: (a: unknown) => typeof a !== 'undefined',
+    [toLiteral(AbilityCondition.not_defined)]: (a: unknown) => typeof a === 'undefined',
     [toLiteral(AbilityCondition.never)]: () => false,
     [toLiteral(AbilityCondition.equals)]: (a: unknown, b: unknown) => a === b,
     [toLiteral(AbilityCondition.not_equals)]: (a: unknown, b: unknown) => a !== b,

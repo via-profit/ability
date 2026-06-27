@@ -362,6 +362,7 @@ export class AbilityDSLParser<
       operator !== TokenTypes.EQ_NULL &&
       operator !== TokenTypes.NOT_EQ_NULL &&
       operator !== TokenTypes.NULL &&
+      operator !== TokenTypes.DEFINED &&
       operator !== TokenTypes.ALWAYS &&
       operator !== TokenTypes.NEVER;
 
@@ -615,6 +616,23 @@ export class AbilityDSLParser<
     }
     this.stream.reset();
 
+    // is defined
+    this.stream.mark();
+    if (this.matchWord('is') && this.matchWord('defined')) {
+      this.stream.commit();
+      return { condition: AbilityCondition.defined, operator: TokenTypes.DEFINED };
+    }
+    this.stream.reset();
+
+    // is not defined
+    this.stream.mark();
+    if (this.matchWord('is') && this.matchWord('not') && this.matchWord('defined')) {
+      this.stream.commit();
+      return { condition: AbilityCondition.not_defined, operator: TokenTypes.DEFINED };
+    }
+    this.stream.reset();
+    
+
     // Single token (symbol or keyword)
 
     const token = this.stream.peek();
@@ -699,7 +717,8 @@ export class AbilityDSLParser<
       (token.type === TokenTypes.KEYWORD ||
         token.type === TokenTypes.IDENTIFIER ||
         token.type === TokenTypes.ALWAYS ||
-        token.type === TokenTypes.NEVER) &&
+        token.type === TokenTypes.NEVER ||
+      token.type === TokenTypes.DEFINED ) &&
       token.value === word
     ) {
       this.stream.next();
@@ -755,8 +774,10 @@ export class AbilityDSLParser<
         return token.value === 'true';
       case TokenTypes.NULL:
         return null;
+      case TokenTypes.DEFINED:
+        return null;
       case TokenTypes.IDENTIFIER:
-        return token.value;
+        return typeof token.value !== 'undefined';
       default: {
         this.stream.syntaxError(`Unexpected value token "${token.value}"`, token, [
           TokenTypes.KEYWORD,
