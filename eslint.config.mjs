@@ -16,6 +16,7 @@ export default [
   {
     files: ['**/*.js', '**/*.cjs', '**/*.mjs'],
     languageOptions: {
+      sourceType: 'script',
       globals: {
         ...globals.browser, // browser APIs (window, document, etc.)
         ...globals.node, // Node.js globals (process, __dirname, etc.)
