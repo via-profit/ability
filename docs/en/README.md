@@ -1,4 +1,3 @@
-```markdown
 # @via-profit/Ability
 
 > A set of services that partially implement the [Attribute Based Access Control](https://en.wikipedia.org/wiki/Attribute-based_access_control) principle.
@@ -397,4 +396,3 @@ MIT
 
 - [GitHub repository](https://github.com/via-profit/ability)
 - [DSL](./dsl.md)
-```
