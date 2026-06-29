@@ -25,7 +25,7 @@ The project was designed to cover typical access control scenarios without unnec
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Core Concepts](#core-concepts)
-- [DSL](./dsl.md)
+- [DSL](./docs/en/dsl.md)
 
 
 ## Key Features
@@ -395,4 +395,4 @@ MIT
 ## Links
 
 - [GitHub repository](https://github.com/via-profit/ability)
-- [DSL](./dsl.md)
+- [DSL](./docs/en/dsl.md)
