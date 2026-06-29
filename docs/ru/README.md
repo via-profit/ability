@@ -53,22 +53,32 @@ npm install @via-profit/ability
 
 ```typescript
 import {
-  AbilityDSLParser,
   AbilityResolver,
-  DenyOverridesStrategy,
   DenyOverridesStrategy,
   ability
 } from '@via-profit/ability';
 
 const policies = ability`
-  @name Разрешено чтение только
+  @name "Разрешено чтение только юзеру с ID 123, если документ опубликован и сегодня суббота"
   permit permission.document.read if all:
+    
+    @name "ID юзера - 123"
     document.ownerId equals 123
+    
+    @name "Документ опубликован"
     document.status in ["published", "archived"]
+    
+    name "Сегодня должна быть суббота"
+    env.today.dayName is 'Saturday'
 `;
 
 const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
+const environment = {
+  today: {
+    dayName: new Date().toLocaleDateString('en-US', { weekday: 'long' }),
+  },
+}
 
 // Проверяем разрешение
 const result = resolver.resolve('document.read', {
@@ -76,7 +86,7 @@ const result = resolver.resolve('document.read', {
     ownerId: 123,
     status: 'published',
   },
-});
+}, environment);
 
 console.log(result.isAllowed()); // true
 
@@ -125,7 +135,7 @@ const policies = ability`
 Если literal недоступен (например, в динамическом окружении):
 
 ```ts
-import { AbilityDSLParser } from '@via-profit-ability';
+import { AbilityDSLParser } from '@via-profit/ability';
 
 const dsl = `
   permit permission.document.read if all:
@@ -232,7 +242,7 @@ resolver.enforce('document.read', {
 ```
 
 - `comment-line` - комментарий
-- `annotation` - аннотация (`id`, `name`, `diasbled`, `tags`, `priority`)
+- `annotation` - аннотация (`id`, `name`, `disabled`, `tags`, `priority`)
 - `effect` – `permit` или `deny`
 - `permission` – ключ разрешения с префиксом `permission.` (например, `permission.order.update`)
 - `all` / `any` – логический оператор для группы правил
@@ -267,6 +277,9 @@ user.roles length greater than 2
 # Проверка на null
 user.deletedAt is null
 
+# Проверка на undefined
+user.middleName is defiend
+
 # Отрицание
 user.banned not equals true
 ```
@@ -293,7 +306,8 @@ except any of:
 @description "Описание"
 @priority 100
 @disabled true
-deny permission.admin.all if always:
+deny permission.admin.all if all:
+  always
 ```
 
 ## Стратегии разрешения
@@ -387,4 +401,3 @@ MIT
 
 - [GitHub репозиторий](https://github.com/via-profit/ability)
 - [DSL](./dsl.md)
-- [Примеры использования](./examples) (todo: examples)

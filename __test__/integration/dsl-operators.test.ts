@@ -19,7 +19,7 @@ describe('DSL Operators', () => {
           owner: { id: '2' },
         }),
       ).toThrow();
-    })
+    });
   });
   // -----------------------------
   // #region Operator "is equals"
@@ -317,6 +317,322 @@ describe('DSL Operators', () => {
     });
   });
 
+  // #region Operator "is defined"
+  describe('Operator "is defined"', () => {
+    // Базовые тесты
+    it('should allow when value is defined', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.middleName is defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: { middleName: 'Ivan' },
+      });
+
+      expect(result.isAllowed()).toBeTruthy();
+    });
+
+    it('should deny when value is undefined', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.middleName is defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: { middleName: undefined },
+      });
+
+      expect(result.isDenied()).toBeTruthy();
+    });
+
+    // Тесты с null (критично!)
+    it('should allow when value is null', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.middleName is defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: { middleName: null },
+      });
+
+      expect(result.isAllowed()).toBeTruthy();
+    });
+
+    // Тесты с отсутствующим полем
+    it('should deny when property does not exist', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.middleName is defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: { firstName: 'John' }, // middleName отсутствует
+      });
+
+      expect(result.isDenied()).toBeTruthy();
+    });
+
+    it('should deny when parent object does not exist', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.profile.middleName is defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: { firstName: 'John' }, // profile отсутствует
+      });
+
+      expect(result.isDenied()).toBeTruthy();
+    });
+
+    it('should deny when nested property does not exist but parent exists', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.profile.middleName is defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: {
+          firstName: 'John',
+          profile: { lastName: 'Doe' }, // middleName отсутствует
+        },
+      });
+
+      expect(result.isDenied()).toBeTruthy();
+    });
+
+    // Тесты с env
+    it('should work with env variables', () => {
+      const dsl = `
+      permit permission.test if all:
+        env.user.ip is defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {}, { user: { ip: '127.0.0.1' } });
+
+      expect(result.isAllowed()).toBeTruthy();
+    });
+
+    it('should deny when env variable is undefined', () => {
+      const dsl = `
+      permit permission.test if all:
+        env.user.ip is defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve(
+        'permission.test',
+        {},
+        { user: {} }, // ip отсутствует
+      );
+
+      expect(result.isDenied()).toBeTruthy();
+    });
+
+    // Комбинация с другими операторами
+    it('should work with is not null in combination', () => {
+      const dsl = `
+      permit permission.test if all:
+        all of:
+          user.middleName is defined
+          user.middleName is not null
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      // Должен быть разрешен только если поле существует И не null
+      const result1 = resolver.resolve('permission.test', {
+        user: { middleName: 'Ivan' },
+      });
+      expect(result1.isAllowed()).toBeTruthy();
+
+      const result2 = resolver.resolve('permission.test', {
+        user: { middleName: null },
+      });
+      expect(result2.isDenied()).toBeTruthy();
+
+      const result3 = resolver.resolve('permission.test', {
+        user: { firstName: 'John' }, // middleName отсутствует
+      });
+      expect(result3.isDenied()).toBeTruthy();
+    });
+  });
+
+  // #region Operator "is not defined"
+  describe('Operator "is not defined"', () => {
+    // Базовые тесты
+    it('should allow when value is undefined', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.middleName is not defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: { middleName: undefined },
+      });
+
+      expect(result.isAllowed()).toBeTruthy();
+    });
+
+    it('should deny when value is defined', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.middleName is not defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: { middleName: 'Oleg' },
+      });
+
+      expect(result.isDenied()).toBeTruthy();
+    });
+
+    // Тесты с null (критично!)
+    it('should deny when value is null', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.middleName is not defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: { middleName: null },
+      });
+
+      expect(result.isDenied()).toBeTruthy();
+    });
+
+    // Тесты с отсутствующим полем
+    it('should allow when property does not exist', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.middleName is not defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: { firstName: 'John' }, // middleName отсутствует
+      });
+
+      expect(result.isAllowed()).toBeTruthy();
+    });
+
+    it('should allow when parent object does not exist', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.profile.middleName is not defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: { firstName: 'John' }, // profile отсутствует
+      });
+
+      expect(result.isAllowed()).toBeTruthy();
+    });
+
+    it('should allow when nested property does not exist but parent exists', () => {
+      const dsl = `
+      permit permission.test if all:
+        user.profile.middleName is not defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {
+        user: {
+          firstName: 'John',
+          profile: { lastName: 'Doe' }, // middleName отсутствует
+        },
+      });
+
+      expect(result.isAllowed()).toBeTruthy();
+    });
+
+    // Тесты с env
+    it('should work with env variables', () => {
+      const dsl = `
+      permit permission.test if all:
+        env.user.ip is not defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve(
+        'permission.test',
+        {},
+        { user: {} }, // ip отсутствует
+      );
+
+      expect(result.isAllowed()).toBeTruthy();
+    });
+
+    it('should deny when env variable is defined', () => {
+      const dsl = `
+      permit permission.test if all:
+        env.user.ip is not defined
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      const result = resolver.resolve('permission.test', {}, { user: { ip: '127.0.0.1' } });
+
+      expect(result.isDenied()).toBeTruthy();
+    });
+
+    // Комбинация с другими операторами
+    it('should work with is null in combination', () => {
+      const dsl = `
+      permit permission.test if all:
+        any of:
+          user.middleName is not defined
+          user.middleName is null
+    `;
+      const policies = new AbilityDSLParser(dsl).parse();
+      const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
+
+      // Должен быть разрешен если поле отсутствует ИЛИ равно null
+      const result1 = resolver.resolve('permission.test', {
+        user: { firstName: 'John' }, // middleName отсутствует
+      });
+      expect(result1.isAllowed()).toBeTruthy();
+
+      const result2 = resolver.resolve('permission.test', {
+        user: { middleName: null },
+      });
+      expect(result2.isAllowed()).toBeTruthy();
+
+      const result3 = resolver.resolve('permission.test', {
+        user: { middleName: 'Ivan' },
+      });
+      expect(result3.isDenied()).toBeTruthy();
+    });
+  });
+
   // -----------------------------
   // #region Operator "in [...]"
   // -----------------------------
@@ -504,7 +820,7 @@ describe('DSL Operators', () => {
     it('Operator "length greater than" should permit', () => {
       const dsl = `
     permit permission.test if all:
-      user.name length equals 4
+      user.name len equals 4
       user.name length = 4
   `;
       const policies = new AbilityDSLParser(dsl).parse();
@@ -523,7 +839,7 @@ describe('DSL Operators', () => {
       const dsl = `
     permit permission.test if all:
       user.name length equals 3
-      user.name length = 3
+      user.name len = 3
   `;
       const policies = new AbilityDSLParser(dsl).parse();
       const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
@@ -629,7 +945,6 @@ describe('DSL Operators', () => {
       });
       expect(result.isAllowed()).toBeTruthy();
       expect(result.isDenied()).toBeFalsy();
-
     });
 
     it('Operator "always" should NOT permit after 16 under DenyOverrides', () => {
@@ -654,10 +969,7 @@ describe('DSL Operators', () => {
 
       expect(result.isDenied()).toBeTruthy();
       expect(result.isAllowed()).toBeFalsy();
-
-
     });
-
   });
 
   // -----------------------------

@@ -362,6 +362,7 @@ export class AbilityDSLParser<
       operator !== TokenTypes.EQ_NULL &&
       operator !== TokenTypes.NOT_EQ_NULL &&
       operator !== TokenTypes.NULL &&
+      operator !== TokenTypes.DEFINED &&
       operator !== TokenTypes.ALWAYS &&
       operator !== TokenTypes.NEVER;
 
@@ -428,7 +429,7 @@ export class AbilityDSLParser<
 
     // "length equals"
     this.stream.mark();
-    if (this.matchWord('length') && this.matchWord('equals')) {
+    if ((this.matchWord('length') || this.matchWord('len')) && this.matchWord('equals')) {
       this.stream.commit();
       return { condition: AbilityCondition.length_equals, operator: TokenTypes.LEN_EQ };
     }
@@ -436,7 +437,7 @@ export class AbilityDSLParser<
 
     // "length ="
     this.stream.mark();
-    if (this.matchWord('length') && this.matchSymbol('=')) {
+    if ((this.matchWord('length') || this.matchWord('len')) && this.matchSymbol('=')) {
       this.stream.commit();
       return { condition: AbilityCondition.length_equals, operator: TokenTypes.LEN_EQ };
     }
@@ -444,7 +445,11 @@ export class AbilityDSLParser<
 
     // "length greater than"
     this.stream.mark();
-    if (this.matchWord('length') && this.matchWord('greater') && this.matchWord('than')) {
+    if (
+      (this.matchWord('length') || this.matchWord('len')) &&
+      this.matchWord('greater') &&
+      this.matchWord('than')
+    ) {
       this.stream.commit();
       return { condition: AbilityCondition.length_greater_than, operator: TokenTypes.LEN_GT };
     }
@@ -452,7 +457,7 @@ export class AbilityDSLParser<
 
     // "length >"
     this.stream.mark();
-    if (this.matchWord('length') && this.matchSymbol('>')) {
+    if ((this.matchWord('length') || this.matchWord('len')) && this.matchSymbol('>')) {
       this.stream.commit();
       return { condition: AbilityCondition.length_greater_than, operator: TokenTypes.LEN_GT };
     }
@@ -460,7 +465,11 @@ export class AbilityDSLParser<
 
     // "length less than"
     this.stream.mark();
-    if (this.matchWord('length') && this.matchWord('less') && this.matchWord('than')) {
+    if (
+      (this.matchWord('length') || this.matchWord('len')) &&
+      this.matchWord('less') &&
+      this.matchWord('than')
+    ) {
       this.stream.commit();
       return { condition: AbilityCondition.length_less_than, operator: TokenTypes.LEN_LT };
     }
@@ -468,7 +477,7 @@ export class AbilityDSLParser<
 
     // "length <"
     this.stream.mark();
-    if (this.matchWord('length') && this.matchSymbol('<')) {
+    if ((this.matchWord('length') || this.matchWord('len')) && this.matchSymbol('<')) {
       this.stream.commit();
       return { condition: AbilityCondition.length_less_than, operator: TokenTypes.LEN_LT };
     }
@@ -615,6 +624,23 @@ export class AbilityDSLParser<
     }
     this.stream.reset();
 
+    // is defined
+    this.stream.mark();
+    if (this.matchWord('is') && this.matchWord('defined')) {
+      this.stream.commit();
+      return { condition: AbilityCondition.defined, operator: TokenTypes.DEFINED };
+    }
+    this.stream.reset();
+
+    // is not defined
+    this.stream.mark();
+    if (this.matchWord('is') && this.matchWord('not') && this.matchWord('defined')) {
+      this.stream.commit();
+      return { condition: AbilityCondition.not_defined, operator: TokenTypes.DEFINED };
+    }
+    this.stream.reset();
+
+
     // Single token (symbol or keyword)
 
     const token = this.stream.peek();
@@ -699,7 +725,8 @@ export class AbilityDSLParser<
       (token.type === TokenTypes.KEYWORD ||
         token.type === TokenTypes.IDENTIFIER ||
         token.type === TokenTypes.ALWAYS ||
-        token.type === TokenTypes.NEVER) &&
+        token.type === TokenTypes.NEVER ||
+      token.type === TokenTypes.DEFINED ) &&
       token.value === word
     ) {
       this.stream.next();
@@ -755,8 +782,10 @@ export class AbilityDSLParser<
         return token.value === 'true';
       case TokenTypes.NULL:
         return null;
+      case TokenTypes.DEFINED:
+        return null;
       case TokenTypes.IDENTIFIER:
-        return token.value;
+        return typeof token.value !== 'undefined';
       default: {
         this.stream.syntaxError(`Unexpected value token "${token.value}"`, token, [
           TokenTypes.KEYWORD,
