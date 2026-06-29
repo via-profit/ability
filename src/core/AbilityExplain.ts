@@ -10,19 +10,6 @@ export type AbilityExplainConfig = {
   readonly debugInfo?: string;
 };
 
-
-
-const colors = {
-  reset: '\x1b[0m',
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  blue: '\x1b[34m',
-  yellow: '\x1b[33m',
-  white: '\x1b[37m',
-  gray: '\x1b[90m',
-};
-
-
 export class AbilityExplain {
   readonly type: AbilityExplainType;
   readonly children: AbilityExplain[];
@@ -40,27 +27,32 @@ export class AbilityExplain {
 
   public toString(indentPrefix: string = '', isLast: boolean = true): string {
     const isMatch = this.match === AbilityMatch.match;
-    const mark = isMatch ? `${colors.green}✓${colors.reset}` : `${colors.red}✗${colors.reset}`;
+    const isMismatch = this.match === AbilityMatch.mismatch;
+    const isPending = this.match === AbilityMatch.pending;
+    // const isDisabled = this.match === AbilityMatch.disabled;
+
+    const mark = isMatch ? `✓` : isMismatch ? `✗` : isPending ? `…` : `⊘`;
+
     let label: string;
     switch (this.type) {
       case 'policy':
-        label = `${colors.blue}POLICY${colors.reset}`;
+        label = `POLICY`;
         break;
       case 'ruleSet':
-        label = `${colors.yellow}RULESET${colors.reset}`;
+        label = `RULESET`;
         break;
       default:
-        label = `${colors.white}RULE${colors.reset}`;
+        label = `RULE`;
     }
     const branch =
       indentPrefix.length === 0
         ? ''
         : isLast
-          ? `${colors.gray}└─${colors.reset} `
-          : `${colors.gray}├─${colors.reset} `;
+          ? `└─ `
+          : `├─ `;
     let out = `${indentPrefix}${branch}${label} ${this.name} — ${mark}`;
-    if (this.debugInfo) out += ` ${colors.gray}(${this.debugInfo})${colors.reset}`;
-    const nextIndent = indentPrefix + (isLast ? '   ' : `${colors.gray}│  ${colors.reset}`);
+    if (this.debugInfo) out += ` (${this.debugInfo})`;
+    const nextIndent = indentPrefix + (isLast ? '   ' : `│  `);
     this.children.forEach((child, idx) => {
       out += '\n' + child.toString(nextIndent, idx === this.children.length - 1);
     });
@@ -74,6 +66,7 @@ export class AbilityExplainRule extends AbilityExplain {
       type: 'rule',
       match: rule.state,
       name: rule.name,
+      debugInfo: `${rule.subject} ${rule.condition} ${JSON.stringify(rule.resource)}`,
     });
   }
 }

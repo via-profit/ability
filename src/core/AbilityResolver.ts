@@ -3,9 +3,12 @@ import { AbilityError } from './AbilityError';
 import { AbilityResult } from './AbilityResult';
 import { AbilityMatch } from './AbilityMatch';
 import { AbilityStrategy } from '../strategy/AbilityStrategy';
+import { AbilityPolicyEffect } from '~/core/AbilityPolicyEffect';
 
 export interface AbilityResolverOptions<TTags extends string> {
   tags?: readonly TTags[];
+  readonly onDeny?: EnforceOnDeny;
+  readonly onAllow?: EnforceOnAllow;
 }
 
 export type ExtractResources<P> = P extends AbilityPolicy<infer R, any, any> ? R : never;
@@ -23,6 +26,14 @@ export type ExtractEnvironmentByPermission<P, Perm extends string> =
   P extends AbilityPolicy<any, infer E, any> ? (Perm extends keyof E ? E[Perm] : never) : never;
 
 
+export type EnforceOptions = {
+  readonly onDeny?: EnforceOnDeny;
+  readonly onAllow?: EnforceOnDeny;
+};
+
+export type EnforceOnDeny = (result: AbilityResult) => void;
+export type EnforceOnAllow = (result: AbilityResult) => void;
+
 export class AbilityResolver<
   P extends AbilityPolicy<any, any, any>,
   S extends AbilityStrategy<
@@ -31,6 +42,8 @@ export class AbilityResolver<
   >,
   TTags extends string = P extends AbilityPolicy<any, any, infer T> ? T : never,
 > {
+  private onDeny?: EnforceOnDeny;
+  private onAllow?: EnforceOnDeny;
   private readonly StrategyClass: new (policies: readonly P[]) => S;
   private readonly policyEntries: readonly {
     policy: P;
@@ -47,7 +60,8 @@ export class AbilityResolver<
     options: AbilityResolverOptions<TTags> = {},
   ) {
     const policies = this.toArray(policyOrListOfPolicies);
-
+    this.onDeny = options.onDeny;
+    this.onAllow = options.onAllow;
     const filtered = options.tags
       ? policies.filter(p => p.tags.some(tag => options.tags!.includes(tag as TTags)))
       : policies;
@@ -101,20 +115,33 @@ export class AbilityResolver<
     const strategy = new this.StrategyClass(filteredPolicies);
     const effect = strategy.evaluate();
 
-    return new AbilityResult(effect, strategy) as AbilityResult<
+    const result = new AbilityResult(effect, strategy) as AbilityResult<
       ExtractResourceByPermission<P, Permission>,
       ExtractEnvironment<P>
     >;
+
+    if (effect === AbilityPolicyEffect.deny && this.onDeny) {
+      this.onDeny(result);
+    }
+
+    if (effect === AbilityPolicyEffect.permit && this.onAllow) {
+      this.onAllow(result);
+    }
+
+    return result;
   }
 
   public enforce<Permission extends keyof ExtractResources<P> & string>(
     permission: Permission,
     resource: ExtractResourceByPermission<P, Permission>,
     environment?: ExtractEnvironmentByPermission<P, Permission>,
+    options?: EnforceOptions,
   ): void | never {
     const result = this.resolve(permission, resource, environment);
 
     if (result.isDenied()) {
+      options?.onDeny && options?.onDeny(result);
+
       throw new AbilityError(`Permission denied`);
     }
   }

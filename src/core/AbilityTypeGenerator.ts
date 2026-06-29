@@ -99,7 +99,7 @@ export class AbilityTypeGenerator {
               }
 
               const existingEnvType = environmentStructure[action][envPath];
-              const targetType = ruleType; // или 'unknown', если хочешь жёстко
+              const targetType = ruleType;
 
               if (existingEnvType && existingEnvType !== targetType) {
                 environmentStructure[action][envPath] = `${existingEnvType} | ${targetType}`;

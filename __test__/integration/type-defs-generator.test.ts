@@ -10,6 +10,14 @@ describe('Type defs generation', () => {
   type Tags = import('../../__test__/integration/types.gen').PolicyTags;
 
   const policies = ability<Res, Env, Tags>`
+@name "Размер оплаты водителю, в заявке, доступен только самому водителю"
+permit permission.order.driverSalary.view if any:
+  all of:
+    @name "Водитель в заявке должен быть тем же пользователем"
+    order.driver is equals accessToken.uuid
+  
+  
+  
     permit permission.document.create if all:
       document.ownerId equals user.id
       document.cteated equals env.createdAt
@@ -146,6 +154,8 @@ deny permission.mut.client.delete if all:
 
 
 
+
+
   test('Type defs generation', () => {
     const types = new AbilityTypeGenerator(policies).generateTypeDefs();
 
@@ -166,5 +176,23 @@ deny permission.mut.client.delete if all:
 
     // console.log(types);
   });
+
+
+
+//   const policies2 = ability<Res, Env, Tags>`
+// @name "Размер оплаты водителю, в заявке, доступен только самому водителю"
+// permit permission.order.driverSalary.view if any:
+//   all of:
+//     @name "Водитель в заявке должен быть тем же пользователем"
+//     order.driver is equals accessToken.uuid
+//     order.number is equals '1235'
+//     order.status is in foo.bar
+// `;
+//
+//   const types = new AbilityTypeGenerator(policies2).generateTypeDefs();
+//
+//   fs.writeFileSync(path.resolve('./__test__/integration/types.gen.ts'), types, {
+//     encoding: 'utf-8',
+//   });
 
 });

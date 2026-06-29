@@ -104,6 +104,47 @@ describe('Examples', () => {
       },
     };
 
+    // const result = resolver.enforce('document.read', resource);
+    const result = resolver.resolve('document.read', resource);
+    console.log(result.isAllowed()); // true
+
+    // Детализация результатов
+    // console.log(result.decisive()?.name);
+    // console.log(result.explain());
+
+    expect(result.isAllowed()).toBeTruthy();
+  });
+
+
+
+  it('Example 333', () => {
+    const policies = ability`
+      @name "Read the document can only owner or published doc"
+      permit permission.document.read if all:
+        @name "only owner"
+        document.ownerId equals user.id
+        
+        @name "published"
+        document.status in ["published", "archived"]
+    `;
+
+    const resolver = new AbilityResolver(policies, DenyOverridesStrategy, {
+      onDeny: res => {
+        console.log(res.explain());
+      }
+    });
+
+    const resource = {
+      document: {
+        ownerId: 123,
+        status: 'published',
+      },
+      user: {
+        id: 123,
+      },
+    };
+
+    // const result = resolver.enforce('document.read', resource);
     const result = resolver.resolve('document.read', resource);
     console.log(result.isAllowed()); // true
 

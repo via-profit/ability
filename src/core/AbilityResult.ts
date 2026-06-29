@@ -22,11 +22,14 @@ export class AbilityResult<
    * Useful for debugging, logging, or building UI tools that visualize permission logic.
    */
   public explain(): string {
-    return this.strategy.policies
+    const resMarker = this.strategy.isDenied() ? '== DENIED==' : '== ALLOWED ==';
+    const policiesExplain =  this.strategy.policies
       .map(policy => {
         return new AbilityExplainPolicy(policy).toString();
       })
       .join('\n');
+
+    return `${resMarker}\n${policiesExplain}\n`;
   }
 
   public decisive() {
