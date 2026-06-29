@@ -1,4 +1,3 @@
-```markdown
 # Ability DSL
 
 Ability DSL is a declarative language for describing access policies.  
