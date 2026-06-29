@@ -289,6 +289,13 @@ user.status in ["active", "verified"]
 | **is null**     | `== null`, `= null` | `middleName is null`     | Значение отсутствует  | any  |
 | **is not null** | `!= null`           | `middleName is not null` | Значение присутствует | any  |
 
+**Defined‑операторы**
+
+| Оператор DSL    | Синонимы | Пример                   | Описание                           | Типы |
+|-----------------|----------|--------------------------|------------------------------------|------|
+| **is defiend**  | -        | `middleName is defined`  | Значение определено                | any  |
+| **is not defiend** | -        | `middleName is not defined` | Значение не определено ('unedfined') | any  |
+
 **Операторы для списков (массивов)**
 
 | Оператор DSL     | Синонимы                  | Пример                         | Описание                   | Типы           |
