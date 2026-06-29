@@ -23,6 +23,7 @@ export class AbilityDSLLexer {
     'contains',
     'includes',
     'length',
+    'len',
     'has',
     'in',
     'gt',

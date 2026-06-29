@@ -429,7 +429,7 @@ export class AbilityDSLParser<
 
     // "length equals"
     this.stream.mark();
-    if (this.matchWord('length') && this.matchWord('equals')) {
+    if ((this.matchWord('length') || this.matchWord('len')) && this.matchWord('equals')) {
       this.stream.commit();
       return { condition: AbilityCondition.length_equals, operator: TokenTypes.LEN_EQ };
     }
@@ -437,7 +437,7 @@ export class AbilityDSLParser<
 
     // "length ="
     this.stream.mark();
-    if (this.matchWord('length') && this.matchSymbol('=')) {
+    if ((this.matchWord('length') || this.matchWord('len')) && this.matchSymbol('=')) {
       this.stream.commit();
       return { condition: AbilityCondition.length_equals, operator: TokenTypes.LEN_EQ };
     }
@@ -445,7 +445,11 @@ export class AbilityDSLParser<
 
     // "length greater than"
     this.stream.mark();
-    if (this.matchWord('length') && this.matchWord('greater') && this.matchWord('than')) {
+    if (
+      (this.matchWord('length') || this.matchWord('len')) &&
+      this.matchWord('greater') &&
+      this.matchWord('than')
+    ) {
       this.stream.commit();
       return { condition: AbilityCondition.length_greater_than, operator: TokenTypes.LEN_GT };
     }
@@ -453,7 +457,7 @@ export class AbilityDSLParser<
 
     // "length >"
     this.stream.mark();
-    if (this.matchWord('length') && this.matchSymbol('>')) {
+    if ((this.matchWord('length') || this.matchWord('len')) && this.matchSymbol('>')) {
       this.stream.commit();
       return { condition: AbilityCondition.length_greater_than, operator: TokenTypes.LEN_GT };
     }
@@ -461,7 +465,11 @@ export class AbilityDSLParser<
 
     // "length less than"
     this.stream.mark();
-    if (this.matchWord('length') && this.matchWord('less') && this.matchWord('than')) {
+    if (
+      (this.matchWord('length') || this.matchWord('len')) &&
+      this.matchWord('less') &&
+      this.matchWord('than')
+    ) {
       this.stream.commit();
       return { condition: AbilityCondition.length_less_than, operator: TokenTypes.LEN_LT };
     }
@@ -469,7 +477,7 @@ export class AbilityDSLParser<
 
     // "length <"
     this.stream.mark();
-    if (this.matchWord('length') && this.matchSymbol('<')) {
+    if ((this.matchWord('length') || this.matchWord('len')) && this.matchSymbol('<')) {
       this.stream.commit();
       return { condition: AbilityCondition.length_less_than, operator: TokenTypes.LEN_LT };
     }
@@ -631,7 +639,7 @@ export class AbilityDSLParser<
       return { condition: AbilityCondition.not_defined, operator: TokenTypes.DEFINED };
     }
     this.stream.reset();
-    
+
 
     // Single token (symbol or keyword)
 
