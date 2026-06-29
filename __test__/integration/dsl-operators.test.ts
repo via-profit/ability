@@ -820,7 +820,7 @@ describe('DSL Operators', () => {
     it('Operator "length greater than" should permit', () => {
       const dsl = `
     permit permission.test if all:
-      user.name length equals 4
+      user.name len equals 4
       user.name length = 4
   `;
       const policies = new AbilityDSLParser(dsl).parse();
@@ -839,7 +839,7 @@ describe('DSL Operators', () => {
       const dsl = `
     permit permission.test if all:
       user.name length equals 3
-      user.name length = 3
+      user.name len = 3
   `;
       const policies = new AbilityDSLParser(dsl).parse();
       const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
