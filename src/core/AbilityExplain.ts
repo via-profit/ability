@@ -31,7 +31,13 @@ export class AbilityExplain {
     const isPending = this.match === AbilityMatch.pending;
     // const isDisabled = this.match === AbilityMatch.disabled;
 
-    const mark = isMatch ? `✓` : isMismatch ? `✗` : isPending ? `…` : `⊘`;
+    const mark = isMatch
+      ? `<match ✓>`
+      : isMismatch
+        ? `<mismatch ✗>`
+        : isPending
+          ? `<pending …>`
+          : `<disabled ⊘>`;
 
     let label: string;
     switch (this.type) {

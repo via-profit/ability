@@ -14,39 +14,37 @@ export default [
 
   // Main source code (both Node.js and browser)
   {
-    files: ['**/*.js', '**/*.cjs', '**/*.mjs'],
+    files: ['**/*.js', '**/*.mjs'], // Убрали .cjs отсюда
     languageOptions: {
-      sourceType: 'script',
+      sourceType: 'module', // Изменили с 'script' на 'module'
       globals: {
-        ...globals.browser, // browser APIs (window, document, etc.)
-        ...globals.node, // Node.js globals (process, __dirname, etc.)
-        ...globals.es2021, // modern ES features
+        ...globals.browser,
+        ...globals.node,
+        ...globals.es2021,
       },
       parserOptions: {
         ecmaVersion: 'latest',
-        sourceType: 'module', // use 'script' if you need CommonJS, but 'module' works for both
       },
     },
     rules: {
-      // Optional: adjust rules to your taste
-      'no-console': 'off', // allow console in Node/browser
+      'no-console': 'off',
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     },
   },
 
-  // Test files (Jest) – override globals and add Jest rules
+  // Test files (Jest)
   {
     files: ['**/__tests__/**/*.js', '**/*.test.js', '**/*.spec.js'],
     ...jestPlugin.configs['flat/recommended'],
     languageOptions: {
+      sourceType: 'module', // Добавлено явно
       globals: {
         ...globals.browser,
         ...globals.node,
-        ...globals.jest, // jest globals (describe, it, expect, etc.)
+        ...globals.jest,
       },
     },
     rules: {
-      // Allow test‑specific patterns
       'jest/no-disabled-tests': 'warn',
       'jest/no-focused-tests': 'error',
       'jest/no-identical-title': 'error',
@@ -55,11 +53,31 @@ export default [
     },
   },
 
-  // If you have CommonJS files (e.g., scripts, configs) – override module type
+  // CommonJS files (только .cjs)
   {
-    files: ['**/*.cjs', '**/scripts/**/*.js'],
+    files: ['**/*.cjs'],
     languageOptions: {
       sourceType: 'commonjs',
+      globals: {
+        ...globals.node,
+        ...globals.es2021,
+      },
+    },
+    rules: {
+      'no-console': 'off',
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    },
+  },
+
+  // Rollup config файл (если он с расширением .js и использует import/export)
+  {
+    files: ['rollup.config.js', '*.config.js', '*.config.mjs'],
+    languageOptions: {
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+        ...globals.es2021,
+      },
     },
   },
 ];

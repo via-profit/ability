@@ -4,6 +4,7 @@ import { AbilityResult } from './AbilityResult';
 import { AbilityMatch } from './AbilityMatch';
 import { AbilityStrategy } from '../strategy/AbilityStrategy';
 import { AbilityPolicyEffect } from '~/core/AbilityPolicyEffect';
+import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
 
 export interface AbilityResolverOptions<TTags extends string> {
   tags?: readonly TTags[];
@@ -26,13 +27,22 @@ export type ExtractEnvironmentByPermission<P, Perm extends string> =
   P extends AbilityPolicy<any, infer E, any> ? (Perm extends keyof E ? E[Perm] : never) : never;
 
 
-export type EnforceOptions = {
-  readonly onDeny?: EnforceOnDeny;
-  readonly onAllow?: EnforceOnDeny;
+export type EnforceOptions<
+  R extends ResourceObject = Record<string, unknown>,
+  E extends EnvironmentObject = Record<string, unknown>,
+> = {
+  readonly onDeny?: EnforceOnDeny<R, E>;
+  readonly onAllow?: EnforceOnDeny<R, E>;
 };
 
-export type EnforceOnDeny = (result: AbilityResult) => void;
-export type EnforceOnAllow = (result: AbilityResult) => void;
+export type EnforceOnDeny<
+  R extends ResourceObject = Record<string, unknown>,
+  E extends EnvironmentObject = Record<string, unknown>,
+> = (result: AbilityResult<R, E>) => void;
+export type EnforceOnAllow<
+  R extends ResourceObject = Record<string, unknown>,
+  E extends EnvironmentObject = Record<string, unknown>,
+> = (result: AbilityResult<R, E>) => void;
 
 export class AbilityResolver<
   P extends AbilityPolicy<any, any, any>,
@@ -42,8 +52,8 @@ export class AbilityResolver<
   >,
   TTags extends string = P extends AbilityPolicy<any, any, infer T> ? T : never,
 > {
-  private onDeny?: EnforceOnDeny;
-  private onAllow?: EnforceOnDeny;
+  private readonly onDeny?: EnforceOnDeny;
+  private readonly onAllow?: EnforceOnDeny;
   private readonly StrategyClass: new (policies: readonly P[]) => S;
   private readonly policyEntries: readonly {
     policy: P;

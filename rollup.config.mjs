@@ -6,6 +6,7 @@ import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import copy from 'rollup-plugin-copy';
+import terser from '@rollup/plugin-terser';
 import { fileURLToPath } from 'node:url';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -42,8 +43,19 @@ const esmConfig = {
       sourceMap: isDev,
       declaration: false,
     }),
+    terser({
+      compress: {
+        drop_console: !isDev,
+        drop_debugger: !isDev,
+        passes: 2,
+      },
+      format: {
+        comments: false,
+        beautify: false,
+      },
+    }),
     copy({
-      targets: [{ src: 'docs/en/README.md', dest: '.', rename: 'README.md' }],
+      targets: [{ src: 'docs/ru/README.md', dest: '.', rename: 'README.md' }],
     }),
   ],
 };
@@ -61,6 +73,17 @@ const cjsConfig = {
     aliasPlugin,
     resolve({ extensions: ['.ts', '.js'] }),
     commonjs(),
+    terser({
+      compress: {
+        drop_console: !isDev,
+        drop_debugger: !isDev,
+        passes: 2,
+      },
+      format: {
+        comments: false,
+        beautify: false,
+      },
+    }),
     typescript({
       tsconfig: './tsconfig.json',
       sourceMap: isDev,

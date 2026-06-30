@@ -8,7 +8,7 @@ export class AbilityResult<
   E extends EnvironmentObject = Record<string, unknown>,
 > {
   protected readonly effect: AbilityPolicyEffectType;
-  protected readonly strategy: AbilityStrategy<R, E>;
+  public readonly strategy: AbilityStrategy<R, E>;
 
   public constructor(effect: AbilityPolicyEffectType, strategy: AbilityStrategy<R, E>) {
     this.effect = effect;
@@ -23,7 +23,7 @@ export class AbilityResult<
    */
   public explain(): string {
     const resMarker = this.strategy.isDenied() ? '== DENIED==' : '== ALLOWED ==';
-    const policiesExplain =  this.strategy.policies
+    const policiesExplain = this.strategy.policies
       .map(policy => {
         return new AbilityExplainPolicy(policy).toString();
       })

@@ -1,4 +1,4 @@
-import { AbilityDSLParser, AbilityResolver, ability } from '../../src';
+import { AbilityDSLParser, AbilityResolver, ability, AbilityError } from '../../src';
 import DenyOverridesStrategy from '../../src/strategy/DenyOverridesStrategy';
 
 describe('Examples', () => {
@@ -130,7 +130,12 @@ describe('Examples', () => {
 
     const resolver = new AbilityResolver(policies, DenyOverridesStrategy, {
       onDeny: res => {
-        console.log(res.explain());
+
+        const explain = res.explain();
+        console.debug(explain);
+
+
+        throw new AbilityError(`Permission denied.`);
       }
     });
 
