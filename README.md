@@ -12,8 +12,8 @@
 
 > ### 🌐 Language Selection / Выбор языка
 >
-> * 🇷🇺 **[Читать на русском](./docs/ru/README.md)**
-> * 🇬🇧 **English**
+> * 🇷🇺 **[Документация на русском](./docs/ru/README.md)**
+> * 🇬🇧 **English documentation**
     >
     >   **English documentation? Error 404: Not Found.**
     >   Since I’ve spent years learning English just to read your code, here is your perfect chance to practice your
@@ -66,13 +66,6 @@ const document = await db.loadDocument();
 // Проверка разрешения
 resolver.enforce('document.read', { document });
 ```
-
-## Документация
-
-- [DSL](./dsl.md)
-- [Резолвер](./resolver.md)
-- [Генерация типов](./types-generator.md)
-- [Стратегии](./strategies.md)
 
 ## Лицензия
 
