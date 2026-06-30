@@ -5,7 +5,6 @@ import dts from 'rollup-plugin-dts';
 import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
-import copy from 'rollup-plugin-copy';
 import terser from '@rollup/plugin-terser';
 import { fileURLToPath } from 'node:url';
 
@@ -53,9 +52,6 @@ const esmConfig = {
         comments: false,
         beautify: false,
       },
-    }),
-    copy({
-      targets: [{ src: 'docs/ru/README.md', dest: '.', rename: 'README.md' }],
     }),
   ],
 };
