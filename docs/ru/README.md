@@ -4,3 +4,4 @@
 - [Резолвер](./resolver.md)
 - [Генерация типов](./types-generator.md)
 - [Стратегии](./strategies.md)
+- [Клиент-серверные приложения](./server-and-client.md)
