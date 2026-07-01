@@ -462,7 +462,7 @@ ${items}
           }
         }
 
-        output += `${spaces}readonly ${key}: ${va.join(' | ')} \n`;
+        output += `${spaces}readonly ${key}?: ${[...new Set(va)].join(' | ')} \n`;
       }
     });
 

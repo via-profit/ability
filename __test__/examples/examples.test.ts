@@ -1,4 +1,10 @@
-import { AbilityDSLParser, AbilityResolver, ability, AbilityError } from '../../src';
+import {
+  AbilityDSLParser,
+  AbilityResolver,
+  ability,
+  AbilityError,
+  AbilityTypeGenerator,
+} from '../../src';
 import DenyOverridesStrategy from '../../src/strategy/DenyOverridesStrategy';
 
 describe('Examples', () => {
@@ -119,6 +125,15 @@ describe('Examples', () => {
 
   it('Example 333', () => {
     const policies = ability`
+    @name "Запрещено снимать водителя если водитель завершил заявку"
+deny permission.order.update if all:
+
+  @name "Водитель в заявке изменился"
+  all of:
+  input.driver is defined
+  order.driver not equals input.driver
+  
+  
       @name "Read the document can only owner or published doc"
       permit permission.document.read if all:
         @name "only owner"
@@ -150,6 +165,7 @@ describe('Examples', () => {
     };
 
     // const result = resolver.enforce('document.read', resource);
+    new AbilityTypeGenerator(policies).generateTypeDefs();
     const result = resolver.resolve('document.read', resource);
     console.log(result.isAllowed()); // true
 
