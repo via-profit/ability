@@ -362,9 +362,9 @@ export class AbilityDSLParser<
       operator !== TokenTypes.EQ_NULL &&
       operator !== TokenTypes.NOT_EQ_NULL &&
       operator !== TokenTypes.NULL &&
-      operator !== TokenTypes.DEFINED &&
       operator !== TokenTypes.ALWAYS &&
-      operator !== TokenTypes.NEVER
+      operator !== TokenTypes.NEVER &&
+      operator !== TokenTypes.DEFINED
     ;
 
     if (operatorConsumesValue) {
@@ -774,13 +774,7 @@ export class AbilityDSLParser<
 
     this.stream.next();
 
-    // if (token.type === TokenTypes.IDENTIFIER) {
-    //   this.stream.next();
-    //
-    //   return this.parseValue();
-    // }
 
-    // CHECK THIS SWITCH COMPARE
     switch (token.type) {
       case TokenTypes.STRING:
         return token.value;
@@ -793,7 +787,7 @@ export class AbilityDSLParser<
       case TokenTypes.DEFINED:
         return typeof token.value !== 'undefined';
       case TokenTypes.IDENTIFIER:
-        return null;
+        return token.value;
       default: {
         this.stream.syntaxError(`Unexpected value token "${token.value}"`, token, [
           TokenTypes.KEYWORD,
