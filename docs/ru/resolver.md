@@ -395,7 +395,7 @@ export const abilityResolver = new AbilityResolver(policies, DenyOverridesStrate
     // Если это dev, то вываливаем в консоль explain всех политик,
     // которые отработали
     if (process.env.NODE_ENV === 'development') {
-      console.log(res.explain());
+      console.log(res.explainToString());
     }
 
     // Если не вернуть ошибку, то резолвер сам её вернет,
@@ -517,6 +517,46 @@ return order;
 
 ---
 
+### Методы `AbilityResult`
+
+Коллбэки `onDeny` и `onAllow` получают `AbilityResult`. Для получения объяснения проверки доступны следующие методы:
+
+| Метод               | Возвращает                 | Описание                                                                                               |
+|---------------------|----------------------------|--------------------------------------------------------------------------------------------------------|
+| `explain()`         | `string`                   | Алиас `explainToString()`, сохранённый для обратной совместимости.                                      |
+| `explainToString()` | `string`                   | Возвращает текстовое объяснение с результатом проверки и деревьями всех участвовавших политик.         |
+| `explainToJSON()`   | `AbilityResultExplainJSON` | Возвращает типизированный объект с `permission`, итоговым `effect` и JSON-представлениями политик.    |
+| `decisive()`        | `AbilityPolicy \| null`    | Возвращает политику, которая определила итог стратегии, если её удалось определить.                   |
+| `explainDecisive()` | `string \| null`           | Возвращает текстовое объяснение решающей политики.                                                     |
+
+Пример использования объяснений в `onDeny`:
+
+```ts
+abilityResolver.enforce(
+  'orders.read',
+  { order },
+  { hour: new Date().getHours() },
+  {
+    onDeny: result => {
+      console.error(result.explainToString());
+      console.log(JSON.stringify(result.explainToJSON(), null, 2));
+    },
+  },
+);
+```
+
+Результат `explainToJSON()` имеет следующий вид:
+
+```ts
+type AbilityResultExplainJSON = {
+  permission: string;
+  effect: 'permit' | 'deny';
+  policies: AbilityExplainJSON[];
+};
+```
+
+---
+
 ### Примеры использования
 
 #### `resolve` - ручная проверка
@@ -557,8 +597,11 @@ abilityResolver.enforce('orders.read', { order }, {
   hour: new Date().getHours()
 }, {
   onDeny: (result) => {
-    // Логируем причину отказа
-    console.error('Access denied:', result.explain());
+    // Логируем текстовое объяснение отказа
+    console.error('Access denied:', result.explainToString());
+
+    // Для API, логирования или интерфейса можно использовать JSON
+    console.error(JSON.stringify(result.explainToJSON(), null, 2));
 
     // Можно отправить метрики или уведомления
     metrics.increment('permission_denied', {
@@ -678,7 +721,8 @@ const result = abilityResolver.resolve('users.delete', { user }, {
 
 ### Как отлаживать политики?
 
-Используйте метод `explain()` на результате проверки - он покажет все сработавшие правила.
+Используйте `explainToString()` или `explainToJSON()` на `AbilityResult`, полученном через `resolve()` или в коллбэке
+`onDeny`/`onAllow`. Метод `explain()` является алиасом `explainToString()`.
 
 ### Можно ли использовать без генерации типов?
 
