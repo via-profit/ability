@@ -10,6 +10,14 @@ export type AbilityExplainConfig = {
   readonly debugInfo?: string;
 };
 
+export type AbilityExplainJSON = {
+  readonly type: AbilityExplainType;
+  readonly name: string;
+  readonly match: AbilityMatchType;
+  readonly debugInfo?: string;
+  readonly children: AbilityExplainJSON[];
+};
+
 export class AbilityExplain {
   readonly type: AbilityExplainType;
   readonly children: AbilityExplain[];
@@ -65,6 +73,16 @@ export class AbilityExplain {
     });
 
     return out;
+  }
+
+  public toJSON(): AbilityExplainJSON {
+    return {
+      type: this.type,
+      name: this.name,
+      match: this.match,
+      ...(this.debugInfo === undefined ? {} : { debugInfo: this.debugInfo }),
+      children: this.children.map(child => child.toJSON()),
+    };
   }
 
 }

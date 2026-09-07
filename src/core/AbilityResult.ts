@@ -1,8 +1,14 @@
-import { AbilityExplainPolicy } from './AbilityExplain';
+import { AbilityExplainJSON, AbilityExplainPolicy } from './AbilityExplain';
 import { EnvironmentObject, ResourceObject } from './AbilityTypeGenerator';
 import { AbilityPolicyEffectType } from './AbilityPolicyEffect';
 import { AbilityStrategy } from '../strategy/AbilityStrategy';
 import { ExtractResources } from '~/core/AbilityResolver';
+
+export type AbilityResultExplainJSON = {
+  readonly permission: string;
+  readonly effect: AbilityPolicyEffectType;
+  readonly policies: AbilityExplainJSON[];
+};
 
 export class AbilityResult<
   R extends ResourceObject = Record<string, unknown>,
@@ -28,7 +34,7 @@ export class AbilityResult<
    *
    * Useful for debugging, logging, or building UI tools that visualize permission logic.
    */
-  public explain(type: 'string' | 'json' = 'string'): string {
+  public explainToString(): string {
     const resMarker = this.strategy.isDenied()
       ? `== ${this.permission} DENIED==`
       : `== ${this.permission} ALLOWED ==`;
@@ -40,6 +46,18 @@ export class AbilityResult<
       .join('\n');
 
     return `${resMarker}\n${policiesExplain}\n`;
+  }
+
+  public explainToJSON(): AbilityResultExplainJSON {
+    return {
+      permission: this.permission,
+      effect: this.effect,
+      policies: this.strategy.policies.map(policy => new AbilityExplainPolicy(policy).toJSON()),
+    };
+  }
+
+  public explain(): string {
+    return this.explainToString();
   }
 
   public decisive() {
