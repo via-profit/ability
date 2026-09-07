@@ -56,7 +56,7 @@ describe('DSL annotations', () => {
         roles: ['admin'],
       },
     });
-    console.log(result.explain().toString());
+    // console.log(result.explain().toString());
 
     // console.log(result.explain().toString());
     //

@@ -39,7 +39,7 @@ describe('Wildcard in the middle of permission path (DSL syntax)', () => {
       },
     });
 
-    console.log(r1.explain().toString());
+    // console.log(r1.explain().toString());
     expect(r1.isAllowed()).toBeTruthy();
   });
 });

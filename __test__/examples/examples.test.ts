@@ -112,11 +112,11 @@ describe('Examples', () => {
 
     // const result = resolver.enforce('document.read', resource);
     const result = resolver.resolve('document.read', resource);
-    console.log(result.isAllowed()); // true
+    // console.log(result.isAllowed()); // true
 
     // Детализация результатов
     // console.log(result.decisive()?.name);
-    console.log(result.explainToJSON());
+    // console.log(result.explainToJSON());
 
     expect(result.isAllowed()).toBeTruthy();
   });
@@ -147,7 +147,7 @@ deny permission.order.update if all:
       onDeny: res => {
 
         const explain = res.explain();
-        console.debug(explain);
+        // console.debug(explain);
 
 
         throw new AbilityError(`Permission denied.`);
@@ -167,7 +167,7 @@ deny permission.order.update if all:
     // const result = resolver.enforce('document.read', resource);
     new AbilityTypeGenerator(policies).generateTypeDefs();
     const result = resolver.resolve('document.read', resource);
-    console.log(result.isAllowed()); // true
+    // console.log(result.isAllowed()); // true
 
     // Детализация результатов
     // console.log(result.decisive()?.name);
