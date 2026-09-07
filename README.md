@@ -13,11 +13,7 @@
 > ### 🌐 Language Selection / Выбор языка
 >
 > * 🇷🇺 **[Документация на русском](./docs/ru/README.md)**
-> * 🇬🇧 **English docs**
-    >
-    >   **English documentation? Error 404: Not Found.**
-    >   Since I’ve spent years learning English just to read your code, here is your perfect chance to practice your
-    Russian! Alternatively, Google Translate is your best friend here.
+> * 🇬🇧 **[English documentation](./docs/en/README.md)**
 
 ## Для чего
 
