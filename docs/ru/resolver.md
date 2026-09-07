@@ -72,12 +72,12 @@ AbilityResolver работает в двух режимах (два метода
 
 Для примера опишем простую политику заявок (файл `./ability/orders.dsl`)
 
-`text
+```text
 @name "Читать данные по заявке можно только автору и только до 16 часов дня"
 permit permission.orders.read if any:
   order.author is equals user.id
   env.hour less than 16
-`
+```
 
 
 ---
