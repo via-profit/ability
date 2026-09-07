@@ -1,6 +1,6 @@
 # @via-profit/ability
 
-> Легкий ABAC-движок с DSL, TypeScript-типами и нулевыми зависимостями
+> Lightweight ABAC engine with DSL, TypeScript types, and zero dependencies
 
 ![npm version](https://img.shields.io/npm/v/%40via-profit/ability)
 ![npm downloads](https://img.shields.io/npm/dm/%40via-profit/ability)
@@ -15,56 +15,54 @@
 > * 🇷🇺 **[Документация на русском](./docs/ru/README.md)**
 > * 🇬🇧 **[English documentation](./docs/en/README.md)**
 
-## Для чего
+## Why
 
-Проект задумывался для того, чтобы закрыть типовые сценарии контроля доступа без лишних сложностей. Нам потребовался
-лёгкий ABAC-движок, работающий и на сервере и в браузере, с простым DSL, автоматической генерацией TypeScript-типов — и
-без внешних зависимостей.
+The project was designed to cover standard access control scenarios without unnecessary complexity. We needed a lightweight ABAC engine that works in both server and browser environments, with a simple DSL, automatic TypeScript type generation, and no external dependencies.
 
-## Основные возможности
+## Key features
 
-- Простой DSL
-- 9 встроенных стратегий разрешения
-- TypeScript-first с генерацией типов
-- Ноль зависимостей
-- Explain для отладки
-- Работает и на сервере и в браузере
+- Simple DSL
+- 9 built-in resolution strategies
+- TypeScript-first with generated types
+- Zero dependencies
+- Explain for debugging
+- Works in both server and browser environments
 
-## Установка
+## Installation
 
 ```bash
 npm install @via-profit/ability
 ```
 
-## Быстрый старт
+## Quick start
 
 ```ts
 import { ability, AbilityResolver, DenyOverridesStrategy } from '@via-profit/ability';
 
-// Создание политик, в частности, одной политики document.read
+// Create policies, including one policy for document.read
 const policies = ability`
-  @name "Разрешить чтение документа только авторам или если он опубликован"
+  @name "Allow reading a document only for authors or if it is published"
   permit permission.document.read if all:
     
-    @name "Пользователь является автором"
+    @name "User is the author"
     document.author is equals user.id
     
-    @name "Документ опубликован"
+    @name "Document is published"
     document.status in ["published", "archived"]
 `;
 
-// Создание резолвера
+// Create the resolver
 const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
-// Загрузка данных (ваш вариант)
+// Load your data (your implementation)
 const document = await db.loadDocument();
 
-// Проверка разрешения
+// Check permission
 resolver.enforce('document.read', { document });
 ```
 
-## Лицензия
+## License
 
-Распространяется под лицензией MIT © [Via-Profit](https://via-profit.ru)
+Distributed under the MIT license © [Via-Profit](https://via-profit.ru)
 
-С условиями лицензии можно ознакомиться в файле [LICENSE](./LICENSE).
+You can review the license terms in [LICENSE](./LICENSE).
