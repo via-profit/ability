@@ -66,6 +66,7 @@ export class AbilityExplain {
 
     return out;
   }
+
 }
 
 export class AbilityExplainRule extends AbilityExplain {

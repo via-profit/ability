@@ -125,7 +125,7 @@ export class AbilityResolver<
     const strategy = new this.StrategyClass(filteredPolicies);
     const effect = strategy.evaluate();
 
-    const result = new AbilityResult(effect, strategy) as AbilityResult<
+    const result = new AbilityResult(permission, effect, strategy) as AbilityResult<
       ExtractResourceByPermission<P, Permission>,
       ExtractEnvironment<P>
     >;

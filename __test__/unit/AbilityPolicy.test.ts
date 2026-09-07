@@ -273,7 +273,7 @@ describe('AbilityPolicy', () => {
 
       expect(explain).toBeDefined();
       expect(explain.type).toBe('policy');
-      expect(explain.name).toBe('Test Policy');
+      expect(explain.name).toBe('<permit> Test Policy');
       expect(explain.match).toBe(AbilityMatch.match);
       expect(explain.children).toHaveLength(1);
     });

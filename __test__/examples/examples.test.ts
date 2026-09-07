@@ -116,7 +116,7 @@ describe('Examples', () => {
 
     // Детализация результатов
     // console.log(result.decisive()?.name);
-    console.log(result.explain());
+    console.log(result.explain('json'));
 
     expect(result.isAllowed()).toBeTruthy();
   });
