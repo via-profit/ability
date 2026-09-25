@@ -3,7 +3,6 @@ import { AbilityError } from './AbilityError';
 import { AbilityResult } from './AbilityResult';
 import { AbilityMatch } from './AbilityMatch';
 import { AbilityStrategy } from '../strategy/AbilityStrategy';
-import { AbilityPolicyEffect } from '~/core/AbilityPolicyEffect';
 import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
 
 export interface AbilityResolverOptions<TTags extends string> {
@@ -32,7 +31,7 @@ export type EnforceOptions<
   E extends EnvironmentObject = Record<string, unknown>,
 > = {
   readonly onDeny?: EnforceOnDeny<R, E>;
-  readonly onAllow?: EnforceOnDeny<R, E>;
+  readonly onAllow?: EnforceOnAllow<R, E>;
 };
 
 export type EnforceOnDeny<
@@ -53,8 +52,20 @@ export class AbilityResolver<
   TTags extends string = P extends AbilityPolicy<any, any, infer T> ? T : never,
 > {
   private readonly onDeny?: EnforceOnDeny;
-  private readonly onAllow?: EnforceOnDeny;
+  private readonly onAllow?: EnforceOnAllow;
   private readonly StrategyClass: new (policies: readonly P[]) => S;
+  /**
+   * Maximum number of permission keys in the selection cache.
+   * The cache is cleared when the limit is reached, so arbitrary keys
+   * (for example, passed from the client) can not cause a memory leak
+   */
+  public static readonly SELECTION_CACHE_LIMIT = 1024;
+
+  /**
+   * Policies selected by the requested permission key.
+   * The selection depends on the key only, so it is computed once per key
+   */
+  private readonly selectionCache = new Map<string, readonly P[]>();
   private readonly policyEntries: readonly {
     policy: P;
     normalizedPermission: string;
@@ -72,8 +83,11 @@ export class AbilityResolver<
     const policies = this.toArray(policyOrListOfPolicies);
     this.onDeny = options.onDeny;
     this.onAllow = options.onAllow;
+    // Policies without tags are always used
     const filtered = options.tags
-      ? policies.filter(p => p.tags.some(tag => options.tags!.includes(tag as TTags)))
+      ? policies.filter(
+          p => p.tags.length === 0 || p.tags.some(tag => options.tags!.includes(tag as TTags)),
+        )
       : policies;
 
     const sorted = [...filtered].sort((a, b) => b.priority - a.priority);
@@ -99,19 +113,12 @@ export class AbilityResolver<
     resource: ExtractResourceByPermission<P, Permission>,
     environment?: ExtractEnvironmentByPermission<P, Permission>,
   ): AbilityResult<ExtractResourceByPermission<P, Permission>, ExtractEnvironment<P>> {
-    const inputNormalized = AbilityResolver.normalizePermission(String(permission));
-    const inputSegments = inputNormalized.split('.');
-
-    const filteredPolicies = this.policyEntries
-      .filter(entry => AbilityResolver.matchPermissions(entry.segments, inputSegments))
-      .map(entry => entry.policy);
+    const filteredPolicies = this.selectPolicies(String(permission));
 
     // 2. check the policies
+    // disabled policies are checked too: `check` resets their state to `disabled`,
+    // otherwise the state of the previous check would be used by the strategy
     for (const policy of filteredPolicies) {
-      if (policy.disabled) {
-        continue;
-      }
-
       const policyMatchState = policy.check(resource, environment);
 
       if (policyMatchState === AbilityMatch.pending) {
@@ -125,20 +132,32 @@ export class AbilityResolver<
     const strategy = new this.StrategyClass(filteredPolicies);
     const effect = strategy.evaluate();
 
-    const result = new AbilityResult(permission, effect, strategy) as AbilityResult<
+    return new AbilityResult(permission, effect, strategy) as AbilityResult<
       ExtractResourceByPermission<P, Permission>,
       ExtractEnvironment<P>
     >;
+  }
 
-    if (effect === AbilityPolicyEffect.deny && this.onDeny) {
-      this.onDeny(result);
+  /**
+   * Returns the policies whose permission key matches the requested one
+   */
+  private selectPolicies(permission: string): readonly P[] {
+    const cached = this.selectionCache.get(permission);
+    if (cached) {
+      return cached;
     }
 
-    if (effect === AbilityPolicyEffect.permit && this.onAllow) {
-      this.onAllow(result);
-    }
+    const inputSegments = AbilityResolver.normalizePermission(permission).split('.');
+    const selected = this.policyEntries
+      .filter(entry => AbilityResolver.matchPermissions(entry.segments, inputSegments))
+      .map(entry => entry.policy);
 
-    return result;
+    if (this.selectionCache.size >= AbilityResolver.SELECTION_CACHE_LIMIT) {
+      this.selectionCache.clear();
+    }
+    this.selectionCache.set(permission, selected);
+
+    return selected;
   }
 
   public enforce<Permission extends keyof ExtractResources<P> & string>(
@@ -150,10 +169,15 @@ export class AbilityResolver<
     const result = this.resolve(permission, resource, environment);
 
     if (result.isDenied()) {
-      options?.onDeny && options?.onDeny(result);
+      // local callback first: the global one may throw its own error
+      options?.onDeny?.(result);
+      this.onDeny?.(result);
 
       throw new AbilityError(`Permission denied`);
     }
+
+    options?.onAllow?.(result);
+    this.onAllow?.(result);
   }
 
   /**
@@ -186,31 +210,41 @@ export class AbilityResolver<
       .toLowerCase(); // optional: make case-insensitive
   }
 
+  /**
+   * Checks whether the permission key of the policy matches the requested key.
+   *
+   * - `*` in the middle of the key matches exactly one segment (`*.create` → `order.create`)
+   * - `*` at the end of the key matches all the remaining segments (`order.*` → `order.item.update`)
+   */
   public static matchPermissions(policySegments: string[], inputSegments: string[]): boolean {
-    let i = 0;
+    const lastIdx = policySegments.length - 1;
 
-    for (; i < policySegments.length; i++) {
+    for (let i = 0; i < policySegments.length; i++) {
       const pSeg = policySegments[i];
       const iSeg = inputSegments[i];
 
-      // '*' — глобальный wildcard: матчим всё, что дальше
-      if (pSeg === '*') {
+      // trailing wildcard matches everything after
+      if (pSeg === '*' && i === lastIdx) {
         return true;
       }
 
-      // input закончился раньше — mismatch
+      // input ended earlier — mismatch
       if (iSeg === undefined) {
         return false;
       }
 
-      // обычное сравнение
+      // wildcard in the middle matches exactly one segment
+      if (pSeg === '*') {
+        continue;
+      }
+
       if (pSeg !== iSeg) {
         return false;
       }
     }
 
-    // Если политика закончилась, но input длиннее — match только если последний сегмент был '*'
-    return i === inputSegments.length;
+    // policy ended, input must end too
+    return policySegments.length === inputSegments.length;
   }
 }
 

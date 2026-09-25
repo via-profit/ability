@@ -17,7 +17,13 @@ export type AbilityConditionCode =
   | 'always'
   | 'never'
   | 'defined'
-  | 'not_defined';
+  | 'not_defined'
+  | 'empty'
+  | 'not empty'
+  | 'starts with'
+  | 'ends with'
+  | 'contains all'
+  | 'contains any';
 
 export type AbilityConditionLiteral =
   | 'equals'
@@ -36,7 +42,13 @@ export type AbilityConditionLiteral =
   | 'always'
   | 'never'
   | 'defined'
-  | 'not_defined';
+  | 'not_defined'
+  | 'empty'
+  | 'not_empty'
+  | 'starts_with'
+  | 'ends_with'
+  | 'contains_all'
+  | 'contains_any';
 
 
 export type AbilityConditionType = AbilityConditionCode & { __brand: 'AbilityCondition' };
@@ -63,6 +75,12 @@ export const AbilityCondition = {
   length_equals: brand('length equals'),
   always: brand('always'),
   never: brand('never'),
+  empty: brand('empty'),
+  not_empty: brand('not empty'),
+  starts_with: brand('starts with'),
+  ends_with: brand('ends with'),
+  contains_all: brand('contains all'),
+  contains_any: brand('contains any'),
 } as const;
 
 
@@ -85,6 +103,12 @@ export function fromLiteral(literal: AbilityConditionLiteral): AbilityConditionT
     never: AbilityCondition.never,
     defined: AbilityCondition.defined,
     not_defined: AbilityCondition.not_defined,
+    empty: AbilityCondition.empty,
+    not_empty: AbilityCondition.not_empty,
+    starts_with: AbilityCondition.starts_with,
+    ends_with: AbilityCondition.ends_with,
+    contains_all: AbilityCondition.contains_all,
+    contains_any: AbilityCondition.contains_any,
   };
 
   const value = map[literal];
@@ -134,10 +158,22 @@ export function toLiteral(cond: AbilityConditionType): AbilityConditionLiteral {
       return 'never';
     case AbilityCondition.defined:
       return 'defined';
-      case AbilityCondition.not_defined:
-        return 'not_defined';
-      default:
-        return 'never';
+    case AbilityCondition.not_defined:
+      return 'not_defined';
+    case AbilityCondition.empty:
+      return 'empty';
+    case AbilityCondition.not_empty:
+      return 'not_empty';
+    case AbilityCondition.starts_with:
+      return 'starts_with';
+    case AbilityCondition.ends_with:
+      return 'ends_with';
+    case AbilityCondition.contains_all:
+      return 'contains_all';
+    case AbilityCondition.contains_any:
+      return 'contains_any';
+    default:
+      return 'never';
   }
 }
 

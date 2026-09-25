@@ -92,26 +92,6 @@ export class AbilityDSLTokenStream {
   }
 
   public syntaxError(details: string, token: AbilityDSLToken, expected?: TokenType[]): never {
-    const lines = this.dsl.split(/\r?\n/);
-    const lineIdx = token.line - 1;
-    const lineBefore = lineIdx > 0 ? lines[lineIdx - 1] : '';
-    const current = lines[lineIdx];
-    const linesAfter = lineIdx + 1 < lines.length ? lines[lineIdx + 1] : '';
-    const wave = ' '.repeat(Math.max(0, token.column - 1)) + '~'.repeat(token.value.length);
-
-    const lineNumWidth = String(token.line + 1).length;
-    const num = (n: number) => String(n).padStart(lineNumWidth, ' ');
-
-    let context = '';
-    if (lineBefore.trim() !== '') {
-      context += `${num(token.line - 1)} | ${lineBefore}\n`;
-    }
-    context += `${num(token.line)} | ${current}\n`;
-    context += `${' '.repeat(lineNumWidth)} | ${wave}\n`;
-    if (linesAfter.trim() !== '') {
-      context += `${num(token.line + 1)} | ${linesAfter}`;
-    }
-
     let finalDetails = details;
 
     if (expected && expected?.length > 0) {
@@ -121,14 +101,19 @@ export class AbilityDSLTokenStream {
       finalDetails = suggestion ? `${detailsMsg} Did you mean \`${suggestion}\`?` : detailsMsg;
     }
 
-    throw new AbilityDSLSyntaxError(token.line, token.column, context + '\n', finalDetails);
+    throw AbilityDSLSyntaxError.fromPosition(
+      this.dsl,
+      token.line,
+      token.column,
+      token.value.length,
+      finalDetails,
+    );
   }
 
-  private suggest(actual: string, expectedTypes: TokenType[]): string | null {
-    const candidates: string[] = [];
-    for (const type of expectedTypes) {
-      candidates.push(type);
-    }
+  /**
+   * Returns the most similar candidate (Levenshtein distance < 3) or null
+   */
+  public suggest(actual: string, candidates: readonly string[]): string | null {
     const uniqueCandidates = [...new Set(candidates)];
     let best: string | null = null;
     let bestDist = 3;

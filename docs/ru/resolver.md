@@ -48,7 +48,7 @@ AbilityResolver работает в двух режимах (два метода
 Вы можете создать один или несколько резолверов, но не стоит создавать его каждый раз перед проверкой прав доступа.
 Лучше определить резолвер один раз и экспортировать уже его инстанс.
 
-Резолвер должен получить на вход массив политик (`AbilityPolicy[]`) и ссылку на класс стратегии. В пакете уже есть 9
+Резолвер должен получить на вход массив политик (`AbilityPolicy[]`) и ссылку на класс стратегии. В пакете уже есть 8
 стратегий, которые можно использовать. Если этого мало, то создавайте свои - [подробнее про стратегии](./strategies.md).
 
 Каждая политика - это класс `AbilityPolicy`, который содержит в себе группы правил и сами правила. Так как описывать
@@ -339,7 +339,7 @@ module.exports = AbilityWatchPlugin;
 
 Теперь непосредственно создание самого резолвера.
 
-На данном этапе у нас есть сгенерированные типы (`./ability/ability-types.ts`), dsl файлы c политиками (
+На данном этапе у нас есть сгенерированные типы (`./ability/ability.types.ts`), dsl файлы c политиками (
 `./ability/orders.dsl`, `./ability/users.dsl` и тп.).
 
 Реализация файла `./ability/index.ts`, который будет содержать в себе сам резолвер.
@@ -382,8 +382,8 @@ const policies = new AbilityDSLParser<Resources, Environment, PolicyTags>(fullDS
 // Создаем инстанс резолвера
 // Вторым аргументом передаем ссылку на класс стратегии
 // Третий аргумент - опции, среди которых есть onDeny.
-// onDeny - это коллбэк, который будет вызван всякий раз
-// когда резолвер вернет deny.
+// onDeny - это коллбэк, который будет вызван всякий раз,
+// когда enforce получит deny (в режиме resolve он не вызывается).
 export const abilityResolver = new AbilityResolver(policies, DenyOverridesStrategy, {
   onDeny: res => {
 
@@ -417,8 +417,8 @@ export const abilityResolver = new AbilityResolver(policies, DenyOverridesStrate
 
 Метод проверки `enforce` принимает первым аргументом ключ разрешения без префикса `permission.`. Вторым аргументом нужно
 передать проверяемый субъект (в данном случае - заявка). Так как ключ разрешения `orders.read` описан только в одной
-политике (см. пример выше) и в этой политике есть проверки статуса и поля author, то передавать нужно объект содержащий
-эти поля. Данные всей заявки передавать не обязательно.
+политике (см. пример выше) и в этой политике есть проверки полей `order.author` и `user.id`, то передавать нужно объект,
+содержащий эти поля. Данные всей заявки передавать не обязательно.
 
 Например:
 
@@ -443,7 +443,7 @@ const Mutation = new GraphQLObjectType<unknown, unknown>({
         // вторым передаем объект с проверяемым ресурсом (заявка)
         // третьим передаем данные окружения (все что не статично:
         // время, ip адрес, часовой пояс и пр.)
-        abilityResolver.enforce('orders.read', { order }, {
+        abilityResolver.enforce('orders.read', { order, user }, {
           hour: new Date().getHours()
         });
 
@@ -462,11 +462,11 @@ const Mutation = new GraphQLObjectType<unknown, unknown>({
 ```ts
 const order = await db.getOrder(id);
 // Ручная проверка (resolve режим)
-const result = abilityResolver.resolve('orders.read', { order }, {
+const result = abilityResolver.resolve('orders.read', { order, user }, {
   hour: new Date().getHours()
 });
 
-if (result.isDeny()) {
+if (result.isDenied()) {
   // Сами решаете, что делать
   console.log('Доступ запрещен:', result.decisive()?.name);
   return null;
@@ -515,6 +515,9 @@ return order;
 | `onDeny`  | `(result: AbilityResult) => void` | Коллбэк, вызываемый перед выбрасыванием исключения. Получает инстанс `AbilityResult` с деталями проверки. |
 | `onAllow` | `(result: AbilityResult) => void` | Коллбэк, вызываемый при успешной проверке доступа. Получает инстанс `AbilityResult` с деталями проверки.  |
 
+Коллбэки из `EnforceOptions` вызываются **раньше** одноимённых коллбэков из опций резолвера. Если глобальный
+`onDeny` выбрасывает свою ошибку, локальный `onDeny` уже успеет отработать.
+
 ---
 
 ### Методы `AbilityResult`
@@ -525,6 +528,8 @@ return order;
 |---------------------|----------------------------|--------------------------------------------------------------------------------------------------------|
 | `explain()`         | `string`                   | Алиас `explainToString()`, сохранённый для обратной совместимости.                                      |
 | `explainToString()` | `string`                   | Возвращает текстовое объяснение с результатом проверки и деревьями всех участвовавших политик.         |
+| `isAllowed()`       | `boolean`                  | `true`, если итоговый эффект — `permit`.                                                               |
+| `isDenied()`        | `boolean`                  | `true`, если итоговый эффект — `deny`.                                                                 |
 | `explainToJSON()`   | `AbilityResultExplainJSON` | Возвращает типизированный объект с `permission`, итоговым `effect` и JSON-представлениями политик.    |
 | `decisive()`        | `AbilityPolicy \| null`    | Возвращает политику, которая определила итог стратегии, если её удалось определить.                   |
 | `explainDecisive()` | `string \| null`           | Возвращает текстовое объяснение решающей политики.                                                     |
@@ -534,7 +539,7 @@ return order;
 ```ts
 abilityResolver.enforce(
   'orders.read',
-  { order },
+  { order, user },
   { hour: new Date().getHours() },
   {
     onDeny: result => {
@@ -544,6 +549,17 @@ abilityResolver.enforce(
   },
 );
 ```
+
+Объяснение строится по состоянию политик на момент проверки: его можно получить и позже, даже после следующих вызовов
+`resolve()`/`enforce()`. Статусы в объяснении:
+
+| Статус       | Значение                                                              |
+|--------------|-----------------------------------------------------------------------|
+| `MATCH ✓`    | условие выполнено                                                     |
+| `MISMATCH ✗` | условие не выполнено                                                  |
+| `EXCEPT ✗`   | основная часть политики выполнена, но её отменил блок `except`        |
+| `DISABLED ⊘` | элемент отключён (`@disabled`) или в группе нет активных правил       |
+| `SKIPPED …`  | элемент не проверялся, потому что результат уже был известен раньше   |
 
 Результат `explainToJSON()` имеет следующий вид:
 
@@ -563,7 +579,7 @@ type AbilityResultExplainJSON = {
 
 ```ts
 // Ручная проверка доступа
-const result = abilityResolver.resolve('orders.read', { order }, {
+const result = abilityResolver.resolve('orders.read', { order, user }, {
   hour: new Date().getHours()
 });
 
@@ -581,7 +597,7 @@ return order;
 
 ```ts
 // Автоматическая проверка с выбрасыванием исключения
-abilityResolver.enforce('orders.read', { order }, {
+abilityResolver.enforce('orders.read', { order, user }, {
   hour: new Date().getHours()
 });
 
@@ -593,7 +609,7 @@ return order;
 
 ```ts
 // Автоматическая проверка с кастомной логикой при запрете
-abilityResolver.enforce('orders.read', { order }, {
+abilityResolver.enforce('orders.read', { order, user }, {
   hour: new Date().getHours()
 }, {
   onDeny: (result) => {
@@ -648,8 +664,12 @@ class AbilityResolver<P extends AbilityPolicy = AbilityPolicy> {
 | Опция     | Тип                               | Описание                                                                                                          |
 |-----------|-----------------------------------|-------------------------------------------------------------------------------------------------------------------|
 | `tags`    | `readonly TTags[]`                | Фильтр политик по тегам. Учитываются только политики с указанными тегами. Политики без тегов используются всегда. |
-| `onDeny`  | `(result: AbilityResult) => void` | Коллбэк, вызываемый при каждом `deny`. Получает инстанс `AbilityResult`.                                          |
-| `onAllow` | `(result: AbilityResult) => void` | Коллбэк, вызываемый при каждом `permit`. Получает инстанс `AbilityResult`.                                        |
+| `onDeny`  | `(result: AbilityResult) => void` | Коллбэк, вызываемый при каждом `deny` в `enforce`. Получает инстанс `AbilityResult`.                              |
+| `onAllow` | `(result: AbilityResult) => void` | Коллбэк, вызываемый при каждом `permit` в `enforce`. Получает инстанс `AbilityResult`.                            |
+
+> [!NOTE]
+> Метод `resolve` не вызывает `onDeny`/`onAllow`: он только возвращает `AbilityResult`. Поэтому `resolve` можно
+> безопасно использовать, например, в React-хуках, даже если глобальный `onDeny` выбрасывает ошибку.
 
 ### Теги
 
@@ -692,20 +712,9 @@ export const userResolver = new AbilityResolver(policies, DenyOverridesStrategy,
 export const fullResolver = new AbilityResolver(policies, DenyOverridesStrategy);
 ```
 
-Или использовать теги для выборочной проверки в рантайме:
-
-```ts
-// Проверка только с тегами ['admin'] без создания отдельного резолвера
-const result = abilityResolver.resolve('users.delete', { user }, {
-  hour: new Date().getHours()
-}, {
-  tags: ['admin'] // Переопределяем теги для конкретной проверки
-});
-```
-
 > [!NOTE]
-> Теги указываются в конструкторе резолвера и могут быть переопределены при вызове методов enforce или resolve через
-> параметр options.
+> Теги задаются только в конструкторе резолвера. Для другого набора тегов создайте отдельный резолвер — это дёшево,
+> политики при этом не копируются.
 
 > [!IMPORTANT]
 > Если политика не имеет тегов, она будет использоваться ВСЕГДА, независимо от фильтрации по тегам.
@@ -740,5 +749,5 @@ const result = abilityResolver.resolve('users.delete', { user }, {
 
 ### Как использовать теги для разных ролей?
 
-Создайте отдельные резолверы с разными тегами или передавайте теги в параметрах методов `enforce`/`resolve`. Например,
-для API-эндпоинтов админа используйте резолвер с тегом `admin`, для пользовательских - с тегом `user`.
+Создайте отдельные резолверы с разными тегами. Например, для API-эндпоинтов админа используйте резолвер с тегом
+`admin`, для пользовательских — с тегом `user`.

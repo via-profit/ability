@@ -211,6 +211,12 @@ export const abilityResolver = new AbilityResolver(policies, DenyOverridesStrate
 export type { Resources, Environment, PolicyTags };
 ```
 
+> [!IMPORTANT]
+> JSON-политики нужно генерировать и разбирать одной и той же версией пакета. В JSON правила хранят признак
+> `resourceType` (литерал или путь), а группы — признак `isExcept`. После обновления пакета заново сгенерируйте
+> `policies.json` на сервере. JSON старого формата без `resourceType` читается по прежнему правилу: строка с точкой
+> считается путём.
+
 ---
 
 ## Интеграция с React
@@ -292,13 +298,9 @@ export type AbilityGateProps<P extends Permission> = {
  * Компонент для условного рендеринга на основе прав доступа
 */
 
-const AbilityGate = <P extends Permission>(props: Props<P>) => {
+export const AbilityGate = <P extends Permission>(props: AbilityGateProps<P>) => {
   const { permission, resource, env, children, fallback } = props;
   const { isAllowed } = useAbility(permission, resource, env);
-
-  if (isAllowed === null) {
-    return null;
-  }
 
   if (isAllowed) {
     return <>{children}</>;

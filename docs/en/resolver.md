@@ -40,7 +40,7 @@ Prefer using it whenever possible. In this mode, the resolver checks access and 
 
 You can create one or more resolvers, but do not create one before every permission check. It is better to define a resolver once and export its instance.
 
-The resolver receives an array of policies (`AbilityPolicy[]`) and a reference to a strategy class. The package already provides 9 strategies. If they are not enough, create your own — see [more about strategies](./strategies.md).
+The resolver receives an array of policies (`AbilityPolicy[]`) and a reference to a strategy class. The package already provides 8 strategies. If they are not enough, create your own — see [more about strategies](./strategies.md).
 
 Each policy is an `AbilityPolicy` class containing rule groups and rules. Describing policies as classes is inconvenient (though possible), so the package supports a simple [DSL](./dsl.md) for describing rules, groups, and policies as text.
 
@@ -295,7 +295,7 @@ module.exports = AbilityWatchPlugin;
 
 ## Creating a resolver
 
-At this point, you have generated types (`./ability/ability-types.ts`) and DSL policy files (`./ability/orders.dsl`, `./ability/users.dsl`, and so on).
+At this point, you have generated types (`./ability/ability.types.ts`) and DSL policy files (`./ability/orders.dsl`, `./ability/users.dsl`, and so on).
 
 Implement `./ability/index.ts` to contain the resolver itself.
 
@@ -337,7 +337,7 @@ const policies = new AbilityDSLParser<Resources, Environment, PolicyTags>(fullDS
 // Create the resolver instance
 // Pass a strategy class as the second argument
 // The third argument contains options, including onDeny.
-// onDeny is called whenever the resolver returns deny.
+// onDeny is called whenever enforce gets deny (it is not called in resolve mode).
 export const abilityResolver = new AbilityResolver(policies, DenyOverridesStrategy, {
   onDeny: res => {
     // Get the policy that returned deny so its name
@@ -364,7 +364,7 @@ export const abilityResolver = new AbilityResolver(policies, DenyOverridesStrate
 
 With the resolver and types in place, you can check permissions wherever needed.
 
-The `enforce` method takes a permission key without the `permission.` prefix as its first argument. Its second argument is the subject being checked (an order in this example). Because `orders.read` is described in one policy above and that policy checks the status and author fields, the object only needs to contain those fields; you do not need to pass the entire order.
+The `enforce` method takes a permission key without the `permission.` prefix as its first argument. Its second argument is the subject being checked (an order in this example). Because `orders.read` is described in one policy above and that policy checks the `order.author` and `user.id` fields, the object only needs to contain those fields; you do not need to pass the entire order.
 
 For example:
 
@@ -389,7 +389,7 @@ const Mutation = new GraphQLObjectType<unknown, unknown>({
         // Pass the resource (order) as the second argument
         // Pass environment data as the third argument (anything dynamic:
         // time, IP address, time zone, and so on)
-        abilityResolver.enforce('orders.read', { order }, {
+        abilityResolver.enforce('orders.read', { order, user }, {
           hour: new Date().getHours()
         });
 
@@ -407,11 +407,11 @@ Example for `resolve` mode:
 ```ts
 const order = await db.getOrder(id);
 // Manual check (resolve mode)
-const result = abilityResolver.resolve('orders.read', { order }, {
+const result = abilityResolver.resolve('orders.read', { order, user }, {
   hour: new Date().getHours()
 });
 
-if (result.isDeny()) {
+if (result.isDenied()) {
   // Decide what to do yourself
   console.log('Access denied:', result.decisive()?.name);
   return null;
@@ -456,6 +456,8 @@ return order;
 | `onDeny` | `(result: AbilityResult) => void` | Callback invoked before an exception is thrown. Receives an `AbilityResult` with check details. |
 | `onAllow` | `(result: AbilityResult) => void` | Callback invoked after a successful check. Receives an `AbilityResult` with check details. |
 
+Callbacks from `EnforceOptions` are called **before** the callbacks with the same name from the resolver options. If the global `onDeny` throws its own error, the local `onDeny` has already run.
+
 ### `AbilityResult` methods
 
 The `onDeny` and `onAllow` callbacks receive an `AbilityResult`. The following methods provide an explanation of the check:
@@ -464,6 +466,8 @@ The `onDeny` and `onAllow` callbacks receive an `AbilityResult`. The following m
 |---|---|---|
 | `explain()` | `string` | Alias for `explainToString()`, retained for backward compatibility. |
 | `explainToString()` | `string` | Returns a text explanation with the result and trees of all participating policies. |
+| `isAllowed()` | `boolean` | `true` if the final effect is `permit`. |
+| `isDenied()` | `boolean` | `true` if the final effect is `deny`. |
 | `explainToJSON()` | `AbilityResultExplainJSON` | Returns a typed object with `permission`, the final `effect`, and JSON policy representations. |
 | `decisive()` | `AbilityPolicy \| null` | Returns the policy that determined the strategy's final result, when identifiable. |
 | `explainDecisive()` | `string \| null` | Returns a text explanation of the decisive policy. |
@@ -473,7 +477,7 @@ Example of using explanations in `onDeny`:
 ```ts
 abilityResolver.enforce(
   'orders.read',
-  { order },
+  { order, user },
   { hour: new Date().getHours() },
   {
     onDeny: result => {
@@ -483,6 +487,16 @@ abilityResolver.enforce(
   },
 );
 ```
+
+The explanation is built from the state of the policies at the moment of the check: it can be obtained later, even after subsequent `resolve()`/`enforce()` calls. Explanation statuses:
+
+| Status | Meaning |
+|---|---|
+| `MATCH ✓` | the condition is fulfilled |
+| `MISMATCH ✗` | the condition is not fulfilled |
+| `EXCEPT ✗` | the main part of the policy is fulfilled, but it was cancelled by the `except` block |
+| `DISABLED ⊘` | the element is disabled (`@disabled`) or the group has no active rules |
+| `SKIPPED …` | the element was not checked because the result was already known |
 
 The `explainToJSON()` result has this shape:
 
@@ -500,7 +514,7 @@ type AbilityResultExplainJSON = {
 
 ```ts
 // Manual access check
-const result = abilityResolver.resolve('orders.read', { order }, {
+const result = abilityResolver.resolve('orders.read', { order, user }, {
   hour: new Date().getHours()
 });
 
@@ -518,7 +532,7 @@ return order;
 
 ```ts
 // Automatic check that throws an exception
-abilityResolver.enforce('orders.read', { order }, {
+abilityResolver.enforce('orders.read', { order, user }, {
   hour: new Date().getHours()
 });
 
@@ -530,7 +544,7 @@ return order;
 
 ```ts
 // Automatic check with custom denial logic
-abilityResolver.enforce('orders.read', { order }, {
+abilityResolver.enforce('orders.read', { order, user }, {
   hour: new Date().getHours()
 }, {
   onDeny: (result) => {
@@ -584,8 +598,11 @@ class AbilityResolver<P extends AbilityPolicy = AbilityPolicy> {
 | Option | Type | Description |
 |---|---|---|
 | `tags` | `readonly TTags[]` | Filter policies by tags. Only policies with the specified tags are considered. Untagged policies are always used. |
-| `onDeny` | `(result: AbilityResult) => void` | Callback invoked for every `deny`. Receives an `AbilityResult`. |
-| `onAllow` | `(result: AbilityResult) => void` | Callback invoked for every `permit`. Receives an `AbilityResult`. |
+| `onDeny` | `(result: AbilityResult) => void` | Callback invoked for every `deny` in `enforce`. Receives an `AbilityResult`. |
+| `onAllow` | `(result: AbilityResult) => void` | Callback invoked for every `permit` in `enforce`. Receives an `AbilityResult`. |
+
+> [!NOTE]
+> The `resolve` method does not call `onDeny`/`onAllow`: it only returns an `AbilityResult`. So `resolve` is safe to use, for example, in React hooks, even if the global `onDeny` throws an error.
 
 ### Tags
 
@@ -628,19 +645,8 @@ export const userResolver = new AbilityResolver(policies, DenyOverridesStrategy,
 export const fullResolver = new AbilityResolver(policies, DenyOverridesStrategy);
 ```
 
-You can also use tags for a one-off runtime check:
-
-```ts
-// Check only with ['admin'] without creating a separate resolver
-const result = abilityResolver.resolve('users.delete', { user }, {
-  hour: new Date().getHours()
-}, {
-  tags: ['admin'] // Override tags for this check
-});
-```
-
 > [!NOTE]
-> Tags are specified in the resolver constructor and can be overridden when calling `enforce` or `resolve` through the options parameter.
+> Tags are specified in the resolver constructor only. For another set of tags, create a separate resolver — it is cheap, the policies are not copied.
 
 > [!IMPORTANT]
 > A policy without tags is always used, regardless of tag filtering.
@@ -671,4 +677,4 @@ It is the standard strategy and follows the “one deny means deny” principle.
 
 ### How do I use tags for different roles?
 
-Create separate resolvers with different tags or pass tags to `enforce`/`resolve`. For example, use a resolver with the `admin` tag for administrator API endpoints and one with the `user` tag for user endpoints.
+Create separate resolvers with different tags. For example, use a resolver with the `admin` tag for administrator API endpoints and one with the `user` tag for user endpoints.

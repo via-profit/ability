@@ -163,12 +163,12 @@ describe('AbilityRule', () => {
         expect(subjectValue).toBe('John');
       });
 
-      it('should return [NaN, NaN] for null resource', () => {
+      it('should return undefined subject and literal value for null resource', () => {
         const rule = AbilityRule.equals('user.name', 'John');
         const [s, r] = rule.extractValues(null);
 
-        expect(s).toBeNaN();
-        expect(r).toBeNaN();
+        expect(s).toBeUndefined();
+        expect(r).toBe('John');
       });
     });
   });

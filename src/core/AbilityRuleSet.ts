@@ -11,6 +11,10 @@ export type AbilityRuleSetConfig = {
   readonly compareMethod: AbilityCompareType;
   readonly rules: readonly AbilityRuleConfig[];
   readonly disabled?: boolean;
+  /**
+   * The group is an except block
+   */
+  readonly isExcept?: boolean;
 };
 
 export type AbilityRuleSetConstructorProps = {
@@ -40,36 +44,68 @@ export class AbilityRuleSet<
    */
   public compareMethod: AbilityCompareType = AbilityCompare.and;
 
-  /**
-   * Group name
-   */
-  public name: string;
   public description?: string | null;
 
-  /**
-   * Group ID
-   */
-  public id: string;
-
-  readonly isExcept?: boolean = false;
+  readonly isExcept: boolean = false;
 
   public disabled: boolean;
+
+  private readonly _id: string | null;
+  private _autoId: string | null = null;
+  private _name: string | null;
 
   public constructor(params: AbilityRuleSetConstructorProps) {
     const { name, id, compareMethod, isExcept, disabled, description } = params;
 
-
     this.description = description;
     this.compareMethod = compareMethod;
-    this.isExcept = isExcept;
+    this.isExcept = isExcept === true;
     this.disabled = typeof disabled === 'boolean' ? disabled : false;
     this.state = this.disabled ? AbilityMatch.disabled : this.state;
-    this.id = id || `g_${this.hash().slice(0, 10)}`;
-    this.name = name || this.id;
+    this._id = id || null;
+    this._name = name || null;
+  }
+
+  /**
+   * Group ID.
+   * If it was not passed explicitly, it is generated from the group content
+   */
+  public get id(): string {
+    if (this._id) {
+      return this._id;
+    }
+
+    if (!this._autoId) {
+      this._autoId = `g_${this.hash().slice(0, 10)}`;
+    }
+
+    return this._autoId;
+  }
+
+  /**
+   * Group name
+   */
+  public get name(): string {
+    return this._name || this.id;
+  }
+
+  public set name(value: string | null) {
+    this._name = value;
+  }
+
+  /**
+   * Resets the evaluation state of the group and its rules
+   */
+  public reset(): void {
+    this.state = this.disabled ? AbilityMatch.disabled : AbilityMatch.pending;
+    for (const rule of this.rules) {
+      rule.reset();
+    }
   }
 
   public addRule(rule: AbilityRule<R, E>): this {
     this.rules.push(rule);
+    this._autoId = null;
 
     return this;
   }
@@ -81,16 +117,13 @@ export class AbilityRuleSet<
   }
 
   public check(resources: R | null, environment?: E): AbilityMatchType {
-    this.state = AbilityMatch.mismatch;
+    this.reset();
 
     if (this.disabled) {
-      this.state = AbilityMatch.disabled;
       return this.state;
     }
 
-    if (!this.rules.length) {
-      return this.state;
-    }
+    this.state = AbilityMatch.mismatch;
 
     const ruleCheckStates: AbilityMatchType[] = [];
 
@@ -110,6 +143,12 @@ export class AbilityRuleSet<
         this.state = AbilityMatch.match;
         return this.state;
       }
+    }
+
+    // There are no active rules in the group - the group does not participate in the check
+    if (!ruleCheckStates.length) {
+      this.state = AbilityMatch.disabled;
+      return this.state;
     }
 
     if (AbilityCompare.and === this.compareMethod) {
@@ -138,13 +177,17 @@ export class AbilityRuleSet<
       description: string | null;
       compareMethod: AbilityCompareType;
       rules: AbilityRule<R, E>[];
+      isExcept: boolean;
+      disabled: boolean;
     }>,
   ): AbilityRuleSet<R, E> {
     const next = new AbilityRuleSet<R, E>({
-      id: props.id ?? this.id,
-      name: props.name ?? this.name,
-      description: props.description ?? this.description,
+      id: props.id !== undefined ? props.id : this._id,
+      name: props.name !== undefined ? props.name : this._name,
+      description: props.description !== undefined ? props.description : this.description,
       compareMethod: props.compareMethod ?? this.compareMethod,
+      isExcept: props.isExcept ?? this.isExcept,
+      disabled: props.disabled ?? this.disabled,
     });
 
     const nextRules = props.rules ?? this.rules;

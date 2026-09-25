@@ -120,12 +120,14 @@ export type PolicyTags = "admin" | "moderator" | "user";
 import { AbilityDSLParser, AbilityResolver, DenyOverridesStrategy } from '@via-profit/ability';
 import type { Resources, Environment, PolicyTags } from './ability.types';
 
-// DSL с типизацией
+// DSL
 const dsl = `
   @name "Чтение документов"
   permit permission.document.read if all:
     document.ownerId equals user.id
     document.status in ["published", "archived"]
+    document.views greater than 10
+    env.time.hour less than 18
 `;
 
 // Парсим DSL с типизацией
@@ -137,29 +139,41 @@ const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 // Используем с автодополнением и проверкой типов
 resolver.enforce('document.read', {
   document: {
-    ownerId: 'user-123', // ✅ string
-    status: 'published'   // ✅ "published" | "archived"
-  }
+    ownerId: 'user-123', // ✅ unknown (справа путь, поэтому тип не выводится)
+    status: 'published', // ✅ string
+    views: 42,           // ✅ number
+  },
+  user: { id: 'user-123' },
 }, {
-  time: {
-    hour: 14,   // ✅ number
-    minute: 30  // ✅ number
-  }
+  time: { hour: 14 },    // ✅ number
 });
 
-// ❌ Ошибка компиляции: ownerId должен быть строкой
+// ❌ Ошибка компиляции: views должен быть числом
 resolver.enforce('document.read', {
   document: {
-    ownerId: 22, // ❌ Type error. Number is not a string'
-    status: 'archived' 
-  }
+    status: 'archived',
+    views: '42', // ❌ Type error: string is not assignable to number
+  },
+  user: { id: 'user-123' },
 }, {
-  time: {
-    hour: 14,
-    minute: 30
-  }
+  time: { hour: 14 },
 });
 ```
+
+Как выводятся типы:
+
+| Правило                                           | Тип поля                            |
+|---------------------------------------------------|-------------------------------------|
+| `equals` / `not equals` с литералом               | тип литерала (`string`, `number`…)  |
+| `in` / `not in` с массивом                        | тип элементов массива               |
+| `>`, `<`, `>=`, `<=`                              | `number`                            |
+| `contains`, `contains all`, `contains any`        | массив типа значения                |
+| `length …`, `is empty`, `is not empty`            | `string \| readonly unknown[]`      |
+| `starts with`, `ends with`                        | `string`                            |
+| справа путь (`user.id`, `env.ip`)                 | `unknown` для обеих сторон          |
+
+Поля из политик с wildcard-ключом (`order.*`, `*.create`) добавляются в типы всех подходящих конкретных ключей
+(`order.update`, `order.create`), потому что резолвер проверяет эти политики вместе.
 
 ---
 
@@ -179,7 +193,7 @@ const policies = ability<Resources, Environment, PolicyTags>`
     env.time.hour less than 18
 
   @name "Администрирование"
-  @tags ["admin"]
+  @tags admin
   permit permission.orders.* if all:
     user.role equals "admin"
 `;

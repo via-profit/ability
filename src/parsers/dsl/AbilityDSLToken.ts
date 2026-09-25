@@ -30,6 +30,12 @@ export type TokenTypeCode =
   | 'LEN_GT'
   | 'LEN_LT'
   | 'LEN_EQ'
+  | 'EMPTY'
+  | 'NOT_EMPTY'
+  | 'STARTS_WITH'
+  | 'ENDS_WITH'
+  | 'CONTAINS_ALL'
+  | 'CONTAINS_ANY'
   | 'ALWAYS'
   | 'NEVER'
   | 'EXCEPT'
@@ -81,6 +87,12 @@ export const TokenTypes = {
   LEN_GT: brand('LEN_GT'),
   LEN_LT: brand('LEN_LT'),
   LEN_EQ: brand('LEN_EQ'),
+  EMPTY: brand('EMPTY'),
+  NOT_EMPTY: brand('NOT_EMPTY'),
+  STARTS_WITH: brand('STARTS_WITH'),
+  ENDS_WITH: brand('ENDS_WITH'),
+  CONTAINS_ALL: brand('CONTAINS_ALL'),
+  CONTAINS_ANY: brand('CONTAINS_ANY'),
   ALWAYS: brand('ALWAYS'),
   NEVER: brand('NEVER'),
   EXCEPT: brand('EXCEPT'),

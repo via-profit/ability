@@ -2,18 +2,31 @@
   "name": "@via-profit/ability",
   "support": "https://via-profit.ru",
   "version": "3.7.7",
-  "description": "Via-Profit Ability service",
+  "description": "Lightweight ABAC engine with DSL, TypeScript types generation and zero dependencies",
   "keywords": [
     "ability",
     "access",
+    "access-control",
+    "abac",
+    "permissions",
+    "policy",
+    "dsl",
     "via-profit"
   ],
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "exports": {
-    "import": "./dist/index.js",
-    "require": "./dist/index.cjs"
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
   },
   "types": "./dist/index.d.ts",
   "engines": {
@@ -51,8 +64,6 @@
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@jagi/jest-transform-graphql": "^1.0.2",
-    "@jest/types": "^30.3.0",
     "@rollup/plugin-alias": "^6.0.0",
     "@rollup/plugin-commonjs": "^29.0.2",
     "@rollup/plugin-node-resolve": "^16.0.3",
@@ -60,23 +71,17 @@
     "@rollup/plugin-typescript": "^12.3.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.5.0",
-    "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "eslint": "^10.1.0",
     "eslint-plugin-jest": "^29.15.1",
     "globals": "^17.4.0",
     "jest": "^30.3.0",
-    "jest-transform-graphql": "^2.1.0",
-    "nodemon": "^3.1.14",
     "prettier": "^3.8.1",
     "rollup": "^4.60.1",
-    "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-dts": "^6.4.1",
     "tinybench": "^6.0.0",
     "ts-jest": "^29.4.9",
-    "ts-loader": "^9.5.4",
-    "ts-node": "^10.9.2",
-    "typescript": "^6.0.2",
-    "typescript-eslint": "^8.58.0"
+    "tslib": "^2.8.1",
+    "typescript": "^6.0.2"
   }
 }

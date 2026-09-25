@@ -87,8 +87,8 @@ export class AbilityTypeGenerator {
           // -----------------------------
           // RESOURCE PATH HANDLING (right side)
           // -----------------------------
-          if (typeof rule.resource === 'string' && this.isPath(rule.resource)) {
-            const resourcePath = rule.resource;
+          if (rule.isResourcePath()) {
+            const resourcePath = rule.resource as string;
 
             // env.* справа
             if (resourcePath.startsWith('env.')) {
@@ -126,6 +126,11 @@ export class AbilityTypeGenerator {
       });
     });
 
+    // The policies with wildcard (`order.*`, `*.create`) are checked together
+    // with the concrete permissions, so their fields are merged into them
+    this.mergeWildcardFields(resorceStructure);
+    this.mergeWildcardFields(environmentStructure);
+
     const filteredStructure: Record<string, Record<string, string>> = {};
     Object.entries(resorceStructure).forEach(([action, fields]) => {
       if (!action.endsWith('.*')) {
@@ -140,16 +145,42 @@ export class AbilityTypeGenerator {
     return this.formatTypeDefinitions(nestedStructure, nestedEnvironment, allTags);
   }
 
-  private isPath(value: unknown): boolean {
-    if (typeof value !== 'string') {
-      return false;
+  /**
+   * Merges the fields of wildcard permissions into the matching concrete permissions
+   */
+  private mergeWildcardFields(structure: Record<string, Record<string, string>>): void {
+    const actions = Object.keys(structure);
+    const wildcards = actions.filter(action => action.split('.').includes('*'));
+
+    if (!wildcards.length) {
+      return;
     }
 
-    if (value.startsWith('"') || value.startsWith("'")) {
-      return false;
+    actions
+      .filter(action => !action.split('.').includes('*'))
+      .forEach(action => {
+        const actionSegments = AbilityResolver.normalizePermission(action).split('.');
+
+        wildcards.forEach(wildcard => {
+          const wildcardSegments = AbilityResolver.normalizePermission(wildcard).split('.');
+
+          if (!AbilityResolver.matchPermissions(wildcardSegments, actionSegments)) {
+            return;
+          }
+
+          Object.entries(structure[wildcard]).forEach(([path, type]) => {
+            structure[action][path] = this.mergeTypes(structure[action][path], type);
+          });
+        });
+      });
+  }
+
+  private mergeTypes(existing: string | undefined, next: string): string {
+    if (!existing || existing === next) {
+      return next;
     }
 
-    return value.includes('.');
+    return `${existing} | ${next}`;
   }
 
   /**
@@ -164,17 +195,28 @@ export class AbilityTypeGenerator {
 
     if (
       rule.condition === AbilityCondition.contains ||
-      rule.condition === AbilityCondition.not_contains
+      rule.condition === AbilityCondition.not_contains ||
+      rule.condition === AbilityCondition.contains_all ||
+      rule.condition === AbilityCondition.contains_any
     ) {
-      return this.getArrayType(rule.resource);
+      return this.getArrayType(rule.isResourcePath() ? undefined : rule.resource);
     }
 
     if (
       rule.condition === AbilityCondition.length_equals ||
       rule.condition === AbilityCondition.length_greater_than ||
-      rule.condition === AbilityCondition.length_less_than
+      rule.condition === AbilityCondition.length_less_than ||
+      rule.condition === AbilityCondition.empty ||
+      rule.condition === AbilityCondition.not_empty
     ) {
       return 'string | readonly unknown[]';
+    }
+
+    if (
+      rule.condition === AbilityCondition.starts_with ||
+      rule.condition === AbilityCondition.ends_with
+    ) {
+      return 'string';
     }
 
     // Numeric comparisons - always number
@@ -189,7 +231,7 @@ export class AbilityTypeGenerator {
 
     // Array operations
     if (rule.condition === AbilityCondition.in || rule.condition === AbilityCondition.not_in) {
-      return this.getInArrayType(rule.resource);
+      return rule.isResourcePath() ? 'unknown' : this.getInArrayType(rule.resource);
     }
 
     // Equality/Inequality operations
@@ -197,7 +239,7 @@ export class AbilityTypeGenerator {
       rule.condition === AbilityCondition.equals ||
       rule.condition === AbilityCondition.not_equals
     ) {
-      return this.getPrimitiveType(rule.resource);
+      return rule.isResourcePath() ? 'unknown' : this.getPrimitiveType(rule.resource);
     }
 
     return 'any';
@@ -242,11 +284,6 @@ export class AbilityTypeGenerator {
       return 'null | unknown';
     }
     if (value === undefined) {
-      return 'undefined';
-    }
-
-    if (typeof value === 'string' && this.isPath(value)) {
-      // This is not a string literal, but a path to another field.
       return 'unknown';
     }
 

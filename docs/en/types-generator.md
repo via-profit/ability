@@ -116,12 +116,14 @@ After generating types, you can use them with `AbilityDSLParser` and `AbilityRes
 import { AbilityDSLParser, AbilityResolver, DenyOverridesStrategy } from '@via-profit/ability';
 import type { Resources, Environment, PolicyTags } from './ability.types';
 
-// Typed DSL
+// DSL
 const dsl = `
   @name "Reading documents"
   permit permission.document.read if all:
     document.ownerId equals user.id
     document.status in ["published", "archived"]
+    document.views greater than 10
+    env.time.hour less than 18
 `;
 
 // Parse typed DSL
@@ -133,29 +135,40 @@ const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 // Use autocomplete and type checking
 resolver.enforce('document.read', {
   document: {
-    ownerId: 'user-123', // ✅ string
-    status: 'published'   // ✅ "published" | "archived"
-  }
+    ownerId: 'user-123', // ✅ unknown (the right side is a path, so the type is not derived)
+    status: 'published', // ✅ string
+    views: 42,           // ✅ number
+  },
+  user: { id: 'user-123' },
 }, {
-  time: {
-    hour: 14,   // ✅ number
-    minute: 30  // ✅ number
-  }
+  time: { hour: 14 },    // ✅ number
 });
 
-// ❌ Compilation error: ownerId must be a string
+// ❌ Compilation error: views must be a number
 resolver.enforce('document.read', {
   document: {
-    ownerId: 22, // ❌ Type error. Number is not a string'
-    status: 'archived'
-  }
+    status: 'archived',
+    views: '42', // ❌ Type error: string is not assignable to number
+  },
+  user: { id: 'user-123' },
 }, {
-  time: {
-    hour: 14,
-    minute: 30
-  }
+  time: { hour: 14 },
 });
 ```
+
+How types are derived:
+
+| Rule | Field type |
+|---|---|
+| `equals` / `not equals` with a literal | the literal type (`string`, `number`…) |
+| `in` / `not in` with an array | the type of the array items |
+| `>`, `<`, `>=`, `<=` | `number` |
+| `contains`, `contains all`, `contains any` | an array of the value type |
+| `length …`, `is empty`, `is not empty` | `string \| readonly unknown[]` |
+| `starts with`, `ends with` | `string` |
+| a path on the right side (`user.id`, `env.ip`) | `unknown` for both sides |
+
+Fields from policies with a wildcard key (`order.*`, `*.create`) are added to the types of all matching concrete keys (`order.update`, `order.create`), because the resolver checks these policies together.
 
 ---
 
@@ -175,7 +188,7 @@ const policies = ability<Resources, Environment, PolicyTags>`
     env.time.hour less than 18
 
   @name "Administration"
-  @tags ["admin"]
+  @tags admin
   permit permission.orders.* if all:
     user.role equals "admin"
 `;

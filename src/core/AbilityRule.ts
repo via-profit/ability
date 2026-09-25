@@ -7,6 +7,13 @@ import {
 } from './AbilityCondition';
 import { AbilityHash } from '~/core/AbilityHash';
 
+/**
+ * How the right side of the rule should be interpreted:
+ * - `value` – literal value (quoted string, number, boolean, null, array)
+ * - `path` – dot-notation path to the resource or environment (`user.id`, `env.ip`)
+ */
+export type AbilityRuleResourceType = 'value' | 'path';
+
 export type AbilityRuleConfig = {
   readonly id?: string | null;
   readonly name?: string | null;
@@ -20,6 +27,12 @@ export type AbilityRuleConfig = {
    * Resource key path like a 'user.name' or value
    */
   readonly resource: string | number | boolean | null | (string | number | boolean | null)[];
+
+  /**
+   * Interpretation of the `resource` field.
+   * If omitted, a string containing a dot is treated as a path (legacy behavior)
+   */
+  readonly resourceType?: AbilityRuleResourceType;
 
   readonly condition: AbilityConditionType;
 
@@ -43,12 +56,19 @@ export class AbilityRule<Resources extends object = object, Environment extends 
    */
   public resource: AbilityRuleConfig['resource'];
 
+  /**
+   * Interpretation of the `resource` field: literal value or path
+   */
+  public resourceType: AbilityRuleResourceType;
+
   public condition: AbilityConditionType;
-  public name: string;
   public description?: string | null;
-  public id: string;
   public state: AbilityMatchType = AbilityMatch.pending;
   public disabled: boolean;
+
+  private readonly _id: string | null;
+  private _autoId: string | null = null;
+  private _name: string | null;
 
   /**
    * Creates an instance of AbilityRule.
@@ -57,20 +77,68 @@ export class AbilityRule<Resources extends object = object, Environment extends 
    * @param {AbilityCondition} params.condition - The condition to evaluate.
    * @param {string} params.subject - The subject of the rule.
    * @param {string} params.resource - The resource to compare against.
+   * @param {string} params.resourceType - The resource interpretation (value or path).
    * @param {boolean} params.disabled - Disabling flag.
    * @param params
    */
   public constructor(params: AbilityRuleConstructorProps) {
-    const { id, name, subject, resource, condition, disabled, description } = params;
+    const { id, name, subject, resource, resourceType, condition, disabled, description } = params;
     this.description = description;
     this.disabled = typeof disabled === 'boolean' ? disabled : false;
     this.subject = subject;
     this.resource = resource;
+    this.resourceType = resourceType ?? AbilityRule.inferResourceType(resource);
     this.condition = condition;
     this.state = this.disabled ? AbilityMatch.disabled : this.state;
+    this._id = id || null;
+    this._name = name || null;
+  }
 
-    this.id = id || `r_${this.hash().slice(0, 10)}`;
-    this.name = name || this.id;
+  /**
+   * Unique identifier of the rule.
+   * If it was not passed explicitly, it is generated from the rule content
+   */
+  public get id(): string {
+    if (this._id) {
+      return this._id;
+    }
+
+    if (!this._autoId) {
+      this._autoId = `r_${this.hash().slice(0, 10)}`;
+    }
+
+    return this._autoId;
+  }
+
+  public get name(): string {
+    return this._name || this.id;
+  }
+
+  public set name(value: string | null) {
+    this._name = value;
+  }
+
+  /**
+   * Legacy interpretation of the resource: a string containing a dot is a path
+   */
+  public static inferResourceType(
+    resource: AbilityRuleConfig['resource'],
+  ): AbilityRuleResourceType {
+    return typeof resource === 'string' && resource.includes('.') ? 'path' : 'value';
+  }
+
+  /**
+   * Returns true if the resource of this rule is a path to the resource or environment
+   */
+  public isResourcePath(): boolean {
+    return this.resourceType === 'path' && typeof this.resource === 'string';
+  }
+
+  /**
+   * Resets the evaluation state of the rule
+   */
+  public reset(): void {
+    this.state = this.disabled ? AbilityMatch.disabled : AbilityMatch.pending;
   }
 
   public static isPrimitive(v: unknown): v is string | number | boolean | null {
@@ -190,6 +258,43 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       }
       return false;
     },
+    [toLiteral(AbilityCondition.empty)]: (a: unknown) => {
+      return AbilityRule.valueLen(a) === 0;
+    },
+    [toLiteral(AbilityCondition.not_empty)]: (a: unknown) => {
+      const len = AbilityRule.valueLen(a);
+      return len !== null && len > 0;
+    },
+    [toLiteral(AbilityCondition.starts_with)]: (a: unknown, b: unknown) => {
+      return AbilityRule.isString(a) && AbilityRule.isString(b) ? a.startsWith(b) : false;
+    },
+    [toLiteral(AbilityCondition.ends_with)]: (a: unknown, b: unknown) => {
+      return AbilityRule.isString(a) && AbilityRule.isString(b) ? a.endsWith(b) : false;
+    },
+    [toLiteral(AbilityCondition.contains_all)]: (a: unknown, b: unknown) => {
+      if (!Array.isArray(a)) {
+        return false;
+      }
+      if (AbilityRule.isPrimitive(b)) {
+        return a.includes(b);
+      }
+      if (Array.isArray(b)) {
+        return b.length > 0 && b.every(v => a.includes(v));
+      }
+      return false;
+    },
+    [toLiteral(AbilityCondition.contains_any)]: (a: unknown, b: unknown) => {
+      if (!Array.isArray(a)) {
+        return false;
+      }
+      if (AbilityRule.isPrimitive(b)) {
+        return a.includes(b);
+      }
+      if (Array.isArray(b)) {
+        return b.some(v => a.includes(v));
+      }
+      return false;
+    },
   } as {
     [K in AbilityConditionLiteral]: (a: unknown, b: unknown) => boolean;
   };
@@ -223,55 +328,32 @@ export class AbilityRule<Resources extends object = object, Environment extends 
     resourceData: Resources | null,
     environment?: Environment | null,
   ): [AbilityRuleConfig['resource'] | undefined, AbilityRuleConfig['resource'] | undefined] {
-    let subjectValue;
-    let resourceValue;
+    // left side is always a path (empty for `always` / `never`)
+    const subjectValue = this.subject
+      ? this.resolvePath(this.subject, resourceData, environment)
+      : undefined;
 
-    if (
-      (resourceData === null || typeof resourceData === 'undefined') &&
-      (environment === null || typeof environment === 'undefined')
-    ) {
-      return [NaN, NaN];
-    }
-
-    // left side resolve
-    if (this.subject.includes('.')) {
-      // if is environment
-      if (this.subject.startsWith('env.') && typeof environment !== 'undefined') {
-        subjectValue = this.getDotNotationValue<AbilityRuleConfig['resource']>(
-          environment,
-          this.subject.replace(/^env\./, ''),
-        );
-        // if is resource
-      } else {
-        subjectValue = this.getDotNotationValue<AbilityRuleConfig['resource']>(
-          resourceData,
-          this.subject,
-        );
-      }
-    } else {
-      subjectValue = this.subject;
-    }
-
-    // right side resolve
-    if (typeof this.resource === 'string' && this.resource.includes('.')) {
-      // if is environment
-      if (this.resource.startsWith('env.') && typeof environment !== 'undefined') {
-        resourceValue = this.getDotNotationValue<AbilityRuleConfig['resource']>(
-          environment,
-          this.resource.replace(/^env\./, ''),
-        );
-      } else {
-        // if is resource
-        resourceValue = this.getDotNotationValue<AbilityRuleConfig['resource']>(
-          resourceData,
-          this.resource,
-        );
-      }
-    } else {
-      resourceValue = this.resource;
-    }
+    // right side is a path only if it was declared as a path
+    const resourceValue = this.isResourcePath()
+      ? this.resolvePath(this.resource as string, resourceData, environment)
+      : this.resource;
 
     return [subjectValue, resourceValue];
+  }
+
+  /**
+   * Resolve the path in the environment (prefix `env.`) or in the resource data
+   */
+  private resolvePath(
+    path: string,
+    resourceData: Resources | null,
+    environment?: Environment | null,
+  ): AbilityRuleConfig['resource'] | undefined {
+    if (path.startsWith('env.')) {
+      return this.getDotNotationValue<AbilityRuleConfig['resource']>(environment, path.slice(4));
+    }
+
+    return this.getDotNotationValue<AbilityRuleConfig['resource']>(resourceData, path);
   }
 
   private static readonly _pathCache = new Map<
@@ -339,16 +421,26 @@ export class AbilityRule<Resources extends object = object, Environment extends 
       description: string | null;
       subject: string;
       resource: AbilityRuleConfig['resource'];
+      resourceType: AbilityRuleResourceType;
       condition: AbilityConditionType;
+      disabled: boolean;
     }>,
   ): AbilityRule<Resources, Environment> {
+    const resource = props.resource !== undefined ? props.resource : this.resource;
+
     return new AbilityRule<Resources, Environment>({
-      id: props.id ?? this.id,
-      name: props.name ?? this.name,
-      description: props.description ?? this.description,
+      id: props.id !== undefined ? props.id : this._id,
+      name: props.name !== undefined ? props.name : this._name,
+      description: props.description !== undefined ? props.description : this.description,
       subject: props.subject ?? this.subject,
-      resource: props.resource ?? this.resource,
+      resource,
+      resourceType:
+        props.resourceType ??
+        (props.resource !== undefined
+          ? AbilityRule.inferResourceType(resource)
+          : this.resourceType),
       condition: props.condition ?? this.condition,
+      disabled: props.disabled ?? this.disabled,
     });
   }
 
@@ -357,6 +449,7 @@ export class AbilityRule<Resources extends object = object, Environment extends 
 
     parts.push(`subject:${this.subject}`);
     parts.push(`resource:${JSON.stringify(this.resource)}`);
+    parts.push(`resourceType:${this.resourceType}`);
     parts.push(`condition:${this.condition}`);
     parts.push(`disabled:${this.disabled}`);
 

@@ -18,21 +18,31 @@ export class AbilityJSONParser {
   public static parsePolicy<R extends ResourceObject, E extends  EnvironmentObject, T extends string = string>(
     config: AbilityPolicyConfig,
   ): AbilityPolicy<R, E, T> {
-    const { id, name, ruleSet, compareMethod, permission, effect, priority, disabled, tags } =
-      config;
+    const {
+      id,
+      name,
+      description,
+      ruleSet,
+      compareMethod,
+      permission,
+      effect,
+      priority,
+      disabled,
+      tags,
+    } = config;
 
     // Create the empty policy
     const policy = new AbilityPolicy<R, E, T>({
       name,
       id,
+      description,
       permission: permission,
       priority: priority,
       effect: effect,
+      compareMethod,
       disabled,
-      tags,
+      tags: tags as readonly T[] | undefined,
     });
-
-    policy.compareMethod = compareMethod;
 
     ruleSet.forEach(ruleSetConfig => {
       policy.addRuleSet(AbilityJSONParser.parseRuleSet<R, E>(ruleSetConfig));
@@ -44,13 +54,15 @@ export class AbilityJSONParser {
   public static parseRule<R extends ResourceObject, E extends  EnvironmentObject>(
     config: AbilityRuleConfig,
   ): AbilityRule<R, E> {
-    const { id, name, subject, resource, condition, disabled } = config;
+    const { id, name, description, subject, resource, resourceType, condition, disabled } = config;
 
     return new AbilityRule<R, E>({
       id,
       name,
+      description,
       subject,
       resource,
+      resourceType,
       disabled,
       condition,
     });
@@ -62,13 +74,15 @@ export class AbilityJSONParser {
   public static parseRuleSet<R extends ResourceObject, E extends  EnvironmentObject>(
     config: AbilityRuleSetConfig,
   ): AbilityRuleSet<R, E> {
-    const { id, name, rules, compareMethod, disabled } = config;
+    const { id, name, description, rules, compareMethod, disabled, isExcept } = config;
 
     const ruleSet = new AbilityRuleSet<R, E>({
       disabled,
       compareMethod: compareMethod,
       name,
       id,
+      description,
+      isExcept,
     });
 
     // Adding rules if exists
@@ -85,9 +99,11 @@ export class AbilityJSONParser {
     return {
       id: rule.id,
       name: rule.name,
+      ...(rule.description ? { description: rule.description } : {}),
       disabled: rule.disabled,
       subject: rule.subject,
       resource: rule.resource,
+      resourceType: rule.resourceType,
       condition: rule.condition,
     };
   }
@@ -96,7 +112,9 @@ export class AbilityJSONParser {
     return {
       id: ruleSet.id.toString(),
       name: ruleSet.name.toString(),
+      ...(ruleSet.description ? { description: ruleSet.description } : {}),
       disabled: ruleSet.disabled,
+      isExcept: ruleSet.isExcept,
       compareMethod: ruleSet.compareMethod,
       rules: ruleSet.rules.map(rule => AbilityJSONParser.ruleToJSON(rule)),
     };
@@ -106,6 +124,7 @@ export class AbilityJSONParser {
     return {
       id: policy.id.toString(),
       name: policy.name.toString(),
+      ...(policy.description ? { description: policy.description } : {}),
       disabled: policy.disabled,
       priority: policy.priority,
       permission: policy.permission,

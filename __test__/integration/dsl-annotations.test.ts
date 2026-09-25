@@ -7,9 +7,7 @@ describe('DSL annotations', () => {
       @name "policy 1"
       @id 1
       @priority 1
-      @tags foo, bar, baz
-      @tags one, two, three
-      @tags tag-name
+      @tags foo, bar, baz, tag-name
       allow permission.annotation.test if all:
         @name "rule name in implicit group"
         user.age gte 16

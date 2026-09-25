@@ -24,6 +24,44 @@ export class AbilityDSLSyntaxError extends Error {
     });
   }
 
+  /**
+   * Creates a syntax error with a DSL code fragment around the specified position
+   * @param dsl - Full DSL source
+   * @param line - Line number (1-based)
+   * @param column - Column number (1-based)
+   * @param length - Length of the highlighted fragment
+   * @param details - Error text
+   */
+  public static fromPosition(
+    dsl: string,
+    line: number,
+    column: number,
+    length: number,
+    details: string,
+  ): AbilityDSLSyntaxError {
+    const lines = dsl.split(/\r?\n/);
+    const lineIdx = line - 1;
+    const lineBefore = lineIdx > 0 ? (lines[lineIdx - 1] ?? '') : '';
+    const current = lines[lineIdx] ?? '';
+    const linesAfter = lineIdx + 1 < lines.length ? lines[lineIdx + 1] : '';
+    const wave = ' '.repeat(Math.max(0, column - 1)) + '~'.repeat(Math.max(1, length));
+
+    const lineNumWidth = String(line + 1).length;
+    const num = (n: number) => String(n).padStart(lineNumWidth, ' ');
+
+    let context = '';
+    if (lineBefore.trim() !== '') {
+      context += `${num(line - 1)} | ${lineBefore}\n`;
+    }
+    context += `${num(line)} | ${current}\n`;
+    context += `${' '.repeat(lineNumWidth)} | ${wave}\n`;
+    if (linesAfter.trim() !== '') {
+      context += `${num(line + 1)} | ${linesAfter}`;
+    }
+
+    return new AbilityDSLSyntaxError(line, column, context + '\n', details);
+  }
+
   private static supportsColor(): boolean {
     return typeof process !== 'undefined' && process.stdout?.isTTY;
   }

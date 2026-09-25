@@ -1,4 +1,5 @@
 import { AbilityDSLToken, TokenTypes } from './AbilityDSLToken';
+import { AbilityDSLSyntaxError } from './AbilityDSLSyntaxError';
 
 export class AbilityDSLLexer {
   private readonly input: string;
@@ -69,7 +70,7 @@ export class AbilityDSLLexer {
         continue;
       }
 
-      if (this.isDigit(char)) {
+      if (this.isDigit(char) || (char === '-' && this.isDigit(this.peekNext()))) {
         this.tokens.push(this.readNumber());
         continue;
       }
@@ -84,7 +85,7 @@ export class AbilityDSLLexer {
         continue;
       }
 
-      throw new Error(`Unexpected character '${char}' at ${this.line}:${this.column}`);
+      throw this.error(`Unexpected character '${char}'`, this.line, this.column);
     }
 
     this.tokens.push(new AbilityDSLToken(TokenTypes.EOF, '', this.line, this.column));
@@ -101,22 +102,6 @@ export class AbilityDSLLexer {
     }
     return new AbilityDSLToken(TokenTypes.COMMENT, value.trim(), startLine, startColumn);
   }
-
-  // private readAlias(): AbilityDSLToken {
-  //   const startLine = this.line;
-  //   const startColumn = this.column;
-  //
-  //   this.advance(); // skip "alias" keyword
-  //
-  //   // Read colon
-  //   this.readSymbol();
-  //
-  //   let value = '';
-  //   while (!this.isAtEnd() && !this.isNewline()) {
-  //     value += this.advance();
-  //   }
-  //   return new AbilityDSLToken(TokenTypes.ALIAS, value.trim(), startLine, startColumn);
-  // }
 
   private readAnnotation(): AbilityDSLToken {
     const startLine = this.line;
@@ -196,17 +181,43 @@ export class AbilityDSLLexer {
       value += char;
     }
 
-    throw new Error(`Unterminated string at ${startLine}:${startColumn}`);
+    throw this.error('Unterminated string', startLine, startColumn);
   }
 
   private readNumber(): AbilityDSLToken {
     const startLine = this.line;
     const startColumn = this.column;
     const start = this.pos;
+
+    // optional minus sign
+    if (this.peek() === '-') {
+      this.advance();
+    }
+
+    // integer part
     while (!this.isAtEnd() && this.isDigit(this.peek())) {
       this.advance();
     }
+
+    // fractional part: the dot must be followed by a digit
+    if (this.peek() === '.' && this.isDigit(this.peekNext())) {
+      this.advance(); // dot
+      while (!this.isAtEnd() && this.isDigit(this.peek())) {
+        this.advance();
+      }
+    }
+
     const value = this.input.slice(start, this.pos);
+
+    if (this.isAlpha(this.peek() ?? '')) {
+      throw this.error(
+        `Invalid number '${value}${this.peek()}'`,
+        startLine,
+        startColumn,
+        value.length + 1,
+      );
+    }
+
     return new AbilityDSLToken(TokenTypes.NUMBER, value, startLine, startColumn);
   }
 
@@ -256,9 +267,9 @@ export class AbilityDSLLexer {
           this.advance();
           return new AbilityDSLToken(TokenTypes.SYMBOL, '!=', startLine, startColumn);
         }
-        throw new Error(`Unexpected symbol '!' at ${this.line}:${this.column}`);
+        throw this.error(`Unexpected symbol '!'`, startLine, startColumn);
       default:
-        throw new Error(`Unknown symbol '${char}' at ${this.line}:${this.column}`);
+        throw this.error(`Unknown symbol '${char}'`, startLine, startColumn);
     }
   }
 
@@ -377,6 +388,19 @@ export class AbilityDSLLexer {
 
   private peek(): string {
     return this.input[this.pos];
+  }
+
+  private peekNext(): string {
+    return this.input[this.pos + 1] ?? '';
+  }
+
+  private error(
+    details: string,
+    line: number,
+    column: number,
+    length: number = 1,
+  ): AbilityDSLSyntaxError {
+    return AbilityDSLSyntaxError.fromPosition(this.input, line, column, length, details);
   }
 
   private advance(): string {

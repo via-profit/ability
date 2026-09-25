@@ -47,6 +47,19 @@ export class AbilityDSLAnnotations {
     return this;
   }
 
+  /**
+   * Returns all the stored annotations
+   */
+  entries(): AnnotationEntry<AnnotationName>[] {
+    return Object.values(this.store).filter(
+      (entry): entry is AnnotationEntry<AnnotationName> => entry !== undefined,
+    );
+  }
+
+  has(key: AnnotationName): boolean {
+    return this.store[key] !== undefined;
+  }
+
   clear() {
     for (const key of Object.keys(this.store) as AnnotationName[]) {
       this.store[key] = undefined;

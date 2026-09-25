@@ -52,7 +52,7 @@ The base `AbilityStrategy` class provides methods for working with the list of m
 
 | Strategy | Behavior | When to use |
 |---|---|---|
-| **`DenyOverridesStrategy`** | If at least one `deny` exists → `deny`, otherwise `permit` | **Default.** A secure approach where denial overrides permission |
+| **`DenyOverridesStrategy`** | If at least one `deny` exists → `deny`, otherwise `permit` | **Recommended.** A secure approach where denial overrides permission |
 | **`PermitOverridesStrategy`** | If at least one `permit` exists → `permit`, otherwise `deny` | When you need to grant the maximum possible access |
 | **`FirstMatchStrategy`** | Result of the first matched policy | Priority follows policy declaration order |
 | **`SequentialLastMatchStrategy`** | Result of the last matched policy | Later declarations have priority |
@@ -60,6 +60,9 @@ The base `AbilityStrategy` class provides methods for working with the list of m
 | **`AllMustPermitStrategy`** | `permit` only if **all** matched policies are `permit` | Maximum strictness (consensus) |
 | **`OnlyOneApplicableStrategy`** | `deny` when more than one policy matched | Prohibiting multiple policies for one resource |
 | **`AnyPermitStrategy`** | `permit` when at least one `permit` exists | Broad access |
+
+> [!NOTE]
+> All built-in strategies share a common rule: if no policy matched, the result is `deny`. In `PriorityStrategy`, when priorities are equal, the policy declared first wins.
 
 ---
 
@@ -75,7 +78,7 @@ import {
   PriorityStrategy
 } from '@via-profit/ability';
 
-// The default strategy
+// The recommended strategy
 const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
 // A strategy where permission takes precedence
@@ -106,9 +109,8 @@ const resolver = new AbilityResolver(policies, PriorityStrategy);
 
 // The policy with @priority 100 will be used
 resolver.enforce('document.read', {
-  document: { id: '123' }
-}, {
-  user: { role: 'admin' }
+  document: { id: '123' },
+  user: { role: 'admin' },
 });
 ```
 
@@ -270,7 +272,7 @@ consensusResolver.enforce('document.approve', {
 ## Frequently asked questions
 
 **Which strategy is used by default?**  
-`DenyOverridesStrategy` is used by default because it is the safest option.
+There is no default strategy — it must always be passed to the resolver constructor explicitly. `DenyOverridesStrategy` is recommended because it is the safest option.
 
 **Can several strategies be used at the same time?**  
 No. A resolver uses one strategy, but you can create several resolvers with different strategies.

@@ -17,4 +17,8 @@ export class AbilityDSLAliases {
   has(alias: string): boolean {
     return this.store.has(alias);
   }
+
+  clear(): void {
+    this.store.clear();
+  }
 }

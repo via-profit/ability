@@ -211,6 +211,9 @@ export const abilityResolver = new AbilityResolver(policies, DenyOverridesStrate
 export type { Resources, Environment, PolicyTags };
 ```
 
+> [!IMPORTANT]
+> JSON policies must be generated and parsed by the same package version. In JSON, rules store the `resourceType` flag (literal or path), and groups store the `isExcept` flag. After updating the package, regenerate `policies.json` on the server. Old-format JSON without `resourceType` is read by the previous rule: a string with a dot is treated as a path.
+
 ---
 
 ## React integration
@@ -291,13 +294,9 @@ export type AbilityGateProps<P extends Permission> = {
  * Component for conditional rendering based on access permissions.
  */
 
-const AbilityGate = <P extends Permission>(props: Props<P>) => {
+export const AbilityGate = <P extends Permission>(props: AbilityGateProps<P>) => {
   const { permission, resource, env, children, fallback } = props;
   const { isAllowed } = useAbility(permission, resource, env);
-
-  if (isAllowed === null) {
-    return null;
-  }
 
   if (isAllowed) {
     return <>{children}</>;

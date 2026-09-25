@@ -938,11 +938,7 @@ describe('DSL Operators', () => {
       const policies = new AbilityDSLParser(dsl).parse();
       const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
-      const result = resolver.resolve('permission.test', {
-        env: {
-          hour: 12,
-        },
-      });
+      const result = resolver.resolve('permission.test', {}, { hour: 12 });
       expect(result.isAllowed()).toBeTruthy();
       expect(result.isDenied()).toBeFalsy();
     });
@@ -961,9 +957,7 @@ describe('DSL Operators', () => {
       const policies = new AbilityDSLParser(dsl).parse();
       const resolver = new AbilityResolver(policies, DenyOverridesStrategy);
 
-      const result = resolver.resolve('permission.test', {
-        env: { hour: 16 },
-      });
+      const result = resolver.resolve('permission.test', {}, { hour: 16 });
 
       // console.log(result.explain().toString());
 

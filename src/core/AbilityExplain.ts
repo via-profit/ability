@@ -1,6 +1,6 @@
 import AbilityRule from './AbilityRule';
 import AbilityRuleSet from './AbilityRuleSet';
-import AbilityPolicy from './AbilityPolicy';
+import AbilityPolicy, { AbilityPolicySnapshot } from './AbilityPolicy';
 import { AbilityMatch, AbilityMatchType } from './AbilityMatch';
 
 export type AbilityExplainConfig = {
@@ -41,17 +41,7 @@ export class AbilityExplain {
   }
 
   public toString(indentPrefix: string = '', isLast: boolean = true): string {
-    const isMatch = this.match === AbilityMatch.match;
-    const isMismatch = this.match === AbilityMatch.mismatch;
-    const isPending = this.match === AbilityMatch.pending;
-
-    const mark = isMatch
-      ? 'MATCH ✓'
-      : isMismatch
-        ? 'MISMATCH ✗'
-        : isPending
-          ? 'PENDING …'
-          : 'DISABLED ⊘';
+    const mark = AbilityExplain.markLabel(this.match);
 
     // колонка статуса
     const paddedStatus = `[${mark}]`.padEnd(15, ' ');
@@ -75,6 +65,22 @@ export class AbilityExplain {
     return out;
   }
 
+  public static markLabel(match: AbilityMatchType): string {
+    switch (match) {
+      case AbilityMatch.match:
+        return 'MATCH ✓';
+      case AbilityMatch.mismatch:
+        return 'MISMATCH ✗';
+      case AbilityMatch.exceptMismatch:
+        return 'EXCEPT ✗';
+      case AbilityMatch.disabled:
+        return 'DISABLED ⊘';
+      default:
+        // not evaluated (short-circuit)
+        return 'SKIPPED …';
+    }
+  }
+
   public toJSON(): AbilityExplainJSON {
     return {
       type: this.type,
@@ -88,24 +94,28 @@ export class AbilityExplain {
 }
 
 export class AbilityExplainRule extends AbilityExplain {
-  constructor(rule: AbilityRule) {
+  constructor(rule: AbilityRule, state: AbilityMatchType = rule.state) {
     super({
       type: 'rule',
-      match: rule.state,
+      match: state,
       name: rule.name,
-      debugInfo: `${rule.subject} ${rule.condition} ${JSON.stringify(rule.resource)}`,
+      debugInfo: `${rule.subject} ${rule.condition} ${
+        rule.isResourcePath() ? String(rule.resource) : JSON.stringify(rule.resource)
+      }`.trim(),
     });
   }
 }
 
 export class AbilityExplainRuleSet extends AbilityExplain {
-  constructor(ruleSet: AbilityRuleSet) {
-    const children = ruleSet.rules.map(rule => new AbilityExplainRule(rule));
+  constructor(ruleSet: AbilityRuleSet, snapshot?: AbilityPolicySnapshot['ruleSet'][number]) {
+    const children = ruleSet.rules.map(
+      (rule, idx) => new AbilityExplainRule(rule, snapshot ? snapshot.rules[idx] : rule.state),
+    );
     super(
       {
         type: 'ruleSet',
-        match: ruleSet.state,
-        name: ruleSet.name,
+        match: snapshot ? snapshot.state : ruleSet.state,
+        name: ruleSet.isExcept ? `except ${ruleSet.name}` : ruleSet.name,
       },
       children,
     );
@@ -113,8 +123,15 @@ export class AbilityExplainRuleSet extends AbilityExplain {
 }
 
 export class AbilityExplainPolicy extends AbilityExplain {
-  constructor(policy: AbilityPolicy) {
-    const children = policy.ruleSet.map(ruleSet => new AbilityExplainRuleSet(ruleSet));
+  /**
+   * @param policy - The policy to explain
+   * @param snapshot - Evaluation state snapshot (see `AbilityPolicy.snapshot()`).
+   * If omitted, the current state of the policy is used
+   */
+  constructor(policy: AbilityPolicy, snapshot?: AbilityPolicySnapshot) {
+    const children = policy.ruleSet.map(
+      (ruleSet, idx) => new AbilityExplainRuleSet(ruleSet, snapshot?.ruleSet[idx]),
+    );
 
     super(
       {
@@ -123,7 +140,7 @@ export class AbilityExplainPolicy extends AbilityExplain {
           policy.priority > -1
             ? `@priority ${policy.priority} <${policy.effect}> ${policy.name}`
             : `<${policy.effect}> ${policy.name}`,
-        match: policy.matchState,
+        match: snapshot ? snapshot.state : policy.matchState,
       },
       children,
     );

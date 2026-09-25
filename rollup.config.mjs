@@ -91,10 +91,16 @@ const cjsConfig = {
 // DTS bundle
 const dtsConfig = {
   input: 'src/index.ts',
-  output: {
-    file: isDev ? 'build/index.d.ts' : 'dist/index.d.ts',
-    format: 'es',
-  },
+  output: [
+    {
+      file: isDev ? 'build/index.d.ts' : 'dist/index.d.ts',
+      format: 'es',
+    },
+    {
+      file: isDev ? 'build/index.d.cts' : 'dist/index.d.cts',
+      format: 'es',
+    },
+  ],
   plugins: [aliasPlugin, dts()],
   external,
 };

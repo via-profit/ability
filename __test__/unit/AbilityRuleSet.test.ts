@@ -183,12 +183,12 @@ describe('AbilityRuleSet', () => {
       expect(result).toBe(AbilityMatch.match);
     });
 
-    it('should handle empty rule set', () => {
+    it('should not participate in the check if the rule set is empty', () => {
       const ruleSet = new AbilityRuleSet({ compareMethod: AbilityCompare.and });
 
       const result = ruleSet.check({ any: 'data' });
 
-      expect(result).toBe(AbilityMatch.mismatch);
+      expect(result).toBe(AbilityMatch.disabled);
     });
   });
 

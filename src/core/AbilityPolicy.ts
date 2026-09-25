@@ -33,6 +33,14 @@ export type AbilityPolicyConstructorProps<TTag extends string = string> = {
   tags?: readonly TTag[];
 };
 
+export type AbilityPolicySnapshot = {
+  readonly state: AbilityMatchType;
+  readonly ruleSet: readonly {
+    readonly state: AbilityMatchType;
+    readonly rules: readonly AbilityMatchType[];
+  }[];
+};
+
 export class AbilityPolicy<
   R extends ResourceObject = Record<string, unknown>,
   E extends EnvironmentObject = Record<string, unknown>,
@@ -57,16 +65,6 @@ export class AbilityPolicy<
    */
   public compareMethod: AbilityCompareType = AbilityCompare.and;
 
-  /**
-   * Policy ID
-   */
-  public id: string;
-
-  /**
-   * Policy name
-   */
-  public name: string;
-
   public description?: string | null;
 
   /**
@@ -81,7 +79,11 @@ export class AbilityPolicy<
 
   public tags: readonly TTag[];
 
-  public constructor(params: AbilityPolicyConstructorProps) {
+  private readonly _id: string | null;
+  private _autoId: string | null = null;
+  private _name: string | null;
+
+  public constructor(params: AbilityPolicyConstructorProps<TTag>) {
     const {
       name,
       description,
@@ -100,9 +102,60 @@ export class AbilityPolicy<
     this.priority = typeof priority === 'number' ? priority : -1;
     this.disabled = typeof disabled === 'boolean' ? disabled : false;
     this.tags = (tags || []) as readonly TTag[];
+    this.matchState = this.disabled ? AbilityMatch.disabled : this.matchState;
+    this._id = id || null;
+    this._name = name || null;
+  }
 
-    this.id = id || `p_${this.hash().slice(0, 10)}`;
-    this.name = name || this.id;
+  /**
+   * Policy ID.
+   * If it was not passed explicitly, it is generated from the policy content
+   */
+  public get id(): string {
+    if (this._id) {
+      return this._id;
+    }
+
+    if (!this._autoId) {
+      this._autoId = `p_${this.hash().slice(0, 10)}`;
+    }
+
+    return this._autoId;
+  }
+
+  /**
+   * Policy name
+   */
+  public get name(): string {
+    return this._name || this.id;
+  }
+
+  public set name(value: string | null) {
+    this._name = value;
+  }
+
+  /**
+   * Resets the evaluation state of the policy, its rule sets and rules
+   */
+  public reset(): void {
+    this.matchState = this.disabled ? AbilityMatch.disabled : AbilityMatch.pending;
+    for (const ruleSet of this.ruleSet) {
+      ruleSet.reset();
+    }
+  }
+
+  /**
+   * Returns a snapshot of the evaluation state of the policy, its rule sets and rules.
+   * Used to explain the result after the policies have been re-checked
+   */
+  public snapshot(): AbilityPolicySnapshot {
+    return {
+      state: this.matchState,
+      ruleSet: this.ruleSet.map(ruleSet => ({
+        state: ruleSet.state,
+        rules: ruleSet.rules.map(rule => rule.state),
+      })),
+    };
   }
 
   /**
@@ -111,6 +164,7 @@ export class AbilityPolicy<
    */
   public addRuleSet(ruleSet: AbilityRuleSet<R, E>): this {
     this.ruleSet.push(ruleSet);
+    this._autoId = null;
 
     return this;
   }
@@ -121,7 +175,7 @@ export class AbilityPolicy<
    */
   public addRuleSets(ruleSets: readonly AbilityRuleSet<R, E>[]): this {
     for (const ruleSet of ruleSets) {
-      this.ruleSet.push(ruleSet);
+      this.addRuleSet(ruleSet);
     }
 
     return this;
@@ -147,16 +201,13 @@ export class AbilityPolicy<
    * @param environment - The user environment object
    */
   public check(resource: R, environment?: E): AbilityMatchType {
-    this.matchState = AbilityMatch.mismatch;
+    this.reset();
 
     if (this.disabled) {
-      this.matchState = AbilityMatch.disabled;
       return this.matchState;
     }
 
-    if (!this.ruleSet.length) {
-      return this.matchState;
-    }
+    this.matchState = AbilityMatch.mismatch;
 
     const normalGroups = this.ruleSet.filter(g => !g.isExcept);
     const exceptGroups = this.ruleSet.filter(g => g.isExcept);
@@ -168,35 +219,39 @@ export class AbilityPolicy<
       }
 
       const state = group.check(resource, environment);
+
+      // the group has no active rules
+      if (AbilityMatch.disabled === state) {
+        continue;
+      }
+
       normalStates.push(state);
 
       if (AbilityCompare.and === this.compareMethod && AbilityMatch.mismatch === state) {
-        this.matchState = AbilityMatch.mismatch;
         return this.matchState;
       }
 
       if (AbilityCompare.or === this.compareMethod && AbilityMatch.match === state) {
-        this.matchState = AbilityMatch.match;
         // break to check except-rule sets
         break;
       }
     }
 
-    // 3. Simple rule sets
-    let normalMatch = false;
-
-    if (AbilityCompare.and === this.compareMethod) {
-      normalMatch = normalStates.every(s => AbilityMatch.match === s);
-    } else {
-      normalMatch = normalStates.some(s => AbilityMatch.match === s);
-    }
-
-    if (!normalMatch) {
-      this.matchState = AbilityMatch.mismatch;
+    // A policy without active conditions never matches
+    if (!normalStates.length) {
       return this.matchState;
     }
 
-    // 4. except-rule sets
+    const normalMatch =
+      AbilityCompare.and === this.compareMethod
+        ? normalStates.every(s => AbilityMatch.match === s)
+        : normalStates.some(s => AbilityMatch.match === s);
+
+    if (!normalMatch) {
+      return this.matchState;
+    }
+
+    // except-rule sets
     for (const group of exceptGroups) {
       if (group.disabled) {
         continue;
@@ -209,7 +264,6 @@ export class AbilityPolicy<
       }
     }
 
-    // 5. match
     this.matchState = AbilityMatch.match;
     return this.matchState;
   }
@@ -219,35 +273,39 @@ export class AbilityPolicy<
       throw new AbilityError('First, run the check method, then explain');
     }
 
-    return new AbilityExplainPolicy(this);
+    return new AbilityExplainPolicy(this as unknown as AbilityPolicy);
   }
 
   public copyWith(
     props: Partial<{
-      id: string;
-      name: string;
+      id: string | null;
+      name: string | null;
       description?: string | null;
       priority: number;
       permission: string;
       effect: AbilityPolicyEffectType;
       compareMethod: AbilityCompareType;
       ruleSet: AbilityRuleSet<R, E>[];
+      disabled: boolean;
+      tags: readonly TTag[];
     }>,
-  ): AbilityPolicy<R, E> {
-    const policy = new AbilityPolicy<R, E>({
-      id: props.id ?? this.id,
-      name: props.name ?? this.name,
-      description: props.description ?? this.description,
+  ): AbilityPolicy<R, E, TTag> {
+    const policy = new AbilityPolicy<R, E, TTag>({
+      id: props.id !== undefined ? props.id : this._id,
+      name: props.name !== undefined ? props.name : this._name,
+      description: props.description !== undefined ? props.description : this.description,
       priority: typeof props.priority !== 'undefined' ? props.priority : this.priority,
       permission: props.permission ?? this.permission,
       effect: props.effect ?? this.effect,
       compareMethod: props.compareMethod ?? this.compareMethod,
+      disabled: props.disabled ?? this.disabled,
+      tags: props.tags ?? this.tags,
     });
 
     const nextRuleSet = props.ruleSet ?? this.ruleSet;
 
-    for (const rule of nextRuleSet) {
-      policy.addRuleSet(rule);
+    for (const ruleSet of nextRuleSet) {
+      policy.addRuleSet(ruleSet);
     }
 
     return policy;

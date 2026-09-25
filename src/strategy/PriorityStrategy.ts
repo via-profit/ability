@@ -7,8 +7,8 @@ import AbilityPolicy from '../core/AbilityPolicy';
  * PriorityStrategy
  *
  * This strategy evaluates policies based on their numeric priority.
- * The policy with the highest priority (lowest number or highest number depending on implementation)
- * determines the final result.
+ * The matched policy with the highest priority number determines the final result.
+ * If several matched policies have the same priority, the first declared one wins.
  *
  * Use this strategy when:
  * - Policies have explicit priority levels.
@@ -18,7 +18,7 @@ import AbilityPolicy from '../core/AbilityPolicy';
  *   Policies:
  *     P1 (priority 10) → deny
  *     P2 (priority 1)  → permit
- *   Result: permit (P2 has higher priority)
+ *   Result: deny (P1 has higher priority)
  */
 export class PriorityStrategy<
   R extends ResourceObject,
