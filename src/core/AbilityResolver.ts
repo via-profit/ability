@@ -3,7 +3,7 @@ import { AbilityError } from './AbilityError';
 import { AbilityResult } from './AbilityResult';
 import { AbilityMatch } from './AbilityMatch';
 import { AbilityStrategy } from '../strategy/AbilityStrategy';
-import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
+import type { EnvironmentObject, ResourceObject } from './AbilityTypeGenerator';
 
 export interface AbilityResolverOptions<TTags extends string> {
   tags?: readonly TTags[];

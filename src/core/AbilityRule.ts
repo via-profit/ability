@@ -5,7 +5,7 @@ import {
   AbilityConditionType,
   toLiteral,
 } from './AbilityCondition';
-import { AbilityHash } from '~/core/AbilityHash';
+import { AbilityHash } from './AbilityHash';
 
 /**
  * How the right side of the rule should be interpreted:

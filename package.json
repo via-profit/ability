@@ -3,6 +3,7 @@
   "support": "https://via-profit.ru",
   "version": "3.7.7",
   "description": "Lightweight ABAC engine with DSL, TypeScript types generation and zero dependencies",
+  "homepage": "https://via-profit.github.io/ability/",
   "keywords": [
     "ability",
     "access",
@@ -44,14 +45,18 @@
   "scripts": {
     "build": "rollup -c",
     "build:dev": "cross-env NODE_ENV=development rollup -c -w",
+    "prepublishOnly": "npm run lint && npm test && npm run build",
     "bench": "npm run build && node ./bench/benchmark.js",
     "test": "jest",
     "lint": "tsc --noEmit && eslint --fix .",
-    "pretty": "prettier --write ./src"
+    "pretty": "prettier --write ./src",
+    "website": "npm --prefix website start",
+    "website:build": "npm --prefix website run build",
+    "website:prod": "npm --prefix website run start:prod"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/via-profit/ability.git"
+    "url": "git+https://github.com/via-profit/ability.git"
   },
   "author": {
     "name": "Via Profit",

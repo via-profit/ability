@@ -8,9 +8,9 @@ import { AbilityDSLLexer } from './AbilityDSLLexer';
 import { AbilityDSLToken, TokenType, TokenTypes } from './AbilityDSLToken';
 import { EnvironmentObject, ResourceObject } from '../../core/AbilityTypeGenerator';
 import { AbilityDSLTokenStream } from './AbilityDSLTokenStream';
-import { AbilityDSLAnnotations, AnnotationName } from '~/parsers/dsl/AbilityDSLAnnotations';
+import { AbilityDSLAnnotations, AnnotationName } from './AbilityDSLAnnotations';
 import { AnnotationAllowed } from './AbilityDSLAnnotationMatrix';
-import { AbilityDSLAliases } from '~/parsers/dsl/AbilityDSLAliases';
+import { AbilityDSLAliases } from './AbilityDSLAliases';
 
 type ArrayValue = (string | number | boolean | null)[];
 

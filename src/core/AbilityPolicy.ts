@@ -5,8 +5,8 @@ import { AbilityPolicyEffectType } from './AbilityPolicyEffect';
 import { AbilityExplain, AbilityExplainPolicy } from './AbilityExplain';
 import { AbilityError } from './AbilityError';
 import { EnvironmentObject, ResourceObject } from './AbilityTypeGenerator';
-import AbilityRule from '~/core/AbilityRule';
-import { AbilityHash } from '~/core/AbilityHash';
+import AbilityRule from './AbilityRule';
+import { AbilityHash } from './AbilityHash';
 
 export type AbilityPolicyConfig<TTag extends string = string> = {
   readonly permission: string;

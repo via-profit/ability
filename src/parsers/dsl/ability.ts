@@ -1,5 +1,5 @@
 import { AbilityDSLParser } from './AbilityDSLParser';
-import { EnvironmentObject, ResourceObject } from '~/core/AbilityTypeGenerator';
+import type { EnvironmentObject, ResourceObject } from '../../core/AbilityTypeGenerator';
 
 export function ability<
   R extends ResourceObject = Record<string, unknown>,

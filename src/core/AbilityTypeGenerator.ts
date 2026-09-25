@@ -1,7 +1,7 @@
 import AbilityPolicy from './AbilityPolicy';
 import { AbilityCondition } from './AbilityCondition';
 import AbilityRule from './AbilityRule';
-import AbilityResolver from '~/core/AbilityResolver';
+import AbilityResolver from './AbilityResolver';
 
 export type Primitive = string | number | boolean | null | undefined;
 export type NestedDict<T = Primitive> = {

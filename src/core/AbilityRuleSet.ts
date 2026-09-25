@@ -2,7 +2,7 @@ import AbilityRule, { AbilityRuleConfig } from './AbilityRule';
 import { AbilityCompare, AbilityCompareType } from './AbilityCompare';
 import { AbilityMatch, AbilityMatchType } from './AbilityMatch';
 import { EnvironmentObject, ResourceObject } from './AbilityTypeGenerator';
-import { AbilityHash } from '~/core/AbilityHash';
+import { AbilityHash } from './AbilityHash';
 
 export type AbilityRuleSetConfig = {
   readonly id?: string | null;

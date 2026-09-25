@@ -6,7 +6,16 @@ import jestPlugin from 'eslint-plugin-jest';
 export default [
   // Global ignores
   {
-    ignores: ['build/**', 'dist/**', 'node_modules/**', 'coverage/**', '.cache/**', '**/*.min.js'],
+    ignores: [
+      'build/**',
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      '.cache/**',
+      '**/*.min.js',
+      // the website has its own dependencies and checks (see website/package.json)
+      'website/**',
+    ],
   },
 
   // Base recommended rules for all JavaScript files

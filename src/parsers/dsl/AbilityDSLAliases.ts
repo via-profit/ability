@@ -1,4 +1,4 @@
-import AbilityRule from '~/core/AbilityRule';
+import AbilityRule from '../../core/AbilityRule';
 
 
 export class AbilityDSLAliases {

@@ -1,0 +1,80 @@
+# Publishes the documentation website (website/) to GitHub Pages.
+#
+# One-time setup: Settings → Pages → Build and deployment → Source: «GitHub Actions».
+# The workflow runs on every push to master that changes the site, the docs or the library,
+# and can be started manually from the Actions tab.
+
+name: Website
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'website/**'
+      - 'docs/**'
+      - 'src/**'
+      - 'CHANGELOG.md'
+      - 'package.json'
+      - '.github/workflows/website.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # publishing to GitHub Pages
+  pages: write
+  # confirms to GitHub Pages that the deployment comes from this repository
+  id-token: write
+
+# Only one deployment at a time; a new push cancels the outdated one
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v6
+
+      - name: Install dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: Type check
+        working-directory: website
+        run: npm run lint
+
+      - name: Build
+        working-directory: website
+        env:
+          # «/ability/» on via-profit.github.io/ability, «/» on a custom domain
+          PUBLIC_PATH: ${{ steps.pages.outputs.base_path }}/
+        run: npm run build
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: website/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
