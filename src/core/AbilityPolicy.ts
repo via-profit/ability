@@ -1,4 +1,4 @@
-import AbilityRuleSet, { AbilityRuleSetConfig } from './AbilityRuleSet';
+import AbilityRuleSet, { AbilityRuleSetConfig, AbilityRuleSetSnapshot } from './AbilityRuleSet';
 import { AbilityMatch, AbilityMatchType } from './AbilityMatch';
 import { AbilityCompare, AbilityCompareType } from './AbilityCompare';
 import { AbilityPolicyEffectType } from './AbilityPolicyEffect';
@@ -35,10 +35,7 @@ export type AbilityPolicyConstructorProps<TTag extends string = string> = {
 
 export type AbilityPolicySnapshot = {
   readonly state: AbilityMatchType;
-  readonly ruleSet: readonly {
-    readonly state: AbilityMatchType;
-    readonly rules: readonly AbilityMatchType[];
-  }[];
+  readonly ruleSet: readonly AbilityRuleSetSnapshot[];
 };
 
 export class AbilityPolicy<
@@ -151,10 +148,7 @@ export class AbilityPolicy<
   public snapshot(): AbilityPolicySnapshot {
     return {
       state: this.matchState,
-      ruleSet: this.ruleSet.map(ruleSet => ({
-        state: ruleSet.state,
-        rules: ruleSet.rules.map(rule => rule.state),
-      })),
+      ruleSet: this.ruleSet.map(ruleSet => ruleSet.snapshot()),
     };
   }
 
@@ -182,14 +176,12 @@ export class AbilityPolicy<
   }
 
   /**
-   * Extract all rules of all ruleSets of this policy
+   * Extract all rules of all ruleSets (including nested ones) of this policy
    */
   public extractRules(): readonly AbilityRule[] {
     const rules: AbilityRule[] = [];
     for (const ruleSet of this.ruleSet) {
-      for (const rule of ruleSet.rules) {
-        rules.push(rule);
-      }
+      rules.push(...(ruleSet.extractRules() as AbilityRule[]));
     }
 
     return rules;

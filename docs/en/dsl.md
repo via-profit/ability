@@ -11,6 +11,7 @@ It lets you express rules in a human-readable form and then use them at runtime 
     - [Group annotations](#group-annotations)
     - [Implicit group](#implicit-group)
     - [Excluding group (`except`)](#excluding-group-except)
+    - [Nested groups](#nested-groups)
 - [Rule](#rule)
     - [Operator](#operator)
     - [Value](#value)
@@ -251,6 +252,42 @@ deny permission.order.update if all:
 **2.1. Exception check (`except`)**
 - If `user.role equals 'administrator'` → `except` is true → **deny is canceled** → the final result is **permit** (granted by the first policy).
 - If the role is not administrator → `except` is false → **deny is applied** → updating a completed order is forbidden.
+
+### Nested groups
+
+A group can contain other groups. A nested group is written with an indentation **greater** than the header of the
+enclosing group (`all of:`, `any of:` or `except`) and is checked as one more condition of the enclosing group: its
+result is combined with the rules of the enclosing group by the operator of the enclosing group. Nesting depth is not
+limited.
+
+```dsl
+@name "An issue is updated by an administrator, or by the assignee or the author of an open issue"
+permit permission.issue.update if any:
+  user.roles contains 'administrator'
+  all of:
+    user.roles contains 'programmer'
+    issue.isClosed is equals false
+    any of:
+      issue.isAssignee is equals true
+      issue.isCreator is equals true
+```
+
+Here the second group is true only if the user is a programmer, the issue is open **and** the user is its assignee or
+author.
+
+- A group on the same indentation as the header of the enclosing group is not nested: it is the next group of the policy.
+- Rules after a nested group on the indentation of the enclosing group belong to the enclosing group again.
+- The rules of a group are checked first, then its nested groups.
+- A disabled nested group (`@disabled`) and a nested group without active rules do not take part in the check.
+- An `except` block is allowed only on the policy level: `except` inside a group is a parse error. Nested groups are
+  allowed inside an `except` block.
+- Indentation is counted in characters: do not mix spaces and tabs.
+- In JSON nested groups are stored in the `ruleSets` field of a group (the field is present only for groups with nested
+  groups).
+
+> [!WARNING] Before 3.8.2 the indentation was ignored: a nested group became a separate group of the policy, and the
+> enclosing group was checked without it. For an `if any:` policy this widened the access. Evaluate JSON policies with
+> nested groups with the library 3.8.2 or later: older versions ignore the `ruleSets` field.
 
 ## Rule
 
@@ -550,7 +587,8 @@ The parser throws `AbilityDSLSyntaxError` (exported from the package) with the l
 - **Structure**
     - a policy without rules;
     - a policy that has only an `except` block;
-    - an empty `all of:` / `any of:` group or an empty `except` block.
+    - an empty `all of:` / `any of:` group or an empty `except` block;
+    - an `except` block inside a group (indented deeper than the group header).
 - **Aliases**: an unknown alias (or usage before definition), a repeated definition, an alias without a rule or with several rules, a dot in the alias name.
 - **Values**
     - an unquoted identifier without a dot on the right side (`user.role equals admin`);

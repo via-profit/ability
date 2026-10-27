@@ -10,11 +10,24 @@ export type AbilityRuleSetConfig = {
   readonly description?: string | null;
   readonly compareMethod: AbilityCompareType;
   readonly rules: readonly AbilityRuleConfig[];
+  /**
+   * Nested groups. Combined with the rules of the group by its compare method
+   */
+  readonly ruleSets?: readonly AbilityRuleSetConfig[];
   readonly disabled?: boolean;
   /**
    * The group is an except block
    */
   readonly isExcept?: boolean;
+};
+
+/**
+ * Evaluation state of the group, its rules and nested groups
+ */
+export type AbilityRuleSetSnapshot = {
+  readonly state: AbilityMatchType;
+  readonly rules: readonly AbilityMatchType[];
+  readonly ruleSets?: readonly AbilityRuleSetSnapshot[];
 };
 
 export type AbilityRuleSetConstructorProps = {
@@ -35,6 +48,13 @@ export class AbilityRuleSet<
    * List of rules
    */
   public rules: AbilityRule<R, E>[] = [];
+
+  /**
+   * List of nested groups.\
+   * Each nested group is checked as one more condition of this group
+   * (after the rules) and combined with them by the group compare method
+   */
+  public ruleSets: AbilityRuleSet<R, E>[] = [];
 
   /**
    * Rules compare method.\
@@ -101,6 +121,34 @@ export class AbilityRuleSet<
     for (const rule of this.rules) {
       rule.reset();
     }
+    for (const ruleSet of this.ruleSets) {
+      ruleSet.reset();
+    }
+  }
+
+  /**
+   * Returns a snapshot of the evaluation state of the group, its rules and nested groups
+   */
+  public snapshot(): AbilityRuleSetSnapshot {
+    return {
+      state: this.state,
+      rules: this.rules.map(rule => rule.state),
+      ...(this.ruleSets.length
+        ? { ruleSets: this.ruleSets.map(ruleSet => ruleSet.snapshot()) }
+        : {}),
+    };
+  }
+
+  /**
+   * Extract all rules of this group and its nested groups
+   */
+  public extractRules(): AbilityRule<R, E>[] {
+    const rules: AbilityRule<R, E>[] = [...this.rules];
+    for (const ruleSet of this.ruleSets) {
+      rules.push(...ruleSet.extractRules());
+    }
+
+    return rules;
   }
 
   public addRule(rule: AbilityRule<R, E>): this {
@@ -112,6 +160,22 @@ export class AbilityRuleSet<
 
   public addRules(rules: AbilityRule<R, E>[]): this {
     rules.forEach(rule => this.addRule(rule));
+
+    return this;
+  }
+
+  /**
+   * Add nested group
+   */
+  public addRuleSet(ruleSet: AbilityRuleSet<R, E>): this {
+    this.ruleSets.push(ruleSet);
+    this._autoId = null;
+
+    return this;
+  }
+
+  public addRuleSets(ruleSets: readonly AbilityRuleSet<R, E>[]): this {
+    ruleSets.forEach(ruleSet => this.addRuleSet(ruleSet));
 
     return this;
   }
@@ -133,6 +197,30 @@ export class AbilityRuleSet<
       }
 
       const state = rule.check(resources, environment);
+      ruleCheckStates.push(state);
+
+      if (AbilityCompare.and === this.compareMethod && AbilityMatch.mismatch === state) {
+        return this.state; // mismatch
+      }
+
+      if (AbilityCompare.or === this.compareMethod && AbilityMatch.match === state) {
+        this.state = AbilityMatch.match;
+        return this.state;
+      }
+    }
+
+    for (const ruleSet of this.ruleSets) {
+      if (ruleSet.disabled) {
+        continue;
+      }
+
+      const state = ruleSet.check(resources, environment);
+
+      // the nested group has no active rules
+      if (AbilityMatch.disabled === state) {
+        continue;
+      }
+
       ruleCheckStates.push(state);
 
       if (AbilityCompare.and === this.compareMethod && AbilityMatch.mismatch === state) {
@@ -167,7 +255,11 @@ export class AbilityRuleSet<
   }
 
   public toString(): string {
-    return `AbilityRuleSet: ${this.name} compareMethod: ${this.compareMethod}, rules: ${this.rules.map(rule => rule.toString()).join('\n')}`;
+    const ruleSets = this.ruleSets.length
+      ? `, ruleSets: ${this.ruleSets.map(ruleSet => ruleSet.toString()).join('\n')}`
+      : '';
+
+    return `AbilityRuleSet: ${this.name} compareMethod: ${this.compareMethod}, rules: ${this.rules.map(rule => rule.toString()).join('\n')}${ruleSets}`;
   }
 
   public copyWith(
@@ -177,6 +269,7 @@ export class AbilityRuleSet<
       description: string | null;
       compareMethod: AbilityCompareType;
       rules: AbilityRule<R, E>[];
+      ruleSets: AbilityRuleSet<R, E>[];
       isExcept: boolean;
       disabled: boolean;
     }>,
@@ -196,6 +289,10 @@ export class AbilityRuleSet<
       next.addRule(rule);
     }
 
+    for (const ruleSet of props.ruleSets ?? this.ruleSets) {
+      next.addRuleSet(ruleSet);
+    }
+
     return next;
   }
 
@@ -207,6 +304,16 @@ export class AbilityRuleSet<
       `disabled:${this.disabled}`,
       `rules:${ruleHashes.join('|')}`,
     ];
+
+    // added only for the nested groups, so the IDs of the flat groups stay the same
+    if (this.ruleSets.length) {
+      parts.push(
+        `ruleSets:${this.ruleSets
+          .map(r => r.hash())
+          .sort()
+          .join('|')}`,
+      );
+    }
 
     return AbilityHash.sha1(parts.join(';'));
   }

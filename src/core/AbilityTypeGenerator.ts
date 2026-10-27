@@ -54,8 +54,8 @@ export class AbilityTypeGenerator {
 
       // Iterate through all ruleSets in the policy
       policy.ruleSet.forEach(ruleSet => {
-        // Iterate through all rules in the ruleSet
-        ruleSet.rules.forEach(rule => {
+        // Iterate through all rules in the ruleSet and its nested ruleSets
+        ruleSet.extractRules().forEach(rule => {
           const subjectPath = rule.subject;
           const ruleType = this.determineTypeFromRule(rule);
 

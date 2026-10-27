@@ -1,5 +1,5 @@
 import AbilityRule from './AbilityRule';
-import AbilityRuleSet from './AbilityRuleSet';
+import AbilityRuleSet, { AbilityRuleSetSnapshot } from './AbilityRuleSet';
 import AbilityPolicy, { AbilityPolicySnapshot } from './AbilityPolicy';
 import { AbilityMatch, AbilityMatchType } from './AbilityMatch';
 
@@ -90,7 +90,6 @@ export class AbilityExplain {
       children: this.children.map(child => child.toJSON()),
     };
   }
-
 }
 
 export class AbilityExplainRule extends AbilityExplain {
@@ -107,10 +106,15 @@ export class AbilityExplainRule extends AbilityExplain {
 }
 
 export class AbilityExplainRuleSet extends AbilityExplain {
-  constructor(ruleSet: AbilityRuleSet, snapshot?: AbilityPolicySnapshot['ruleSet'][number]) {
-    const children = ruleSet.rules.map(
-      (rule, idx) => new AbilityExplainRule(rule, snapshot ? snapshot.rules[idx] : rule.state),
-    );
+  constructor(ruleSet: AbilityRuleSet, snapshot?: AbilityRuleSetSnapshot) {
+    const children: AbilityExplain[] = [
+      ...ruleSet.rules.map(
+        (rule, idx) => new AbilityExplainRule(rule, snapshot ? snapshot.rules[idx] : rule.state),
+      ),
+      ...ruleSet.ruleSets.map(
+        (nested, idx) => new AbilityExplainRuleSet(nested, snapshot?.ruleSets?.[idx]),
+      ),
+    ];
     super(
       {
         type: 'ruleSet',

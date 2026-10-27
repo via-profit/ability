@@ -74,6 +74,9 @@ const VALUELESS_OPERATORS: readonly TokenType[] = [
  * where <group> is either "all of:" or "any of:", followed by a colon,
  * and then a list of rules (one per line).
  *
+ * A group, which is indented deeper than the header of the enclosing explicit
+ * group ("all of:", "any of:", "except"), is a nested group of it.
+ *
  * Each rule is: <path> <operator> <value>
  *
  * The value is a literal (quoted string, number, boolean, null, array)
@@ -256,8 +259,9 @@ export class AbilityDSLParser<
 
   /**
    * Parses a single group, e.g. "all of:" or "any of:", and returns a RuleSet.
+   * @param nested - the group is nested in another group
    */
-  private parseGroup(): AbilityRuleSet {
+  private parseGroup(nested = false): AbilityRuleSet {
     const annotations = this.takeAnnotations('ruleSet');
 
     const compareToken = this.stream.expectOneOf(
@@ -284,9 +288,9 @@ export class AbilityDSLParser<
       disabled: annotations.disabled?.value ?? undefined,
     });
 
-    this.parseGroupRules(group, 'group');
+    this.parseGroupRules(group, nested ? 'nested group' : 'group', compareToken.column, nested);
 
-    if (!group.rules.length) {
+    if (!group.rules.length && !group.ruleSets.length) {
       this.stream.syntaxError('The group has no rules', compareToken);
     }
 
@@ -331,9 +335,9 @@ export class AbilityDSLParser<
       disabled: annotations.disabled?.value ?? undefined,
     });
 
-    this.parseGroupRules(group, 'except group');
+    this.parseGroupRules(group, 'except group', exceptToken.column);
 
-    if (!group.rules.length) {
+    if (!group.rules.length && !group.ruleSets.length) {
       this.stream.syntaxError('The except group has no rules', exceptToken);
     }
 
@@ -341,21 +345,55 @@ export class AbilityDSLParser<
   }
 
   /**
-   * Reads the rules of the group until the next group, except block, policy, alias or EOF
+   * Reads the rules of the group until the next group, except block, policy, alias or EOF.
+   *
+   * For an explicit group (`headerColumn` is passed) a group, which starts to the right of
+   * the group header, is parsed as a nested group. A nested group (`nested`) ends at the
+   * first line, which is not to the right of its header.
+   *
+   * @param group - the group to fill
+   * @param owner - the group kind for error messages
+   * @param headerColumn - column of the group header (`all`, `any` or `except`)
+   * @param nested - the group is nested in another group
    */
-  private parseGroupRules(group: AbilityRuleSet, owner: string): void {
+  private parseGroupRules(
+    group: AbilityRuleSet,
+    owner: string,
+    headerColumn: number | null = null,
+    nested = false,
+  ): void {
     while (true) {
       this.consumeLeadingComments();
       this.consumeLeadingAnnotations();
 
-      if (
-        this.stream.eof() ||
-        this.isStartOfGroup() ||
-        this.isStartOfPolicy() ||
-        this.isStartOfExcept() ||
-        this.isStartOfAlias()
-      ) {
+      if (this.stream.eof() || this.isStartOfPolicy() || this.isStartOfAlias()) {
         break;
+      }
+
+      const token = this.stream.peek();
+      const isInner = headerColumn !== null && token.column > headerColumn;
+
+      if (nested && !isInner) {
+        break;
+      }
+
+      if (this.isStartOfExcept()) {
+        if (isInner) {
+          this.stream.syntaxError(
+            'The `except` block cannot be nested in a group. Place it on the policy level',
+            token,
+          );
+        }
+        break;
+      }
+
+      if (this.isStartOfGroup()) {
+        if (!isInner) {
+          break;
+        }
+
+        group.addRuleSet(this.parseGroup(true));
+        continue;
       }
 
       if (!this.isStartOfRule()) {

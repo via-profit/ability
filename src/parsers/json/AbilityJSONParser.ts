@@ -74,7 +74,7 @@ export class AbilityJSONParser {
   public static parseRuleSet<R extends ResourceObject, E extends  EnvironmentObject>(
     config: AbilityRuleSetConfig,
   ): AbilityRuleSet<R, E> {
-    const { id, name, description, rules, compareMethod, disabled, isExcept } = config;
+    const { id, name, description, rules, ruleSets, compareMethod, disabled, isExcept } = config;
 
     const ruleSet = new AbilityRuleSet<R, E>({
       disabled,
@@ -90,6 +90,11 @@ export class AbilityJSONParser {
       const abilityRules = rules.map(ruleConfig => AbilityJSONParser.parseRule(ruleConfig));
 
       ruleSet.addRules(abilityRules);
+    }
+
+    // Adding nested rule sets if exists
+    if (ruleSets && ruleSets.length > 0) {
+      ruleSet.addRuleSets(ruleSets.map(nested => AbilityJSONParser.parseRuleSet<R, E>(nested)));
     }
 
     return ruleSet;
@@ -117,6 +122,9 @@ export class AbilityJSONParser {
       isExcept: ruleSet.isExcept,
       compareMethod: ruleSet.compareMethod,
       rules: ruleSet.rules.map(rule => AbilityJSONParser.ruleToJSON(rule)),
+      ...(ruleSet.ruleSets.length
+        ? { ruleSets: ruleSet.ruleSets.map(nested => AbilityJSONParser.ruleSetToJSON(nested)) }
+        : {}),
     };
   }
 
