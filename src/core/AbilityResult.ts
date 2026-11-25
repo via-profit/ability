@@ -31,7 +31,7 @@ export class AbilityResult<
     strategy: AbilityStrategy<R, E>,
   ) {
     this.permission = permission;
-    this.effect = effect;
+    this.effect = effect === AbilityPolicyEffect.permit ? effect : AbilityPolicyEffect.deny;
     this.strategy = strategy;
     this.snapshots = strategy.policies.map(policy => policy.snapshot());
   }

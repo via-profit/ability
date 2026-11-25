@@ -2,6 +2,12 @@ import { AbilityRule, AbilityRuleConfig } from '../../core/AbilityRule';
 import { AbilityRuleSet, AbilityRuleSetConfig } from '../../core/AbilityRuleSet';
 import { EnvironmentObject, ResourceObject } from '../../core/AbilityTypeGenerator';
 import { AbilityPolicy, AbilityPolicyConfig } from '../../core/AbilityPolicy';
+import { AbilityCompare } from '../../core/AbilityCompare';
+import { AbilityCondition } from '../../core/AbilityCondition';
+import { AbilityParserError } from '../../core/AbilityError';
+import { AbilityPolicyEffect } from '../../core/AbilityPolicyEffect';
+
+const conditions = new Set(Object.values(AbilityCondition));
 
 export class AbilityJSONParser {
   /**
@@ -31,6 +37,13 @@ export class AbilityJSONParser {
       tags,
     } = config;
 
+    if (effect !== AbilityPolicyEffect.permit && effect !== AbilityPolicyEffect.deny) {
+      throw new AbilityParserError('Invalid policy effect');
+    }
+    if (compareMethod !== undefined) {
+      AbilityJSONParser.validateCompareMethod(compareMethod);
+    }
+
     // Create the empty policy
     const policy = new AbilityPolicy<R, E, T>({
       name,
@@ -56,6 +69,16 @@ export class AbilityJSONParser {
   ): AbilityRule<R, E> {
     const { id, name, description, subject, resource, resourceType, condition, disabled } = config;
 
+    if (!conditions.has(condition)) {
+      throw new AbilityParserError('Invalid rule condition');
+    }
+    if (resourceType !== undefined && resourceType !== 'value' && resourceType !== 'path') {
+      throw new AbilityParserError('Invalid rule resource type');
+    }
+    if (resourceType === 'path' && typeof resource !== 'string') {
+      throw new AbilityParserError('A rule resource path must be a string');
+    }
+
     return new AbilityRule<R, E>({
       id,
       name,
@@ -75,6 +98,8 @@ export class AbilityJSONParser {
     config: AbilityRuleSetConfig,
   ): AbilityRuleSet<R, E> {
     const { id, name, description, rules, ruleSets, compareMethod, disabled, isExcept } = config;
+
+    AbilityJSONParser.validateCompareMethod(compareMethod);
 
     const ruleSet = new AbilityRuleSet<R, E>({
       disabled,
@@ -98,6 +123,12 @@ export class AbilityJSONParser {
     }
 
     return ruleSet;
+  }
+
+  private static validateCompareMethod(compareMethod: unknown): void {
+    if (compareMethod !== AbilityCompare.and && compareMethod !== AbilityCompare.or) {
+      throw new AbilityParserError('Invalid rule comparison method');
+    }
   }
 
   public static ruleToJSON(rule: AbilityRule): AbilityRuleConfig {

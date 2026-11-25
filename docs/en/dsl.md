@@ -532,6 +532,8 @@ Annotations are specified **directly before the alias definition** (one per line
 
 ## Environments
 
+Use static DSL with the `ability` template. Pass dynamic values through the resource or environment (`env.*`) and load policy code from a trusted source. Paths read only own properties. When `equals` compares two paths, both attributes must be defined for the rule to match.
+
 On the right side of a rule, you can reference not only literals or resource fields, but also **environment variables** — data passed when a policy is checked (for example, the request IP address, current time, or session parameters).
 
 ### Syntax

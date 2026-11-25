@@ -154,6 +154,10 @@ export class AbilityDSLLexer {
       i++;
     }
 
+    if (inString) {
+      throw this.error('Unterminated annotation string', startLine, startColumn);
+    }
+
     return new AbilityDSLToken(TokenTypes.ANNOTATION, result.trim(), startLine, startColumn);
   }
 
@@ -216,6 +220,10 @@ export class AbilityDSLLexer {
         startColumn,
         value.length + 1,
       );
+    }
+
+    if (!Number.isFinite(Number(value))) {
+      throw this.error('Number is out of range', startLine, startColumn, value.length);
     }
 
     return new AbilityDSLToken(TokenTypes.NUMBER, value, startLine, startColumn);

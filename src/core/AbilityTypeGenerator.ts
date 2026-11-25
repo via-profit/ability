@@ -17,7 +17,6 @@ export class AbilityTypeGenerator {
   readonly policies: readonly AbilityPolicy[];
   private readonly policyEntries: readonly {
     policy: AbilityPolicy;
-    normalizedPermission: string;
     segments: string[];
   }[];
 
@@ -26,7 +25,6 @@ export class AbilityTypeGenerator {
 
     this.policyEntries = policies.map(policy => ({
       policy,
-      normalizedPermission: AbilityResolver.normalizePermission(policy.permission),
       segments: AbilityResolver.normalizePermission(policy.permission).split('.'),
     }));
   }
@@ -36,8 +34,8 @@ export class AbilityTypeGenerator {
    */
   public generateTypeDefs(): string {
     // Structure to store types: { [action]: { [subjectPath]: type } }
-    const resorceStructure: Record<string, Record<string, string>> = {};
-    const environmentStructure: Record<string, Record<string, string>> = {};
+    const resourceStructure: Record<string, Record<string, string>> = Object.create(null);
+    const environmentStructure: Record<string, Record<string, string>> = Object.create(null);
 
     // tags
     const allTags = new Set<string>();
@@ -48,8 +46,8 @@ export class AbilityTypeGenerator {
       const action = policy.permission;
 
       // Initialize object for action if it doesn't exist
-      if (!resorceStructure[action]) {
-        resorceStructure[action] = {};
+      if (!resourceStructure[action]) {
+        resourceStructure[action] = Object.create(null);
       }
 
       // Iterate through all ruleSets in the policy
@@ -70,17 +68,17 @@ export class AbilityTypeGenerator {
             const envPath = subjectPath.replace(/^env\./, '');
 
             if (!environmentStructure[action]) {
-              environmentStructure[action] = {};
+              environmentStructure[action] = Object.create(null);
             }
 
             environmentStructure[action][envPath] = ruleType;
           } else {
-            const existingType = resorceStructure[action][subjectPath];
+            const existingType = resourceStructure[action][subjectPath];
 
             if (existingType && existingType !== ruleType) {
-              resorceStructure[action][subjectPath] = `${existingType} | ${ruleType}`;
+              resourceStructure[action][subjectPath] = `${existingType} | ${ruleType}`;
             } else {
-              resorceStructure[action][subjectPath] = ruleType;
+              resourceStructure[action][subjectPath] = ruleType;
             }
           }
 
@@ -95,7 +93,7 @@ export class AbilityTypeGenerator {
               const envPath = resourcePath.replace(/^env\./, '');
 
               if (!environmentStructure[action]) {
-                environmentStructure[action] = {};
+                environmentStructure[action] = Object.create(null);
               }
 
               const existingEnvType = environmentStructure[action][envPath];
@@ -108,17 +106,17 @@ export class AbilityTypeGenerator {
               }
             } else {
               // обычный ресурс справа
-              if (!resorceStructure[action]) {
-                resorceStructure[action] = {};
+              if (!resourceStructure[action]) {
+                resourceStructure[action] = Object.create(null);
               }
 
-              const existingResType = resorceStructure[action][resourcePath];
+              const existingResType = resourceStructure[action][resourcePath];
               const targetType = ruleType; // или 'unknown'
 
               if (existingResType && existingResType !== targetType) {
-                resorceStructure[action][resourcePath] = `${existingResType} | ${targetType}`;
+                resourceStructure[action][resourcePath] = `${existingResType} | ${targetType}`;
               } else {
-                resorceStructure[action][resourcePath] = targetType;
+                resourceStructure[action][resourcePath] = targetType;
               }
             }
           }
@@ -128,11 +126,11 @@ export class AbilityTypeGenerator {
 
     // The policies with wildcard (`order.*`, `*.create`) are checked together
     // with the concrete permissions, so their fields are merged into them
-    this.mergeWildcardFields(resorceStructure);
+    this.mergeWildcardFields(resourceStructure);
     this.mergeWildcardFields(environmentStructure);
 
-    const filteredStructure: Record<string, Record<string, string>> = {};
-    Object.entries(resorceStructure).forEach(([action, fields]) => {
+    const filteredStructure: Record<string, Record<string, string>> = Object.create(null);
+    Object.entries(resourceStructure).forEach(([action, fields]) => {
       if (!action.endsWith('.*')) {
         filteredStructure[action] = fields;
       }
@@ -173,6 +171,14 @@ export class AbilityTypeGenerator {
           });
         });
       });
+  }
+
+  private escapeComment(value: string): string {
+    return value.replace(/\*\//g, '* /');
+  }
+
+  private quoteTypeLiteral(value: string): string {
+    return "'" + JSON.stringify(value).slice(1, -1).replace(/'/g, "\\'") + "'";
   }
 
   private mergeTypes(existing: string | undefined, next: string): string {
@@ -313,10 +319,10 @@ export class AbilityTypeGenerator {
   private buildNestedStructure(
     flatStructure: Record<string, Record<string, string>>,
   ): Record<string, NestedDict<string>> {
-    const result: Record<string, NestedDict<string>> = {};
+    const result: Record<string, NestedDict<string>> = Object.create(null);
 
     Object.entries(flatStructure).forEach(([action, paths]) => {
-      result[action] = {};
+      result[action] = Object.create(null);
 
       Object.entries(paths).forEach(([path, type]) => {
         const parts = path.split('.');
@@ -328,7 +334,7 @@ export class AbilityTypeGenerator {
           const currentValue = current[part];
 
           if (!currentValue || typeof currentValue !== 'object') {
-            const newObj: NestedDict<string> = {};
+            const newObj: NestedDict<string> = Object.create(null);
             current[part] = newObj;
             current = newObj;
           } else {
@@ -380,16 +386,16 @@ export class AbilityTypeGenerator {
       const items = filteredPolicies
         .sort((a, b) => a.id.localeCompare(b.id))
         .map(p => {
-          const effect = p.effect.padEnd(6, ' '); // permit / deny / audit
+          const effect = p.effect.padEnd(6, ' ');
           const displayName = p.name === p.id ? 'Unnamed policy' : p.name;
-          return `  *   - ${effect} ${p.id}  "${displayName}"`;
+          return this.escapeComment(`  *   - ${effect} ${p.id}  "${displayName}"`);
         })
         .join('\n');
       //
       output += `
  /**
-  * Permission: ${permission}
-  * Effects: ${effects.join(', ')}
+  * Permission: ${this.escapeComment(permission)}
+  * Effects: ${this.escapeComment(effects.join(', '))}
   * Policies:
 ${items}
   */
@@ -397,10 +403,10 @@ ${items}
 
       if (isEmpty) {
         // empty object → undefined
-        output += `  ['${permission}']: undefined;\n`;
+        output += `  [${this.quoteTypeLiteral(permission)}]: undefined;\n`;
       } else {
         // not empty object
-        output += `  ['${permission}']: {\n`;
+        output += `  [${this.quoteTypeLiteral(permission)}]: {\n`;
         output += this.formatNestedObject(actionObj, 4);
         output += '  } | null | undefined;\n';
       }
@@ -413,7 +419,7 @@ ${items}
       allTags.size > 0
         ? Array.from(allTags)
             .sort()
-            .map(tag => `'${tag}'`)
+            .map(tag => this.quoteTypeLiteral(tag))
             .join(' | ')
         : 'never';
     output += `\n\nexport type PolicyTags = ${tagsUnion};\n`;
@@ -437,22 +443,22 @@ ${items}
         .map(p => {
           const effect = p.effect.padEnd(6, ' ');
           const displayName = p.name === p.id ? 'Unnamed policy' : p.name;
-          return `  *   - ${effect} ${p.id}  "${displayName}"`;
+          return this.escapeComment(`  *   - ${effect} ${p.id}  "${displayName}"`);
         })
         .join('\n');
 
       output += `
  /**
-  * Permission: ${permission}
-  * Effects: ${effects.join(', ')}
+  * Permission: ${this.escapeComment(permission)}
+  * Effects: ${this.escapeComment(effects.join(', '))}
   * Policies:
 ${items}
   */
 `;
       if (isEmpty) {
-        output += `  ['${permission}']: undefined;\n`;
+        output += `  [${this.quoteTypeLiteral(permission)}]: undefined;\n`;
       } else {
-        output += `  ['${permission}']: {\n`;
+        output += `  [${this.quoteTypeLiteral(permission)}]: {\n`;
         output += this.formatNestedObject(envObj as any, 4);
         output += '  } | null | undefined;\n';
       }
@@ -479,10 +485,13 @@ ${items}
 
     sortedKeys.forEach(key => {
       const value = obj[key];
+      const property = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)
+        ? key
+        : this.quoteTypeLiteral(key);
 
       if (typeof value === 'object' && value !== null) {
         // Nested object
-        output += `${spaces}readonly ${key}: {\n`;
+        output += `${spaces}readonly ${property}: {\n`;
         output += this.formatNestedObject(value, indent + 2);
         output += `${spaces}} | null | undefined;\n`;
       } else {
@@ -499,7 +508,7 @@ ${items}
           }
         }
 
-        output += `${spaces}readonly ${key}?: ${[...new Set(va)].join(' | ')} \n`;
+        output += `${spaces}readonly ${property}?: ${[...new Set(va)].join(' | ')} \n`;
       }
     });
 

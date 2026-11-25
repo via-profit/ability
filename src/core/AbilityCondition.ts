@@ -111,16 +111,14 @@ export function fromLiteral(literal: AbilityConditionLiteral): AbilityConditionT
     contains_any: AbilityCondition.contains_any,
   };
 
-  const value = map[literal];
-
-  if (!value) {
+  if (!Object.prototype.hasOwnProperty.call(map, literal)) {
     const expected = Object.keys(map).join(', ');
     throw new AbilityParserError(
       `Literal "${literal}" does not found in AbilityCondition. Expected one of: ${expected}`
     );
   }
 
-  return value;
+  return map[literal];
 }
 
 

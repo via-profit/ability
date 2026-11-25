@@ -1045,15 +1045,17 @@ export class AbilityDSLParser<
         case 'description':
           this.annBuffer.setDescription(value, token);
           break;
-        case 'priority':
-          if (!/^-?\d+$/.test(value)) {
+        case 'priority': {
+          const priority = Number(value);
+          if (!/^-?\d+$/.test(value) || !Number.isSafeInteger(priority)) {
             this.stream.syntaxError(
-              `Annotation \`@priority\` expects an integer, got \`${value}\``,
+              `Annotation \`@priority\` expects an integer in the safe range, got \`${value}\``,
               token,
             );
           }
-          this.annBuffer.setPriority(parseInt(value, 10), token);
+          this.annBuffer.setPriority(priority, token);
           break;
+        }
         case 'disabled':
           if (value !== '' && value !== 'true' && value !== 'false') {
             this.stream.syntaxError(

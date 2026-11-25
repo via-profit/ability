@@ -425,6 +425,8 @@ return order;
 
 ## `AbilityResolver` constructor parameters
 
+The resolver filters policies by tag and captures their permission keys and priority order at construction. Create a new resolver when keys, priorities, or tags change.
+
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `policies` | `readonly P[] \| P` | Yes | A list of policies or one policy |

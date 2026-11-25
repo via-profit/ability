@@ -68,7 +68,6 @@ export class AbilityResolver<
   private readonly selectionCache = new Map<string, readonly P[]>();
   private readonly policyEntries: readonly {
     policy: P;
-    normalizedPermission: string;
     segments: string[];
   }[];
 
@@ -94,7 +93,6 @@ export class AbilityResolver<
 
     this.policyEntries = sorted.map(policy => ({
       policy,
-      normalizedPermission: AbilityResolver.normalizePermission(policy.permission),
       segments: AbilityResolver.normalizePermission(policy.permission).split('.'),
     }));
 
@@ -148,9 +146,11 @@ export class AbilityResolver<
     }
 
     const inputSegments = AbilityResolver.normalizePermission(permission).split('.');
-    const selected = this.policyEntries
-      .filter(entry => AbilityResolver.matchPermissions(entry.segments, inputSegments))
-      .map(entry => entry.policy);
+    const selected = Object.freeze(
+      this.policyEntries
+        .filter(entry => AbilityResolver.matchPermissions(entry.segments, inputSegments))
+        .map(entry => entry.policy),
+    );
 
     if (this.selectionCache.size >= AbilityResolver.SELECTION_CACHE_LIMIT) {
       this.selectionCache.clear();
@@ -205,9 +205,9 @@ export class AbilityResolver<
   public static normalizePermission(permission: string): string {
     return permission
       .trim()
+      .toLowerCase()
       .replace(/^permission\./, '') // remove prefix
-      .replace(/\.+/g, '.') // collapse multiple dots
-      .toLowerCase(); // optional: make case-insensitive
+      .replace(/\.+/g, '.'); // collapse multiple dots
   }
 
   /**

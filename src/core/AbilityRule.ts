@@ -312,7 +312,13 @@ export class AbilityRule<Resources extends object = object, Environment extends 
 
     const [subjectValue, resourceValue] = this.extractValues(resource, environment);
     const handler = AbilityRule.operatorHandlers[toLiteral(this.condition)];
-    const result = handler(subjectValue, resourceValue);
+    // Two absent attributes are insufficient to establish equality between paths.
+    const missingEqualityOperands =
+      this.condition === AbilityCondition.equals &&
+      this.isResourcePath() &&
+      subjectValue === undefined &&
+      resourceValue === undefined;
+    const result = !missingEqualityOperands && handler(subjectValue, resourceValue);
 
     this.state = result ? AbilityMatch.match : AbilityMatch.mismatch;
 
@@ -361,23 +367,29 @@ export class AbilityRule<Resources extends object = object, Environment extends 
     (string | { prop: string; index: number })[]
   >();
 
-  private static _parsePath(desc: string): (string | { prop: string; index: number })[] {
+  private static _parsePath(desc: string): (string | { prop: string; index: number })[] | undefined {
     const cached = AbilityRule._pathCache.get(desc);
     if (cached) return cached;
 
     const parts = desc.split('.');
     const segments: (string | { prop: string; index: number })[] = [];
     for (const part of parts) {
-      const bracketIdx = part.indexOf('[');
-      if (bracketIdx !== -1) {
-        // формат: "prop[index]" (индекс может быть только числом)
-        const prop = part.slice(0, bracketIdx);
-        const indexStr = part.slice(bracketIdx + 1, -1);
-        const index = Number(indexStr);
-        segments.push({ prop, index });
-      } else {
+      if (!part.includes('[') && !part.includes(']')) {
         segments.push(part);
+        continue;
       }
+
+      const match = /^([^\[\]]+)\[(\d+)\]$/.exec(part);
+      if (!match) return undefined;
+
+      const index = Number(match[2]);
+      if (!Number.isSafeInteger(index)) return undefined;
+
+      segments.push({ prop: match[1], index });
+    }
+
+    if (AbilityRule._pathCache.size >= 1024) {
+      AbilityRule._pathCache.clear();
     }
     AbilityRule._pathCache.set(desc, segments);
     return segments;
@@ -394,17 +406,23 @@ export class AbilityRule<Resources extends object = object, Environment extends 
     }
 
     const segments = AbilityRule._parsePath(desc);
-    let current: any = resource;
+    if (!segments) return undefined;
+
+    let current: unknown = resource;
+    const hasOwn = Object.prototype.hasOwnProperty;
 
     for (const seg of segments) {
-      if (current == null) {
+      const prop = typeof seg === 'string' ? seg : seg.prop;
+      if (current == null || !hasOwn.call(current, prop)) {
         return undefined;
       }
-      if (typeof seg === 'string') {
-        current = current[seg];
-      } else {
-        const arr = current[seg.prop];
-        current = Array.isArray(arr) ? arr[seg.index] : undefined;
+
+      current = (current as Record<string, unknown>)[prop];
+      if (typeof seg !== 'string') {
+        if (!Array.isArray(current) || !hasOwn.call(current, seg.index)) {
+          return undefined;
+        }
+        current = current[seg.index];
       }
     }
     return current as T;
