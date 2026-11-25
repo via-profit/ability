@@ -6,6 +6,18 @@ generation and zero dependencies. It works the same way on the server and in the
 The project covers typical access control scenarios without unnecessary complexity: rules are described as text, checked
 in microseconds, and on denial you can get a detailed explanation of which condition failed.
 
+## Philosophy: Intentionally "Dumb" Policies
+
+The core architectural principle of `@via-profit/ability` is simple: **business logic belongs in your application, not in your access control library.**
+
+In many authorization tools, rules gradually get bloated with custom callbacks, async database calls, and complex computations. As a result, business logic leaks into the permission layer, making access checks fragile and hard to debug.
+
+`@via-profit/ability` takes a different approach:
+* **No business logic inside the DSL.** The language intentionally omits complex expressions, loops, and custom functions — providing only clear, declarative comparison operators.
+* **Pre-computed context only.** Your application is responsible for fetching and preparing the attributes (e.g., resolving `isSubscriptionActive: true`). The policy engine simply evaluates this flat snapshot against your rules.
+* **Predictable and trivial to test.** Policies act as pure functions with zero side effects. Testing complex permission matrices requires nothing more than passing a plain JSON object to the resolver.
+
+
 ## Installation
 
 ```bash
