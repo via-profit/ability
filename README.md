@@ -2,7 +2,7 @@
 
 > Lightweight ABAC engine with DSL, TypeScript types, and zero dependencies
 
-[![documentation](https://img.shields.io/badge/docs-via--profit.github.io%2Fability-22c7d6)](https://via-profit.github.io/ability/)
+[![documentation](https://img.shields.io/badge/docs-via--profit.github.io%2Fability-22c7d6)](https://ability.via-profit.ru/)
 ![npm version](https://img.shields.io/npm/v/%40via-profit/ability)
 ![npm downloads](https://img.shields.io/npm/dm/%40via-profit/ability)
 ![license](https://img.shields.io/github/license/via-profit/ability)
@@ -17,7 +17,7 @@ they are checked right in the browser.
 
 > ### 🌐 Language Selection / Выбор языка
 >
-> * 🌐 **[Сайт документации / Documentation website](https://via-profit.github.io/ability/)**
+> * 🌐 **[Сайт документации / Documentation website](https://ability.via-profit.ru/)**
 > * 🇷🇺 **[Документация на русском](./docs/ru/README.md)**
 > * 🇬🇧 **[English documentation](./docs/en/README.md)**
 

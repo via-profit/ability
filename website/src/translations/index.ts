@@ -105,6 +105,12 @@ const messages = {
     ru: 'Ноль зависимостей и около 1.5 µs на проверку — можно проверять права на каждом рендере.',
     en: 'Zero dependencies and about 1.5 µs per check — fine to check on every render.',
   },
+  'home.star': { ru: 'Поставить звезду', en: 'Star on GitHub' },
+  'home.star.title': { ru: 'Понравилось? Поставьте звезду', en: 'Found it useful? Leave a star' },
+  'home.star.text': {
+    ru: 'Ability — открытый проект под лицензией MIT. Звезда на GitHub — самый простой способ поддержать проект: она помогает библиотеке расти и позволяет другим разработчикам узнать о ней.',
+    en: 'Ability is an open source project under the MIT license. A star on GitHub is the simplest way to support it: it helps the library grow and lets more developers discover it.',
+  },
   'home.install': { ru: 'Установка', en: 'Installation' },
 
   'playground.title': { ru: 'Песочница', en: 'Playground' },

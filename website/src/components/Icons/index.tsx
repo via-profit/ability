@@ -97,6 +97,14 @@ export const EditIcon = outline(
   </>,
 );
 
+/**
+ * Outline star. Pass `fill="currentColor"` to get the filled one
+ */
+export const StarIcon = outline(
+  'StarIcon',
+  <path d="M12 3.25 14.41 9.18 20.8 9.64 15.9 13.77 17.44 19.98 12 16.6 6.56 19.98 8.1 13.77 3.2 9.64 9.59 9.18Z" />,
+);
+
 export const GithubIcon = React.forwardRef<SVGSVGElement, IconProps>((props, ref) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"

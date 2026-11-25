@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 
 import Logo from '~/components/Logo';
 import SyntaxHighlighter from '~/components/SyntaxHighlighter';
-import { CheckIcon, CopyIcon, GithubIcon, PlayIcon } from '~/components/Icons';
+import { CheckIcon, CopyIcon, PlayIcon, StarIcon } from '~/components/Icons';
 import { useT, MessageId } from '~/translations';
 import { docs } from '~/utils/docs';
 import { ABILITY_VERSION, GITHUB_URL } from '~/utils/env';
@@ -138,15 +138,23 @@ const buttonStyles = css`
   }
 `;
 
-const PrimaryButton = styled(Link)`
+const primaryStyles = (theme: Theme) => css`
   ${buttonStyles};
   color: #ffffff;
-  background: ${({ theme }) => gradient(theme)};
-  box-shadow: 0 0.5rem 1.5rem -0.5rem ${({ theme }) => theme.color.accentPrimary.alpha(0.6).toString()};
+  background: ${gradient(theme)};
+  box-shadow: 0 0.5rem 1.5rem -0.5rem ${theme.color.accentPrimary.alpha(0.6).toString()};
 
   &:hover {
-    box-shadow: 0 0.75rem 2rem -0.5rem ${({ theme }) => theme.color.accentPrimary.alpha(0.8).toString()};
+    box-shadow: 0 0.75rem 2rem -0.5rem ${theme.color.accentPrimary.alpha(0.8).toString()};
   }
+`;
+
+const PrimaryButton = styled(Link)`
+  ${({ theme }) => primaryStyles(theme)};
+`;
+
+const PrimaryAnchor = styled.a`
+  ${({ theme }) => primaryStyles(theme)};
 `;
 
 const secondaryStyles = (theme: Theme) => css`
@@ -166,6 +174,15 @@ const SecondaryButton = styled(Link)`
 
 const SecondaryAnchor = styled.a`
   ${({ theme }) => secondaryStyles(theme)};
+`;
+
+/**
+ * Link to the GitHub repository. The star is highlighted with the accent color
+ */
+const StarAnchor = styled(SecondaryAnchor)`
+  & svg {
+    color: ${({ theme }) => theme.color.accentPrimary.toString()};
+  }
 `;
 
 const Install = styled.button`
@@ -330,6 +347,65 @@ const Card = styled(Link)`
   }
 `;
 
+const StarCard = styled.div`
+  position: relative;
+  overflow: hidden;
+  padding: 3.5rem 1.5rem;
+  text-align: center;
+  background-color: ${({ theme }) => theme.color.surface.toString()};
+  border: 1px solid ${({ theme }) => theme.color.border.toString()};
+  border-radius: 0.75rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -14rem;
+    left: 50%;
+    width: 40rem;
+    max-width: 100%;
+    height: 24rem;
+    transform: translateX(-50%);
+    background: radial-gradient(
+      closest-side,
+      ${({ theme }) => theme.color.accentPrimary.alpha(theme.isDark ? 0.18 : 0.14).toString()},
+      transparent
+    );
+    pointer-events: none;
+  }
+`;
+
+const StarBadge = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1.25rem;
+  font-size: 2rem;
+  color: #ffffff;
+  background: ${({ theme }) => gradient(theme)};
+  border-radius: 1.1rem;
+  box-shadow: 0 0.75rem 2rem -0.75rem ${({ theme }) => theme.color.accentPrimary.alpha(0.9).toString()};
+`;
+
+const StarTitle = styled.h2`
+  position: relative;
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+`;
+
+const StarText = styled.p`
+  position: relative;
+  max-width: 34rem;
+  margin: 0 auto 1.75rem;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: ${({ theme }) => theme.color.textSecondary.toString()};
+`;
+
 const features: readonly { readonly title: MessageId; readonly text: MessageId }[] = [
   { title: 'home.feature.dsl.title', text: 'home.feature.dsl.text' },
   { title: 'home.feature.types.title', text: 'home.feature.types.text' },
@@ -376,10 +452,10 @@ const Home: React.FC = () => {
             <PlayIcon />
             {t('home.playground')}
           </SecondaryButton>
-          <SecondaryAnchor href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
-            <GithubIcon />
-            GitHub
-          </SecondaryAnchor>
+          <StarAnchor href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+            <StarIcon fill="currentColor" />
+            {t('home.star')}
+          </StarAnchor>
         </Actions>
         <div>
           <Install type="button" onClick={copyInstall} title={t('code.copy')}>
@@ -416,6 +492,20 @@ const Home: React.FC = () => {
             </Feature>
           ))}
         </FeatureGrid>
+      </Section>
+
+      <Section>
+        <StarCard>
+          <StarBadge>
+            <StarIcon fill="currentColor" />
+          </StarBadge>
+          <StarTitle>{t('home.star.title')}</StarTitle>
+          <StarText>{t('home.star.text')}</StarText>
+          <PrimaryAnchor href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+            <StarIcon fill="currentColor" />
+            {t('home.star')}
+          </PrimaryAnchor>
+        </StarCard>
       </Section>
 
       <Section>

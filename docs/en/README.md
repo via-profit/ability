@@ -1,6 +1,6 @@
 # @via-profit/ability Documentation
 
-> 🌐 [Documentation website with search and playground](https://via-profit.github.io/ability/)
+> 🌐 [Documentation website with search and playground](https://ability.via-profit.ru/)
 
 - [Introduction](./getting-started.md)
 - [DSL](./dsl.md)

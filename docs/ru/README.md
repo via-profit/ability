@@ -1,6 +1,6 @@
 # @via-profit/ability  Документация
 
-> 🌐 [Сайт документации с поиском и песочницей](https://via-profit.github.io/ability/)
+> 🌐 [Сайт документации с поиском и песочницей](https://ability.via-profit.ru/)
 
 - [Введение](./getting-started.md)
 - [DSL](./dsl.md)
