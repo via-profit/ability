@@ -25,6 +25,18 @@ they are checked right in the browser.
 
 The project was designed to cover standard access control scenarios without unnecessary complexity. We needed a lightweight ABAC engine that works in both server and browser environments, with a simple DSL, automatic TypeScript type generation, and no external dependencies.
 
+## Philosophy: Intentionally "Dumb" Policies
+
+The core architectural principle of `@via-profit/ability` is simple: **business logic belongs in your application, not in your access control library.**
+
+In many authorization tools, rules gradually get bloated with custom callbacks, async database calls, and complex computations. As a result, business logic leaks into the permission layer, making access checks fragile and hard to debug.
+
+`@via-profit/ability` takes a different approach:
+* **No business logic inside the DSL.** The language intentionally omits complex expressions, loops, and custom functions — providing only clear, declarative comparison operators.
+* **Pre-computed context only.** Your application is responsible for fetching and preparing the attributes (e.g., resolving `isSubscriptionActive: true`). The policy engine simply evaluates this flat snapshot against your rules.
+* **Predictable and trivial to test.** Policies act as pure functions with zero side effects. Testing complex permission matrices requires nothing more than passing a plain JSON object to the resolver.
+
+
 ## Key features
 
 - Simple DSL
