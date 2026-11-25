@@ -1,39 +1,43 @@
 import React from 'react';
-import { createRoot } from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { CacheProvider } from '@emotion/react';
+import { hydrateRoot } from 'react-dom/client';
+import { createBrowserRouter, matchRoutes, RouterProvider } from 'react-router-dom';
 import createCache from '@emotion/cache';
 
-import UiProvider from '~/providers/UiProvider';
-import ThemeProvider from '~/providers/ThemeProvider';
-import LocaleProvider from '~/providers/LocaleProvider';
-import routes from '~/routes';
-import { PUBLIC_PATH } from '~/utils/env';
+import Application from '~/application/Application';
+import { createRoutes } from '~/routes';
+import { getPathLocale } from '~/utils/locale';
 
-const bootstrap = () => {
-  const rootElement = document.getElementById('app');
-  if (!rootElement) {
-    throw new Error('Root element with id #app not found');
+const bootstrap = async () => {
+  const root = document.getElementById('app');
+  const locale = getPathLocale(window.location.pathname);
+  if (!root || !locale) {
+    throw new Error('Cannot hydrate the Ability website without the app root and a locale');
   }
 
-  const cssCache = createCache({ key: 'app' });
-  const router = createBrowserRouter(routes, {
-    basename: PUBLIC_PATH.replace(/\/+$/, '') || '/',
-  });
+  const basename = `/${locale}`;
+  const routes = createRoutes(locale);
+  const matches = matchRoutes(routes, window.location, basename) ?? [];
 
-  createRoot(rootElement).render(
-    <React.StrictMode>
-      <CacheProvider value={cssCache}>
-        <UiProvider>
-          <ThemeProvider>
-            <LocaleProvider>
-              <RouterProvider router={router} />
-            </LocaleProvider>
-          </ThemeProvider>
-        </UiProvider>
-      </CacheProvider>
-    </React.StrictMode>,
+  // Load the code of the server-rendered route tree before hydrating its HTML.
+  await Promise.all(
+    matches.map(async ({ route }) => {
+      if (typeof route.lazy === 'function') {
+        Object.assign(route, await route.lazy());
+        delete route.lazy;
+      }
+    }),
+  );
+
+  const cssCache = createCache({ key: 'app' });
+  const theme = root.dataset.theme === 'light' ? 'light' : 'dark';
+  const router = createBrowserRouter(routes, { basename });
+
+  hydrateRoot(
+    root,
+    <Application cssCache={cssCache} locale={locale} theme={theme}>
+      <RouterProvider router={router} />
+    </Application>,
   );
 };
 
-bootstrap();
+void bootstrap().catch(error => console.error('Ability hydration failed', error));

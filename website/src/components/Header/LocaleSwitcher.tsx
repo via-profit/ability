@@ -1,9 +1,10 @@
 import React from 'react';
 import styled from '@emotion/styled';
+import { useLocation } from 'react-router-dom';
 
 import { useUi } from '~/providers/UiProvider';
 import { useT } from '~/translations';
-import IconButton from './IconButton';
+import { IconLink } from './IconButton';
 
 const Label = styled.span`
   font-family: var(--font-mono);
@@ -13,19 +14,24 @@ const Label = styled.span`
 `;
 
 const LocaleSwitcher: React.FC = () => {
-  const { locale, setLocale } = useUi();
+  const { locale } = useUi();
+  const { pathname, search, hash } = useLocation();
+  const [isMounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
+  const target = locale === 'ru' ? 'en' : 'ru';
   const t = useT();
   const title = t('header.language');
 
   return (
-    <IconButton
-      type="button"
+    <IconLink
+      href={`/${target}${pathname}${search}${isMounted ? hash : ''}`}
+      hrefLang={target}
       title={title}
       aria-label={title}
-      onClick={() => setLocale(locale === 'ru' ? 'en' : 'ru')}
     >
-      <Label>{locale === 'ru' ? 'EN' : 'RU'}</Label>
-    </IconButton>
+      <Label>{target.toUpperCase()}</Label>
+    </IconLink>
   );
 };
 

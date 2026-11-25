@@ -54,7 +54,7 @@ export interface EvaluationResult {
     /**
      * Average time of one check in milliseconds
      */
-    readonly duration: number;
+    readonly duration: number | null;
   } | null;
   readonly typeDefs: string;
   readonly json: string;
@@ -135,6 +135,7 @@ export const evaluate = (
   context: string,
   strategyName: StrategyName,
   permission: string,
+  measureDuration: boolean,
 ): EvaluationResult => {
   const { policies, error: dslError } = parseDSL(dsl);
   const { resource, environment, error: contextError } = parseContext(context);
@@ -157,13 +158,16 @@ export const evaluate = (
 
     const result = resolve();
 
-    // Average of several runs: a single check is faster than the timer precision of the browser
-    const runs = 200;
-    const start = performance.now();
-    for (let i = 0; i < runs; i++) {
-      resolve();
+    let duration: number | null = null;
+    if (measureDuration) {
+      // Average of several runs: a single check is faster than the timer precision of the browser
+      const runs = 200;
+      const start = performance.now();
+      for (let i = 0; i < runs; i++) {
+        resolve();
+      }
+      duration = (performance.now() - start) / runs;
     }
-    const duration = (performance.now() - start) / runs;
 
     check = {
       isAllowed: result.isAllowed(),

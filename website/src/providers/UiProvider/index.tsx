@@ -1,66 +1,33 @@
 import React from 'react';
+import type { Locale } from '~/utils/locale';
 
+export type { Locale } from '~/utils/locale';
 export type ThemeName = 'dark' | 'light';
-export type Locale = 'ru' | 'en';
 
-export interface UiState {
+interface UiContextValue {
   readonly theme: ThemeName;
   readonly locale: Locale;
-}
-
-interface UiContextValue extends UiState {
   readonly setTheme: (theme: ThemeName) => void;
-  readonly setLocale: (locale: Locale) => void;
 }
 
-const STORAGE_KEY = 'ability-ui';
+export const themeCookie = 'ability-theme';
 
 const UiContext = React.createContext<UiContextValue | null>(null);
 
-/**
- * Settings chosen by the user earlier. Unknown values are ignored
- */
-const readStoredState = (): Partial<UiState> => {
-  try {
-    const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || '{}');
+interface Props {
+  readonly children: React.ReactNode;
+  readonly locale: Locale;
+  readonly initialTheme: ThemeName;
+}
 
-    return {
-      ...(stored.theme === 'dark' || stored.theme === 'light' ? { theme: stored.theme } : {}),
-      ...(stored.locale === 'ru' || stored.locale === 'en' ? { locale: stored.locale } : {}),
-    };
-  } catch {
-    return {};
-  }
-};
-
-const defaultState = (): UiState => ({
-  theme: 'dark',
-  locale: navigator.language.toLowerCase().startsWith('ru') ? 'ru' : 'en',
-});
-
-export const UiProvider: React.FC<{ readonly children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = React.useState<UiState>(() => ({
-    ...defaultState(),
-    ...readStoredState(),
-  }));
+export const UiProvider: React.FC<Props> = ({ children, locale, initialTheme }) => {
+  const [theme, setTheme] = React.useState(initialTheme);
 
   React.useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // storage is not available (private mode), settings live until the page reload
-    }
-    document.documentElement.lang = state.locale;
-  }, [state]);
+    document.cookie = `${themeCookie}=${theme}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }, [theme]);
 
-  const value = React.useMemo<UiContextValue>(
-    () => ({
-      ...state,
-      setTheme: theme => setState(prev => ({ ...prev, theme })),
-      setLocale: locale => setState(prev => ({ ...prev, locale })),
-    }),
-    [state],
-  );
+  const value = React.useMemo(() => ({ theme, locale, setTheme }), [theme, locale]);
 
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
 };

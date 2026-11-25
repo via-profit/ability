@@ -1,50 +1,50 @@
-# @via-profit/ability — website
+# @via-profit/ability — сайт документации
 
-Documentation website and playground of `@via-profit/ability`.
+Сайт использует React Router и Node.js для серверного рендеринга. В браузере React гидратирует готовый HTML и подключает поиск, переключение темы и песочницу. Нужен Node.js 24 или новее.
 
-The website is a part of the library repository, but it is not an npm workspace and is not published:
-it has its own `package.json` and dependencies.
+## Разработка
 
-## Development
+Из корня репозитория:
 
-```bash
-cd website
-npm install
-npm start          # http://localhost:8080, the port can be changed with PORT=3000
+```sh
+npm ci --prefix website
+npm run website
 ```
 
-From the repository root: `npm run website`, `npm run website:build` and `npm run website:prod`.
+Сайт открывается на [localhost:8080](http://localhost:8080). Сервер перезапускается после пересборки. Порт можно изменить через `PORT`.
 
-## Production
+## Деплой через SSH и systemd
 
-```bash
-npm run start:prod   # build + static server, http://localhost:8080
-npm run serve        # only the server of the already built dist/
+На рабочей машине скопируйте `website/.env.deploy.example` в `website/.env.deploy`. Укажите SSH-хост в `DEPLOY_HOST`, логин в `DEPLOY_USER`, каталог сайта в `DEPLOY_DESTINATION_DIR` и публичный HTTPS-адрес в `DEPLOY_SITE_URL`. В `DEPLOY_NODE_BIN` задайте абсолютный путь к Node.js 24 на сервере. Адрес прослушивания и порт задаются через `DEPLOY_BIND_HOST` и `DEPLOY_PORT`. Эти значения записываются в серверный `.env` и используются для проверки ответа после запуска. Затем выполните из корня репозитория
+
+```sh
+npm ci --prefix website
+npm run deploy
 ```
 
-The server (`scripts/serve.js`) has no dependencies: it serves `dist/`, returns `index.html` for the routes
-of the site, compresses text files with gzip and caches the hashed assets forever.
-Settings: `PORT`, `HOST` and `PUBLIC_PATH` (the same value as for the build).
+Команда собирает сайт локально, отправляет архив по SSH и проверяет его контрольную сумму на сервере. Затем она размещает готовый `dist` в `DEPLOY_DESTINATION_DIR/dist`, сохраняет unit как `DEPLOY_DESTINATION_DIR/DEPLOY_SERVICE_NAME.service`, создаёт на него симлинк в `/etc/systemd/system`, запускает сервис и проверяет ответ SSR.
 
-## Build
+На хосте нужны Node.js 24, пользователь `web` и доступ к `sudo` для установки unit и управления systemd. Файлы сайта загружаются и распаковываются от SSH-пользователя. Каталог сайта и Node.js должны быть доступны пользователю `web`. Если удалённый шаг завершается ошибкой, скрипт сохраняет временный каталог с загруженными файлами и предыдущей сборкой и выводит его путь. Вручную сервис можно запустить командой `sudo systemctl start viaprofit.ability`. Статус доступен через `systemctl status viaprofit.ability`, журнал через `journalctl -u viaprofit.ability -f`.
 
-```bash
-npm run build                        # dist/
-PUBLIC_PATH=/ability/ npm run build  # the site is served from a sub path (for example, GitHub Pages)
-npm run lint                         # type check
+Настройте домен и TLS на nginx. В примере конфигурации сервис слушает `127.0.0.1:9045`. При изменении адреса или порта обновите `proxy_pass` в nginx. Пример блока для HTTPS-конфигурации nginx
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:9045;
+    gzip on;
+    gzip_types text/javascript image/svg+xml text/plain application/xml;
+}
 ```
 
-`dist/` is a static single-page application. `dist/404.html` is a copy of `index.html`, so static hosting
-(GitHub Pages and similar) opens any route of the site.
+## Страницы
 
-## How it works
+- Русская версия находится под `/ru`, английская под `/en`. Запросы без префикса перенаправляются на английскую версию. Переключатель языка открывает тот же раздел на другом языке.
+- Перечень статей задан в `src/utils/docs.ts`. Маршруты загружают Markdown из `../docs/ru`, `../docs/en` и `../CHANGELOG.md` до рендеринга страницы. Браузер загружает Markdown открытой статьи отдельным JS-чанком перед гидратацией. После правок Markdown production-сборку нужно обновить.
+- Тексты интерфейса находятся в `src/translations/index.ts`, токены светлой и тёмной тем в `src/themes`. Выбранная тема хранится в cookie и учитывается при SSR.
+- Песочница собирается из исходников Ability. Редакторы CodeMirror и диаграммы Mermaid подключаются в браузере.
 
-- **Library** — the site imports `@via-profit/ability` directly from `../src` (webpack alias), so changes of the
-  library are visible on the site without a build.
-- **Documentation** — the pages are rendered from `../docs/ru/*.md` and `../docs/en/*.md`, the changelog from
-  `../CHANGELOG.md`. The same markdown is shown on GitHub, so the texts are edited in one place.
-  The list of pages is in `src/utils/docs.ts`.
-- **Design** — components of [`@via-profit/ui-kit`](https://github.com/via-profit/ui-kit) wrapped into the own
-  components of the site (`src/components`), the theme is in `src/themes`.
-- **Interface texts** — `src/translations/index.ts`, every text has all the translations.
-- **Playground** — `src/playground`: CodeMirror editors, examples, evaluation of the policies.
+## Индексация и текстовая документация
+
+На корне сайта доступны `/robots.txt`, `/sitemap.xml`, `/llms.txt` и `/llms-full.txt`. Карта сайта включает публичные страницы обеих локалей. `llms.txt` содержит ссылки на Markdown-версии статей текущей сборки на своём домене, а `llms-full.txt` объединяет статьи, оглавления и журнал изменений из той же сборки.
+
+Деплой записывает публичный адрес из `DEPLOY_SITE_URL` в `SITE_URL` сервиса. Он используется в ссылках карты сайта и указателей. При локальном запуске без `SITE_URL` используется HTTP-адрес запроса.

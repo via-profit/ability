@@ -52,7 +52,8 @@
     "pretty": "prettier --write ./src",
     "website": "npm --prefix website start",
     "website:build": "npm --prefix website run build",
-    "website:prod": "npm --prefix website run start:prod"
+    "website:prod": "npm --prefix website run start:prod",
+    "deploy": "npm --prefix website run deploy"
   },
   "repository": {
     "type": "git",

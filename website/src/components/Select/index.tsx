@@ -8,6 +8,7 @@ export interface SelectOption<T extends string> {
 }
 
 export interface SelectProps<T extends string> {
+  readonly id: string;
   readonly label: string;
   readonly value: T | null;
   readonly options: readonly SelectOption<T>[];
@@ -27,13 +28,14 @@ const Container = styled.div`
  * Select of the site based on the ui-kit Selectbox
  */
 const Select = <T extends string>(props: SelectProps<T>) => {
-  const { label, value, options, onChange, className, placeholder } = props;
+  const { id, label, value, options, onChange, className, placeholder } = props;
   const [isOpen, setOpen] = React.useState(false);
   const selected = options.find(option => option.value === value) ?? null;
 
   return (
     <Container className={className}>
       <Selectbox
+        id={id}
         fullWidth
         label={label}
         items={options}

@@ -11,8 +11,8 @@
 ![issues](https://img.shields.io/github/issues/via-profit/ability)
 ![stars](https://img.shields.io/github/stars/via-profit/ability?style=social)
 
-**📖 [Documentation website](https://via-profit.github.io/ability/)** — docs in English and Russian with search, and an
-**[interactive playground](https://via-profit.github.io/ability/playground)** where you can write policies and see how
+**📖 [Documentation website](https://ability.via-profit.ru/)** — docs in English and Russian with search, and an
+**[interactive playground](https://ability.via-profit.ru/playground)** where you can write policies and see how
 they are checked right in the browser.
 
 > ### 🌐 Language Selection / Выбор языка

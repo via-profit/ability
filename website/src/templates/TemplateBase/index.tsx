@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, ScrollRestoration } from 'react-router-dom';
 import styled from '@emotion/styled';
 
+import PageTitle from '~/application/PageTitle';
 import Header from '~/components/Header';
 import PageWrapper from '~/components/PageWrapper';
 import Footer from '~/components/Footer';
@@ -18,6 +19,7 @@ const Content = styled.main`
  */
 const TemplateBase: React.FC = () => (
   <PageWrapper>
+    <PageTitle />
     <Header />
     <Content>
       <Outlet />

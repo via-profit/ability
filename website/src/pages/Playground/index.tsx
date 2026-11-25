@@ -301,31 +301,39 @@ const Playground: React.FC = () => {
   const { locale } = useUi();
   const { hash } = useLocation();
   const navigate = useNavigate();
-  const [state, setState] = React.useState<PlaygroundState>(() => initialState(hash));
+  const [state, setState] = React.useState<PlaygroundState>(() => fromExample(defaultExample));
   const [debounced, setDebounced] = React.useState(state);
-  const [exampleId, setExampleId] = React.useState<string | null>(() =>
-    readHashState(hash) || readStoredState() ? null : defaultExample.id,
-  );
+  const [exampleId, setExampleId] = React.useState<string | null>(defaultExample.id);
+  const [isMounted, setMounted] = React.useState(false);
+  const initialHash = React.useRef(hash);
   const [tab, setTab] = React.useState<OutputTab>('explain');
   const [isShared, setShared] = React.useState(false);
 
   React.useEffect(() => {
-    document.title = `${t('playground.title')} · @via-profit/ability`;
-  }, [t]);
+    const sharedHash = initialHash.current;
+    const initial = initialState(sharedHash);
+    setState(initial);
+    setDebounced(initial);
+    setExampleId(readHashState(sharedHash) || readStoredState() ? null : defaultExample.id);
+    setMounted(true);
+  }, []);
 
-  // The state from the link is applied once, then the link is cleaned
   React.useEffect(() => {
-    if (hash) {
+    if (isMounted && hash) {
       navigate('/playground', { replace: true });
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isMounted, hash, navigate]);
 
   React.useEffect(() => {
+    if (!isMounted) {
+      return undefined;
+    }
+
     const timeout = setTimeout(() => setDebounced(state), 250);
     writeStoredState(state);
 
     return () => clearTimeout(timeout);
-  }, [state]);
+  }, [isMounted, state]);
 
   React.useEffect(() => {
     if (!isShared) {
@@ -337,8 +345,8 @@ const Playground: React.FC = () => {
   }, [isShared]);
 
   const firstPass = React.useMemo(
-    () => evaluate(debounced.dsl, debounced.context, debounced.strategy, debounced.permission),
-    [debounced],
+    () => evaluate(debounced.dsl, debounced.context, debounced.strategy, debounced.permission, isMounted),
+    [debounced, isMounted],
   );
 
   // Without a chosen key the first key of the policies is checked
@@ -347,8 +355,8 @@ const Playground: React.FC = () => {
     () =>
       permission === debounced.permission
         ? firstPass
-        : evaluate(debounced.dsl, debounced.context, debounced.strategy, permission),
-    [firstPass, permission, debounced],
+        : evaluate(debounced.dsl, debounced.context, debounced.strategy, permission, isMounted),
+    [firstPass, permission, debounced, isMounted],
   );
 
   const update = (patch: Partial<PlaygroundState>) => {
@@ -377,6 +385,7 @@ const Playground: React.FC = () => {
   };
 
   const { check } = result;
+  const duration = check?.duration;
 
   return (
     <Page>
@@ -384,6 +393,7 @@ const Playground: React.FC = () => {
 
       <Toolbar>
         <Select
+          id="playground-example"
           label={t('playground.example')}
           placeholder={t('playground.customExample')}
           value={exampleId}
@@ -391,12 +401,14 @@ const Playground: React.FC = () => {
           onChange={selectExample}
         />
         <Select
+          id="playground-strategy"
           label={t('playground.strategy')}
           value={state.strategy}
           options={strategyNames.map(name => ({ value: name, label: name }))}
           onChange={strategy => update({ strategy })}
         />
         <TextField
+          id="playground-permission"
           fullWidth
           label={t('playground.permission')}
           value={state.permission}
@@ -432,18 +444,22 @@ const Playground: React.FC = () => {
             <FileName>policies.dsl</FileName>
             <PanelMeta>{t('playground.policiesCount', { count: result.policies.length })}</PanelMeta>
           </PanelHeader>
-          <React.Suspense fallback={<LoadingIndicator />}>
-            <CodeEditor
-              language="dsl"
-              value={state.dsl}
-              error={result.dslError}
-              ariaLabel={t('playground.policies')}
-              onChange={dsl => {
-                setExampleId(null);
-                update({ dsl });
-              }}
-            />
-          </React.Suspense>
+          {isMounted ? (
+            <React.Suspense fallback={<LoadingIndicator />}>
+              <CodeEditor
+                language="dsl"
+                value={state.dsl}
+                error={result.dslError}
+                ariaLabel={t('playground.policies')}
+                onChange={dsl => {
+                  setExampleId(null);
+                  update({ dsl });
+                }}
+              />
+            </React.Suspense>
+          ) : (
+            <LoadingIndicator />
+          )}
         </Panel>
 
         <Panel>
@@ -452,18 +468,22 @@ const Playground: React.FC = () => {
             <FileName>context.json</FileName>
           </PanelHeader>
           <Hint>{t('playground.contextHint')}</Hint>
-          <React.Suspense fallback={<LoadingIndicator />}>
-            <CodeEditor
-              language="json"
-              value={state.context}
-              error={result.contextError}
-              ariaLabel={t('playground.context')}
-              onChange={context => {
-                setExampleId(null);
-                update({ context });
-              }}
-            />
-          </React.Suspense>
+          {isMounted ? (
+            <React.Suspense fallback={<LoadingIndicator />}>
+              <CodeEditor
+                language="json"
+                value={state.context}
+                error={result.contextError}
+                ariaLabel={t('playground.context')}
+                onChange={context => {
+                  setExampleId(null);
+                  update({ context });
+                }}
+              />
+            </React.Suspense>
+          ) : (
+            <LoadingIndicator />
+          )}
         </Panel>
 
         <Panel aria-live="polite">
@@ -507,13 +527,12 @@ const Playground: React.FC = () => {
                 {check.isAllowed ? t('playground.permit') : t('playground.deny')}
               </VerdictTitle>
               <VerdictLine>
-                <code>{permission}</code> · {state.strategy} ·{' '}
-                {t('playground.duration', {
-                  time:
-                    check.duration < 1
-                      ? `${(check.duration * 1000).toFixed(1)} µs`
-                      : `${check.duration.toFixed(2)} ms`,
-                })}
+                <code>{permission}</code> · {state.strategy}
+                {duration != null && (
+                  <> · {t('playground.duration', {
+                    time: duration < 1 ? `${(duration * 1000).toFixed(1)} µs` : `${duration.toFixed(2)} ms`,
+                  })}</>
+                )}
               </VerdictLine>
               <VerdictLine>
                 {t('playground.decisive')}:{' '}

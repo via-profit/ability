@@ -344,10 +344,6 @@ const Home: React.FC = () => {
   const [copied, setCopied] = React.useState(false);
 
   React.useEffect(() => {
-    document.title = '@via-profit/ability';
-  }, []);
-
-  React.useEffect(() => {
     if (!copied) {
       return undefined;
     }
